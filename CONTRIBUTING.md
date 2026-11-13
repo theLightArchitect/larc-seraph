@@ -15,7 +15,7 @@ YARA ships as two flavors generated from `rules/src/yara` by `python tools/build
 - `rules/yara` is the Forge flavor. Canonical rule names and `SERAPH-YARA-NNN` ids. It must compile with no externals. Do not write `filepath` in that tree.
 - `rules/path-scoped` is the path-scoped flavor. Names end in `_Path`, ids end in `-PATH`, and the rules read `filepath`. The CLI uses this set plus the plist rules.
 
-Pass `filepath` as the path is stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. The Forge flavor cannot see that string. MCP rules there require a leading `{`, except `SERAPH-YARA-016`, which also accepts a file that starts with `mcpServers:` or `[mcp_servers`. `SERAPH_Instruction_Unsafe_Directive` on Forge requires an in-file marker such as `agent instructions` or `AGENTS.md`. `SERAPH_Instruction_Hidden_Unicode` on Forge does not: the tag and bidi bytes are the signal, because a real `CLAUDE.md` or `.cursor/rules` file often does not name itself. The git-hook rule there skips git's sample banner instead of a `.sample` filename.
+Pass `filepath` as the path is stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. The Forge flavor cannot see that string. MCP rules there need a text file that opens with a JSON object (after an optional BOM or blank space), a top-level `mcpServers:` key, or an `mcp_servers` table. The Forge instruction rule needs an in-file marker, and the Forge hidden-unicode and git-hook rules match on content alone, which is why their Forge copies carry a lower `score`.
 
 English confirmation-bypass sentences live in `larc_seraph/phrases.py`. `python tools/build_phrase_rules.py` writes them into the YARA rule, and `python tools/build_rule_flavors.py` writes both flavors. CI fails if either file drifts. A positive instruction fixture that the CLI matches and YARA does not also fails CI.
 
@@ -33,7 +33,7 @@ Every YARA rule has these meta strings:
 | `date` | `YYYY-MM-DD`, first publication of the rule |
 | `modified` | `YYYY-MM-DD` |
 | `description` | Starts with `Detects ` |
-| `reference` | `https://` URL. Extra URLs use `reference_2`, `reference_3` |
+| `reference` | `https://` URL. Repeat the `reference` key for each extra URL |
 | `id` | `SERAPH-YARA-NNN`. The number is unique across YARA and Sigma |
 | `status` | `experimental`, `test`, `stable`, or `deprecated` |
 | `score` | Integer `0` through `100` |
@@ -110,7 +110,7 @@ Signed-off-by: Your Name <you@example.com>
 
 That line certifies you can submit the change under the project licenses: Apache-2.0 for code, tests, the scanner, and docs, and the Detection Rule License 1.1 for `rules/`. There is no separate CLA.
 
-CI checks `Signed-off-by` on pull request commits. Merge commits are skipped. Do not rewrite published history to add a trailer.
+CI checks `Signed-off-by` on pull request commits. Merge commits are skipped. Do not rewrite published history to add a trailer. A sign-off certifies that a person has the right to submit the change. A coding agent may write a commit, and the sign-off on it has to be the maintainer's or the contributor's own name.
 
 CI also runs gitleaks on the git history. `.gitleaks.toml` keeps the default rules and ignores one false positive: a `SERAPH-SIGMA-NNN` or `SERAPH-YARA-NNN` id. Do not add a real credential to that allowlist.
 

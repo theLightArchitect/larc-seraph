@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-SIGMA-013 · sigma · <span class="sev sev-medium">medium</span></p>
 <h1>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist</h1>
-<p class="deck">A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the larc-seraph normalized macOS contract.</p>
+<p class="deck">A shell, Python, Node, Bun, Deno, Perl, Ruby, osascript, or curl wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -53,7 +53,7 @@
 <h2 id="threat">Threat</h2>
 <p>Creating the plist is the moment a login or boot job appears on disk. The content rules say whether the job is a shell in a user-writable path or an SSH tunnel. This rule says an interpreter wrote a plist under LaunchAgents or LaunchDaemons, which is the event you can see even when the file was deleted before a scanner reached it.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The path has to contain one of the two launchd directories and end in <code>.plist</code>. The writer has to be a shell, Python, Node, osascript, or curl. <code>cp</code> dropping a plist does not match. A shell writing a README does not match. <code>/bin/sh</code> is matched as a suffix that does not also match <code>ssh</code>, which is a classic endswith footgun.</p>
+<p>The path has to contain one of the two launchd directories and end in <code>.plist</code>. The writer has to be a shell, Python (including a versioned binary such as <code>python3.12</code>), Node, Bun, Deno, Perl, Ruby, osascript, or curl. <code>cp</code> dropping a plist does not match. A shell writing a README does not match. <code>/bin/sh</code> is matched as a suffix that does not also match <code>ssh</code>, which is a classic endswith footgun.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Severity is medium because installers and Homebrew casks drop LaunchAgents from shell scripts all day. Correlate with the plist content rules before you escalate. A writer that is a compiled helper, not an interpreter, does not match. The rule cannot see the plist body. That is the YARA rule&#x27;s job.</p>
 <h2 id="triage">Triage</h2>

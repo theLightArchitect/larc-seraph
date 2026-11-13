@@ -6,7 +6,7 @@ Creating the plist is the moment a login or boot job appears on disk. The conten
 
 ## Why this rule
 
-The path has to contain one of the two launchd directories and end in `.plist`. The writer has to be a shell, Python, Node, osascript, or curl. `cp` dropping a plist does not match. A shell writing a README does not match. `/bin/sh` is matched as a suffix that does not also match `ssh`, which is a classic endswith footgun.
+The path has to contain one of the two launchd directories and end in `.plist`. The writer has to be a shell, Python (including a versioned binary such as `python3.12`), Node, Bun, Deno, Perl, Ruby, osascript, or curl. `cp` dropping a plist does not match. A shell writing a README does not match. `/bin/sh` is matched as a suffix that does not also match `ssh`, which is a classic endswith footgun.
 
 ## Limitations
 

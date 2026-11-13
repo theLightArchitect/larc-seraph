@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-010 · yara · <span class="sev sev-high">high</span></p>
 <h1>Git hook decodes a payload, pipes a fetch into a shell, or posts a credential path</h1>
-<p class="deck">Detects a script under .git/hooks, .githooks, or .husky that pipes a fetch into a shell, decodes into a shell, or posts a credential path. Sample hooks are excluded. Content-only rule: it compiles with no externals.</p>
+<p class="deck">Detects a shell or interpreter script that pipes a fetch into a shell, decodes into a shell, runs a fetch through command substitution, or sends a credential path to a network tool. In a Git hook this is the pattern from the cited incident. This rule has no path, so an installer script with the same line also matches. Treat a match as a lead. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>

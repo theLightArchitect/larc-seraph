@@ -6,7 +6,7 @@ This is the running form of the plist rule. A reverse forward plus host-key chec
 
 ## Why this rule
 
-`Image` has to be ssh. The command line has to contain a reverse-forward flag surrounded by spaces, and one of the two spellings of the disabled host-key option. `accept-new` does not match. A disabled check on an ordinary git connection, with no reverse forward, does not match.
+`Image` has to be ssh or autossh. The command line has to contain a reverse forward (`-R`, alone, in a cluster such as `-NR`, or glued to its value, or `RemoteForward`) and the disabled host-key option, spelled `no` or `off`. `accept-new` does not match. A disabled check on an ordinary git connection, with no reverse forward, does not match.
 
 ## Limitations
 

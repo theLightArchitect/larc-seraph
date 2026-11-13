@@ -53,7 +53,7 @@
 <h2 id="threat">Threat</h2>
 <p>This is the running form of the plist rule. A reverse forward plus host-key checking disabled is the same pair of choices. The parent is intentionally not restricted to an agent host. A LaunchAgent&#x27;s parent is launchd. Requiring Cursor or Claude on the parent would miss the persistence case the rule exists for.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p><code>Image</code> has to be ssh. The command line has to contain a reverse-forward flag surrounded by spaces, and one of the two spellings of the disabled host-key option. <code>accept-new</code> does not match. A disabled check on an ordinary git connection, with no reverse forward, does not match.</p>
+<p><code>Image</code> has to be ssh or autossh. The command line has to contain a reverse forward (<code>-R</code>, alone, in a cluster such as <code>-NR</code>, or glued to its value, or <code>RemoteForward</code>) and the disabled host-key option, spelled <code>no</code> or <code>off</code>. <code>accept-new</code> does not match. A disabled check on an ordinary git connection, with no reverse forward, does not match.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Operators do disable host-key checking on purpose. The false-positive note says that, and the severity stays high because the combination is still rare. Options stored in the user&#x27;s ssh config, rather than on the command line, are invisible here. A reverse forward that uses <code>-R</code> glued to the next token, with no spaces, can miss the spaced-flag check.</p>
 <h2 id="triage">Triage</h2>

@@ -2,7 +2,7 @@
 
 ## Threat
 
-`npx` and `uvx` will fetch code at start time. A registry package with a version is a choice you can pin. A URL, a `github:` specifier, a `git+` specifier, or an explicit `@latest` tag is a choice that moves whenever the remote moves.
+`npx` and `uvx` will fetch code at start time. A registry package with a version is a choice you can pin. A URL, a `github:` or `gitlab:` specifier, a `git+` specifier, or a moving dist-tag such as `@latest` or `@next` is a choice that moves whenever the remote moves.
 
 ## Why this rule
 

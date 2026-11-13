@@ -6,7 +6,7 @@ Agent instruction files are read by a model and, usually, glanced at by a person
 
 ## Why this rule
 
-The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. Every tag character counts, however many flag emoji come before it. Only the England, Scotland, and Wales flag sequences are exempt. It does not match zero-width space, word joiner, or emoji joiners, bidi isolates (U+2066 to U+2069), or variation selectors. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The path-scoped rule still requires an instruction path or a JSON tool description. The Forge copy does not, because a real `CLAUDE.md` or `.cursor/rules/style.mdc` often never writes its own name. That copy is wider: a changelog that embeds a bidi override matches Forge and stays silent for the path-scoped rule.
+The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. Every tag character counts, however many flag emoji come before it. Only the England, Scotland, and Wales flag sequences are exempt. It also matches the bidi isolates U+2066 to U+2068 and a run of four variation selectors from the supplement. It does not match zero-width space, word joiner, emoji joiners, or a single variation selector. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The path-scoped rule still requires an instruction path or a JSON tool description. The Forge copy does not, because a real `CLAUDE.md` or `.cursor/rules/style.mdc` often never writes its own name. That copy is wider: a changelog that embeds a bidi override matches Forge and stays silent for the path-scoped rule.
 
 ## Limitations
 

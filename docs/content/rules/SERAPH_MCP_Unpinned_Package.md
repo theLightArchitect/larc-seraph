@@ -6,7 +6,7 @@
 
 ## Why this rule
 
-The command has to be npx or uvx inside an MCP server map. A bare name, or a scoped name, matches when that package token has no numeric version. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted on the matched entry, not for the whole file. A community scope such as `@example/tool` matches. A `name@1.2.3` pin, or a stray `node@1.2` elsewhere in the file, does not clear a second unpinned package.
+The command has to be npx, uvx, or bunx inside an MCP server map. A bare name, or a scoped name, matches when that package token has no numeric version. `@modelcontextprotocol`, `@anthropic-ai`, and `@github` are allowlisted on the matched entry, not for the whole file. A community scope such as `@example/tool` matches. A `name@1.2.3` pin, or a stray `node@1.2` elsewhere in the file, does not clear a second unpinned package.
 
 ## Limitations
 
