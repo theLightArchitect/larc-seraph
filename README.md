@@ -42,7 +42,7 @@ This is not an EDR, a blocker, or a claim of coverage. It is not offensive tooli
 
 Sigma rules assume a normalized macOS field contract (`Image`, `CommandLine`, `ParentImage`, `TargetFilename`, `User`). They do not match raw Apple unified logs until a translator maps Endpoint Security events onto those names. The threat model states that limit in full.
 
-`SERAPH-YARA-016` flags an unpinned registry package. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted. A numeric version pin is not a match. Upstream READMEs that show `uvx mcp-server-time` do match; that is recorded in the corpus report.
+`SERAPH-YARA-016` flags an unpinned registry package inside a JSON, TOML, or YAML MCP config. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted. A numeric version pin is not a match. A Markdown README that only quotes the config is not a match.
 
 ## Run the tests
 
@@ -77,7 +77,7 @@ Telemetry normalizers for eslogger JSON, Elastic Common Schema, and osquery rows
 
 ## Known limitations
 
-These are the gaps that are still open after the v0.1.0 vetting pass. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
+These are the gaps that are still open after the v0.1.1 scope tuning. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
 
 - A zero-width mark between every letter of a confirmation-bypass sentence. One mark inside the phrase is caught.
 - Homoglyphs other than Cyrillic `o` in that same sentence.
@@ -86,7 +86,7 @@ These are the gaps that are still open after the v0.1.0 vetting pass. The method
 - Shell startup files the path list does not name, such as Fish. A project file that still ends in `.zshrc` does match.
 - An MCP file that contains both a pinned package and an unpinned one can suppress `SERAPH-YARA-016`, because a numeric version anywhere in the file clears it.
 - osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire.
-- The benign corpus is a pinned sample of public trees, not every workstation. Three allowlisted hits are upstream files that really do contain the pattern.
+- The benign corpus is a sample of public trees, not every workstation. The v0.1.1 Linux scan of that sample had no hits. The Mac scan that motivated this version is summarized in VALIDATION.md.
 
 ## Validation
 

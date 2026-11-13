@@ -23,12 +23,14 @@ rule SERAPH_MCP_Unpinned_Package
         attack_tactic = "initial-access"
         reference = "https://attack.mitre.org/techniques/T1195/002/"
         reference_2 = "https://modelcontextprotocol.io/specification/2025-06-18"
-        scope = "MCP client configs that contain an mcpServers object. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github."
+        scope = "JSON, TOML, or YAML MCP configs. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github."
         false_positives = "A community MCP server installed the way its README shows, with npx -y and no version. The allowlist is short on purpose. Review the package name."
         license = "Detection Rule License 1.1"
 
     strings:
         $mcp = "\"mcpServers\"" ascii
+        $mcp_yaml = /mcpServers[ \t]*:/ ascii
+        $mcp_toml = /mcp_servers[ \t]*=/ ascii
         $runner = /"command"\s*:\s*"(npx|uvx)"/ nocase ascii
         // Bare package: " -y ", "name" with no @ and no slash.
         $bare_y = /"(-y|--yes)"\s*,\s*"[A-Za-z0-9][A-Za-z0-9._-]*"/ ascii
@@ -36,13 +38,25 @@ rule SERAPH_MCP_Unpinned_Package
         $scoped = /"(-y|--yes)"\s*,\s*"@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+"/ ascii
         // uvx often omits -y: the first args element is the package name.
         $uvx_bare = /"command"\s*:\s*"uvx"[\s\S]{0,80}"args"\s*:\s*\[\s*"[A-Za-z0-9][A-Za-z0-9._-]*"/ ascii
-        $pinned = /@[0-9][0-9A-Za-z._-]*/ ascii
+        $pin0 = "@0." ascii
+        $pin1 = "@1." ascii
+        $pin2 = "@2." ascii
+        $pin3 = "@3." ascii
+        $pin4 = "@4." ascii
+        $pin5 = "@5." ascii
+        $pin6 = "@6." ascii
+        $pin7 = "@7." ascii
+        $pin8 = "@8." ascii
+        $pin9 = "@9." ascii
         $official_mcp = /"@modelcontextprotocol\/[A-Za-z0-9._-]+"/ ascii
         $official_anthropic = /"@anthropic\/[A-Za-z0-9._-]+"/ ascii
         $official_github = /"@github\/[A-Za-z0-9._-]+"/ ascii
 
     condition:
-        $mcp and $runner and not $pinned and not $official_mcp and not $official_anthropic and not $official_github and (
+        (
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+        ) and ($mcp or $mcp_yaml or $mcp_toml) and $runner and not any of ($pin*) and not $official_mcp and not $official_anthropic and not $official_github and (
             $bare_y or $scoped or $uvx_bare
         )
 }

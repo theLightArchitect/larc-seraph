@@ -29,9 +29,14 @@ rule SERAPH_MCP_Remote_Npx
 
     strings:
         $mcp = "\"mcpServers\"" ascii
+        $mcp_yaml = /mcpServers[ \t]*:/ ascii
+        $mcp_toml = /mcp_servers[ \t]*=/ ascii
         $remote = /((npx)|(uvx)|(npm[ \t]+exec)).{0,160}(github:|git\+|gist\.github\.com|"https?:\/\/|'https?:\/\/)/s nocase ascii
         $latest = /((npx)|(uvx)).{0,180}@latest\b/s nocase ascii
 
     condition:
-        $mcp and ($remote or $latest)
+        (
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+        ) and ($mcp or $mcp_yaml or $mcp_toml) and ($remote or $latest)
 }

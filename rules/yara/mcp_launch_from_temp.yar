@@ -29,6 +29,8 @@ rule SERAPH_MCP_Launch_From_Temp
 
     strings:
         $mcp = "\"mcpServers\"" ascii
+        $mcp_yaml = /mcpServers[ \t]*:/ ascii
+        $mcp_toml = /mcp_servers[ \t]*=/ ascii
 
         $cmd_tmp = /"command"\s*:\s*"(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/var\/tmp\/|\/dev\/shm\/)[^"]{0,180}"/ ascii
         $cmd_cache = /"command"\s*:\s*"[^"]{0,180}\/Library\/Caches\/[^"]{0,120}"/ ascii
@@ -38,7 +40,10 @@ rule SERAPH_MCP_Launch_From_Temp
         $arg_cache = /"[^"]{0,80}\/Library\/Caches\/[^"]{0,160}"/ ascii
 
     condition:
-        $mcp and (
+        (
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+        ) and ($mcp or $mcp_yaml or $mcp_toml) and (
             $cmd_tmp or
             $cmd_cache or
             (

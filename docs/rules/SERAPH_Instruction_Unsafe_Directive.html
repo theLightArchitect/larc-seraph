@@ -36,17 +36,17 @@
 
 <p class="eyebrow">SERAPH-YARA-007 · yara · <span class="sev sev-high">high</span></p>
 <h1>Agent instructions request secret theft or skipped confirmation</h1>
-<p class="deck">Instruction-shaped prose tells an agent to skip confirmation, including case, spacing, a single zero-width gap, or a Cyrillic lookalike, or places a credential path or token name within a short window of a network sink.</p>
+<p class="deck">An instruction file tells an agent to skip confirmation, or places a credential path near a network sink. CLI flag help and non-instruction paths do not match.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1567/">T1567</a>, <a href="https://attack.mitre.org/techniques/T1562/001/">T1562.001</a></div>
   <div><span>Tactic</span>exfiltration, defense-evasion</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>Files that look like agent instructions: a Markdown heading, or a line beginning with You are. Deploy on AGENTS.md, CLAUDE.md, .cursorrules, and copilot-instructions.md.</div>
+  <div><span>Scope</span>AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs. Set filepath. Flag-help lines that mention --yes or -y do not match.</div>
 </div>
 <h2>False positives</h2>
-<ul><li>A team policy that truly wants agents to skip confirmation, written with the same phrases. A security note that places a credential path and the word webhook in the same short paragraph. Homoglyphs other than Cyrillic o, and zero-width bytes inside a word past three bytes, still pass.</li></ul>
+<ul><li>A team policy in a real instruction file that wants agents to skip confirmation. Homoglyphs other than Cyrillic o still pass.</li></ul>
 <h2>References</h2>
 <ul><li><a href="https://attack.mitre.org/techniques/T1567/">https://attack.mitre.org/techniques/T1567/</a></li><li><a href="https://attack.mitre.org/techniques/T1562/001/">https://attack.mitre.org/techniques/T1562/001/</a></li><li><a href="https://atlas.mitre.org/techniques/AML.T0051">https://atlas.mitre.org/techniques/AML.T0051</a></li></ul>
 <article class="prose">

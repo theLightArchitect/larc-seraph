@@ -4,7 +4,11 @@
    https://lightarchitects.ai
    Licensed under the Detection Rule License 1.1. See LICENSE.rules.
    Defensive signature. Not an exploit and not a payload.
+
+   Scanners must pass the external string filepath with forward slashes.
 */
+
+import "math"
 
 rule SERAPH_Instruction_Unsafe_Directive
 {
@@ -16,27 +20,28 @@ rule SERAPH_Instruction_Unsafe_Directive
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.1.0"
+        version = "1.2.0"
         severity = "high"
-        description = "Instruction-shaped prose tells an agent to skip confirmation, including case, spacing, a single zero-width gap, or a Cyrillic lookalike, or places a credential path or token name within a short window of a network sink."
+        description = "An instruction file tells an agent to skip confirmation, or places a credential path near a network sink. CLI flag help and non-instruction paths do not match."
         attack_technique = "T1567, T1562.001"
         attack_tactic = "exfiltration, defense-evasion"
         reference = "https://attack.mitre.org/techniques/T1567/"
         reference_2 = "https://attack.mitre.org/techniques/T1562/001/"
         reference_3 = "https://atlas.mitre.org/techniques/AML.T0051"
-        scope = "Files that look like agent instructions: a Markdown heading, or a line beginning with You are. Deploy on AGENTS.md, CLAUDE.md, .cursorrules, and copilot-instructions.md."
-        false_positives = "A team policy that truly wants agents to skip confirmation, written with the same phrases. A security note that places a credential path and the word webhook in the same short paragraph. Homoglyphs other than Cyrillic o, and zero-width bytes inside a word past three bytes, still pass."
+        scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs. Set filepath. Flag-help lines that mention --yes or -y do not match."
+        false_positives = "A team policy in a real instruction file that wants agents to skip confirmation. Homoglyphs other than Cyrillic o still pass."
         license = "Detection Rule License 1.1"
 
     strings:
-        $scope_md = /^#\s+\S/ ascii
-        $scope_you = /You are an? / nocase ascii
+        $desc = "\"description\"" ascii
 
         // Whitespace may stretch. One UTF-8 zero-width code point may sit inside the phrase.
+        // Skip-confirmation must be reachable from the start of the line without a hyphen,
+        // so "--yes / -y skip confirmation" help text does not match.
         $bypass_1 = /do(\xe2\x80\x8b)?[ \t]{0,8}not[ \t]{1,8}ask[ \t]{1,8}for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation/ nocase ascii
         $bypass_2 = /don(\xe2\x80\x8b)?.?t[ \t]{1,8}ask[ \t]{1,8}for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation/ nocase ascii
         $bypass_3 = /never[ \t]{1,8}ask[ \t]{1,8}(the[ \t]{1,8}(user|operator)[ \t]{1,8})?for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation/ nocase ascii
-        $bypass_4 = /skip[ \t]{1,8}(all[ \t]{1,8})?confirm(\xe2\x80\x8b)?ation[ \t]{1,8}prompts/ nocase ascii
+        $bypass_4 = /(^|\n)[^\n-]{0,80}skip[ \t]{1,8}(all[ \t]{1,8})?confirm(\xe2\x80\x8b)?ation[ \t]{1,8}prompts?/ nocase ascii
         $bypass_5 = /disable[ \t]{1,8}confirm(\xe2\x80\x8b)?ation/ nocase ascii
         $bypass_6 = /disable[ \t]{1,8}permission[ \t]{1,8}prompts/ nocase ascii
         $bypass_7 = /bypass[ \t]{1,8}permission/ nocase ascii
@@ -53,5 +58,16 @@ rule SERAPH_Instruction_Unsafe_Directive
         $inject_rev = /(curl |wget |webhook|ANTHROPIC_API_KEY|OPENAI_API_KEY|GITHUB_TOKEN|\.ssh\/).{0,400}ignore (all )?(previous|prior|above) instructions/s nocase ascii
 
     condition:
-        any of ($scope*) and any of ($bypass*, $pair_*, $inject_*, $homo)
+        filesize > 0 and filesize < 5000000 and
+        not (uint32(0) == 0x464c457f) and
+        not (uint32(0) == 0xfeedfacf or uint32(0) == 0xfeedface or uint32(0) == 0xcffaedfe or uint32(0) == 0xbebafeca) and
+        not (uint16(0) == 0x5a4d) and
+        not (uint32(0) == 0x04034b50) and
+        not (uint16(0) == 0x8b1f) and
+        not for any i in (0..math.min(1023, filesize - 1)) : (uint8(i) == 0) and
+        (
+            filepath matches /(\/(agents|claude|gemini)\.md$)|(\/\.cursorrules$)|(\/skill\.md$)|(\/copilot-instructions\.md$)|(\/\.cursor\/rules\/)/ or
+            (filepath matches /\.(json|jsonc)$/ and $desc)
+        ) and
+        any of ($bypass*, $pair_*, $inject_*, $homo)
 }

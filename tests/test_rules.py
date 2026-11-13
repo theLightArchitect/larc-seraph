@@ -20,7 +20,7 @@ from larc_seraph.inventory import (
     load_yara_records,
     parse_yara_meta,
 )
-from larc_seraph.scan import compile_yara
+from larc_seraph.scan import compile_yara, yara_match
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENT_MARKERS = [
@@ -99,8 +99,8 @@ def test_agent_marker_lists_stay_in_sync():
 def test_every_rule_has_labelled_fixtures(yara_rules, sigma_by_name):
     for record in load_records():
         positive, negative = fixture_dirs(record.kind, record.name)
-        positives = [path for path in positive.iterdir() if path.is_file()]
-        negatives = [path for path in negative.iterdir() if path.is_file()]
+        positives = [path for path in positive.rglob("*") if path.is_file()]
+        negatives = [path for path in negative.rglob("*") if path.is_file()]
         assert positives, record.name
         assert negatives, record.name
         for path in positives + negatives:
@@ -111,18 +111,22 @@ def test_every_rule_has_labelled_fixtures(yara_rules, sigma_by_name):
 def test_yara_fixtures_match_only_the_documented_rule(yara_rules):
     for record in load_yara_records():
         positive, negative = fixture_dirs("yara", record.name)
-        for path in positive.iterdir():
-            hits = {match.rule for match in yara_rules.match(str(path))}
+        for path in positive.rglob("*"):
+            if not path.is_file():
+                continue
+            hits = {match.rule for match in yara_match(yara_rules, path=str(path))}
             assert hits == {record.name}, (path, hits)
-        for path in negative.iterdir():
-            hits = {match.rule for match in yara_rules.match(str(path))}
+        for path in negative.rglob("*"):
+            if not path.is_file():
+                continue
+            hits = {match.rule for match in yara_match(yara_rules, path=str(path))}
             assert hits == set(), (path, hits)
 
 
 def test_yara_known_good_matches_nothing(yara_rules):
     folder = ROOT / "tests" / "fixtures" / "yara" / "known_good"
     for path in folder.iterdir():
-        hits = {match.rule for match in yara_rules.match(str(path))}
+        hits = {match.rule for match in yara_match(yara_rules, path=str(path))}
         assert hits == set(), (path.name, hits)
 
 
@@ -153,10 +157,14 @@ def test_sigma_known_good_matches_nothing(sigma_by_name):
 
 def test_non_unicode_fixtures_are_ascii():
     allowed = {
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tag_characters.md",
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/bidi_override.md",
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/homoglyph.md",
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zero_width.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tags/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/bidi/CLAUDE.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/flag/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/bin/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tool/mcp.json",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/vendor/CHANGELOG.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/homo/GEMINI.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zw/CLAUDE.md",
     }
     for path in (ROOT / "tests" / "fixtures").rglob("*"):
         if not path.is_file() or path in allowed:
@@ -166,13 +174,13 @@ def test_non_unicode_fixtures_are_ascii():
 
 def test_unicode_fixtures_contain_the_documented_scalars():
     tags = (
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tag_characters.md"
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tags/AGENTS.md"
     ).read_text(encoding="utf-8")
     assert "\U000E0001" in tags
     assert "\U000E007F" in tags
     assert any(0xE0000 <= ord(char) <= 0xE007F for char in tags)
     bidi = (
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/bidi_override.md"
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/bidi/CLAUDE.md"
     ).read_text(encoding="utf-8")
     assert "\u202e" in bidi
 

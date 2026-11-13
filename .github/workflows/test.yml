@@ -19,6 +19,18 @@ jobs:
           curl -fL -o /tmp/yara-x.tgz https://github.com/VirusTotal/yara-x/releases/download/v1.23.0/yara-x-v1.23.0-x86_64-unknown-linux-gnu.tar.gz
           sudo tar -xzf /tmp/yara-x.tgz -C /usr/local/bin
           yr --version
+      - name: Build libyara 4.5.4 yarac
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq autoconf automake libtool pkg-config flex bison
+          curl -fL -o /tmp/yara-src.tar.gz https://github.com/VirusTotal/yara/archive/refs/tags/v4.5.4.tar.gz
+          tar -xzf /tmp/yara-src.tar.gz -C /tmp
+          cd /tmp/yara-4.5.4
+          ./bootstrap.sh
+          ./configure --disable-shared --enable-static --disable-magic --disable-cuckoo --disable-dotnet --prefix=/tmp/yara-install
+          make -j"$(nproc)"
+          make install
+          /tmp/yara-install/bin/yarac --version
       - name: Fixture, metadata, conversion, evasion, and yara-x
         run: pytest
       - name: Sigma rule validation

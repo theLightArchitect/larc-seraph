@@ -1,19 +1,8 @@
 {
   "files_scanned": 15615,
-  "seconds": 1.0,
-  "hit_counts": {
-    "SERAPH_MCP_Remote_Npx": 1,
-    "SERAPH_MCP_Unpinned_Package": 2
-  },
-  "hits": {
-    "SERAPH_MCP_Remote_Npx": [
-      "git/gemini-cli/packages/cli/src/utils/commentJson.test.ts"
-    ],
-    "SERAPH_MCP_Unpinned_Package": [
-      "git/servers/src/time/README.md",
-      "git/servers/src/fetch/README.md"
-    ]
-  },
+  "seconds": 1.789,
+  "hit_counts": {},
+  "hits": {},
   "fetch_notes": [
     "reuse servers",
     "reuse husky",

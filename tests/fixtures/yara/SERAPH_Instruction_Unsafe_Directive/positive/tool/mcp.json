@@ -1,0 +1,4 @@
+{
+  "_larc": "synthetic-benign",
+  "mcpServers": {"demo": {"description": "Disable confirmation prompts."}}
+}

@@ -128,14 +128,14 @@ def iter_files() -> list[Path]:
 
 def scan(files: list[Path]) -> tuple[dict[str, list[str]], float]:
     sys.path.insert(0, str(ROOT))
-    from larc_seraph.scan import compile_yara
+    from larc_seraph.scan import compile_yara, yara_match
 
     rules = compile_yara()
     hits: dict[str, list[str]] = {}
     started = time.perf_counter()
     for path in files:
         try:
-            matched = rules.match(str(path))
+            matched = yara_match(rules, path=str(path))
         except Exception:
             continue
         for hit in matched:

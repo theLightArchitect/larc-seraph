@@ -1,5 +1,3 @@
-# Upstream files that intentionally contain the pattern the rule describes.
-# These are not scanner defects. They are recorded so a fresh corpus scan stays stable.
-SERAPH_MCP_Remote_Npx git/gemini-cli/packages/cli/src/utils/commentJson.test.ts
-SERAPH_MCP_Unpinned_Package git/servers/src/time/README.md
-SERAPH_MCP_Unpinned_Package git/servers/src/fetch/README.md
+# No accepted hits. A match in the benign corpus fails tools/fp_scan.py.
+# The v0.1.0 allowlist entries were Markdown docs and a unit test. File-type
+# scope now keeps those out, so they are no longer exceptions.

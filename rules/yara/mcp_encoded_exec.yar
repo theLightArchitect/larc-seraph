@@ -30,6 +30,8 @@ rule SERAPH_MCP_Encoded_Exec
 
     strings:
         $mcp = "\"mcpServers\"" ascii
+        $mcp_yaml = /mcpServers[ \t]*:/ ascii
+        $mcp_toml = /mcp_servers[ \t]*=/ ascii
         $dec_sh = /base64[ \t]+(-[dD]|--decode)\b[^\n]{0,80}\|\s*(ba)?sh\b/ nocase ascii
         $dec_zsh = /base64[ \t]+(-[dD]|--decode)\b[^\n]{0,80}\|\s*zsh\b/ nocase ascii
         $py_fwd = /b64decode.{0,80}(eval|exec)\s*\(/s nocase ascii
@@ -38,5 +40,8 @@ rule SERAPH_MCP_Encoded_Exec
         $urllib_rev = /(eval|exec)\s*\(.{0,120}urlopen/s nocase ascii
 
     condition:
-        $mcp and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev, $urllib, $urllib_rev)
+        (
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+        ) and ($mcp or $mcp_yaml or $mcp_toml) and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev, $urllib, $urllib_rev)
 }

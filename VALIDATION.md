@@ -15,7 +15,7 @@ This file is the methodology and the results. A green test run proves the fixtur
 | libyara | Pass. `yara-python` compiles the set. |
 | yara-x 1.23.0 | Pass. `yr compile rules/yara` exits 0 with no warning text, including no slow-rule warning. |
 | Wide-tree speed | Pass. 400 benign Markdown files scanned in the unit test in under 10 seconds. The corpus scan below is the larger number. |
-| Benign corpus | Pass against the allowlist. 15615 files in 1.0 seconds. Three hits, all allowlisted. No other rule fired. |
+| Benign corpus | Pass. 15615 files in about 1.8 seconds. Zero hits after the v0.1.1 scope tuning. |
 | Metadata | Pass. Author is Kevin Francis Tan. Date, references, ATT&CK, severity, and false-positive notes are required by the test. Sigma UUIDs and YARA ids are unique. |
 | Evasion matrix | Pass. `validation/evasion-matrix.yml` is executed by pytest. Misses are asserted, not ignored. |
 
@@ -36,14 +36,22 @@ Homebrew cask Ruby files were not a separate tree. The servers and gemini-cli tr
 
 ### Hits
 
-| Rule | Count | What the file actually is |
+After v0.1.1 the Linux corpus scan reports no hits. The three v0.1.0 hits were a unit test and two Markdown READMEs. Those files are not JSON, TOML, or YAML configs, so the MCP rules no longer see them. The allowlist is empty on purpose. A new hit fails `tools/fp_scan.py`.
+
+## Real macOS host
+
+A scan of 70,470 files on a Mac, with `yr` and libyara agreeing on every hit, produced 264 benign matches. The rules were wider than the scope written on them. No user home directory names and no secret values are repeated here.
+
+| Class | Hits | What changed |
 | --- | --- | --- |
-| `SERAPH_MCP_Remote_Npx` | 1 | `gemini-cli` unit test that embeds `@playwright/mcp@latest` as sample config. The rule is doing what it says. |
-| `SERAPH_MCP_Unpinned_Package` | 2 | Official `servers` READMEs for time and fetch, which show `uvx mcp-server-time` and `uvx mcp-server-fetch` with no version. |
+| Hidden Unicode in caches and binaries | 148 | Instruction-path gate plus a non-text check (null bytes and executable or archive headers). |
+| Subdivision-flag emoji | 6 | Tag characters that sit in a U+1F3F4 … U+E007F flag sequence are ignored. A tag outside that sequence still matches. |
+| Unsafe Directive in vendor docs, changelogs, transcripts, and a fish completion | 62 | Same path gate. `skip confirmation` must be reachable from the start of the line without a hyphen, so `--yes` / `-y` help text does not match. |
+| Git hook text outside a hook directory | 7 | Path must be under `.git/hooks/` or `.husky/`, and the name must not end in `.sample`. |
+| MCP examples in Markdown docs | 29 | Extension must be JSON, JSONC, TOML, or YAML. A README that quotes a config does not match. |
+| Tests and editor file-history copies of the pack's own fixtures | 12 | Expected. Those files are the synthetic true positives. No rule change. |
 
-No other rule matched. `node_modules` content from the two npm packs and the Python trees matched nothing.
-
-The allowlist is `validation/fp-allowlist.txt`. A new hit that is not on that list fails the script.
+Regression fixtures for each unwanted class live next to the rules' other fixtures. The true positives that must keep firing were re-checked: an SSH reverse-tunnel LaunchAgent with host-key checking disabled, a LaunchAgent that runs `/bin/bash` on a user script with RunAtLoad and KeepAlive, unpinned `npx -y` inside a real MCP JSON config, and a plugin-shipped `@latest` MCP package.
 
 ## Evasion
 
@@ -111,4 +119,5 @@ Joining eslogger args with spaces drops quoting. A command whose only copy of a 
 - Memory-only tradecraft and encrypted blobs that are never decoded in the file.
 - A full macOS image of `/System/Library/LaunchAgents`. This environment is Linux.
 - Every EDR schema. ECS and the eslogger shape we documented are the two we convert and test. osquery is the third normalizer.
-- A claim that the three allowlisted corpus hits are the only benign hits that will ever occur.
+- A claim that the Mac corpus was re-scanned after this tuning. The Linux corpus was. The Mac classes are covered by regression fixtures.
+- Apple's own LaunchAgents. This build host is Linux, so that tree was never in the corpus.

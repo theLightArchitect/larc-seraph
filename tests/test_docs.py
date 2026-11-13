@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from larc_seraph.inventory import ROOT, load_records, writeup_path
-from larc_seraph.scan import compile_yara
+from larc_seraph.scan import compile_yara, yara_match
 
 REQUIRED_SECTIONS = ("## Threat", "## Why this rule", "## Limitations", "## Triage")
 TEXT_SUFFIXES = {".md", ".html", ".css", ".svg", ".txt"}
@@ -54,7 +54,7 @@ def test_public_pages_do_not_match_the_yara_pack():
         for path in paths:
             if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
                 continue
-            hits = sorted(match.rule for match in rules.match(str(path)))
+            hits = sorted(match.rule for match in yara_match(rules, path=str(path)))
             assert hits == [], (path.relative_to(ROOT), hits)
             scanned += 1
     assert scanned > 10

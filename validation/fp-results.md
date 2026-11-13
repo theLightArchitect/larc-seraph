@@ -1,12 +1,11 @@
 # Benign-corpus YARA results
 
 Files scanned: 15615
-Seconds: 1.0
+Seconds: 1.789
 
 ## Hit counts
 
-- SERAPH_MCP_Remote_Npx: 1
-- SERAPH_MCP_Unpinned_Package: 2
+No YARA rule matched the corpus.
 
 ## Fetch notes
 

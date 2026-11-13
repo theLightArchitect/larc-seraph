@@ -21,14 +21,44 @@ def compile_yara() -> yara.Rules:
     paths = sorted((ROOT / "rules" / "yara").glob("*.yar"))
     if not paths:
         raise SystemExit("no YARA rules found")
-    return yara.compile(filepaths={path.stem: str(path) for path in paths})
+    # filepath is empty unless a scanner sets it. Rules that care about scope
+    # treat an empty path as "judge the bytes only where that is safe".
+    return yara.compile(
+        filepaths={path.stem: str(path) for path in paths},
+        externals={"filepath": ""},
+    )
+
+
+def rule_filepath(path: str) -> str:
+    """Normalize a path for rule scope.
+
+    Git will not store a fixture inside a directory named .git, so the
+    fixture tree uses .git-hooks and this function presents it to the
+    rules as .git/hooks. Real hook paths are unchanged.
+    """
+    text = path.replace("\\", "/").lower()
+    return text.replace("/.git-hooks/", "/.git/hooks/")
+
+
+def yara_match(rules: yara.Rules, path: str | None = None, data: bytes | None = None, filepath: str | None = None):
+    """Match one file. filepath is the scope string the rules see."""
+
+    if filepath is None:
+        filepath = "" if path is None else rule_filepath(path)
+    else:
+        filepath = rule_filepath(filepath)
+    if data is not None:
+        return rules.match(data=data, externals={"filepath": filepath})
+    if path is None:
+        raise ValueError("path or data is required")
+    return rules.match(path, externals={"filepath": filepath})
 
 
 def scan_yara(targets: list[Path]) -> int:
     rules = compile_yara()
     matched = 0
     for target in targets:
-        hits = rules.match(str(target))
+        hits = yara_match(rules, path=str(target))
         if not hits:
             print(f"clean  {target}")
             continue

@@ -29,11 +29,16 @@ rule SERAPH_MCP_Curl_Pipe_Shell
 
     strings:
         $mcp = "\"mcpServers\"" ascii
+        $mcp_yaml = /mcpServers[ \t]*:/ ascii
+        $mcp_toml = /mcp_servers[ \t]*=/ ascii
         $pipe_curl = /curl[^\n]{0,200}\|\s*(ba)?sh\b/ nocase ascii
         $pipe_wget = /wget[^\n]{0,200}\|\s*(ba)?sh\b/ nocase ascii
         $pipe_zsh = /(curl|wget)[^\n]{0,200}\|\s*zsh\b/ nocase ascii
         $subst = /(ba)?sh\s+<\s*\(\s*(curl|wget)/ nocase ascii
 
     condition:
-        $mcp and any of ($pipe_curl, $pipe_wget, $pipe_zsh, $subst)
+        (
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+        ) and ($mcp or $mcp_yaml or $mcp_toml) and any of ($pipe_curl, $pipe_wget, $pipe_zsh, $subst)
 }

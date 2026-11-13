@@ -14,7 +14,7 @@ import yara
 
 from larc_seraph.eval import rule_matches
 from larc_seraph.inventory import ROOT, load_sigma_rules
-from larc_seraph.scan import compile_yara
+from larc_seraph.scan import compile_yara, yara_match
 from larc_seraph.translate import NORMALIZERS
 
 SAMPLES = ROOT / "telemetry" / "samples"
@@ -78,6 +78,27 @@ def test_committed_conversions_match_a_fresh_run():
             assert "process_path" in text or "parent_process_path" in text
 
 
+def test_libyara_compiles_without_warnings():
+    yarac = shutil.which("yarac")
+    if yarac is None:
+        candidate = Path("/tmp/yara-install/bin/yarac")
+        yarac = str(candidate) if candidate.is_file() else None
+    if yarac is None:
+        pytest.fail("yarac 4.5.x is not installed")
+    result = subprocess.run(
+        [yarac, "--fail-on-warnings", "-d", "filepath=", *[str(path) for path in sorted((ROOT / "rules" / "yara").glob("*.yar"))], str(ROOT / ".cache-libyara.yac")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    compiled = ROOT / ".cache-libyara.yac"
+    if compiled.exists():
+        compiled.unlink()
+    noise = (result.stdout + result.stderr).strip()
+    assert result.returncode == 0, noise
+    assert noise == ""
+
+
 def test_yara_x_compiles_without_warnings():
     yr = shutil.which("yr")
     if yr is None:
@@ -86,7 +107,7 @@ def test_yara_x_compiles_without_warnings():
     if yr is None:
         pytest.fail("yara-x yr CLI is not installed")
     result = subprocess.run(
-        [yr, "compile", str(ROOT / "rules" / "yara"), "-o", str(ROOT / ".cache-yara-x.yarc")],
+        [yr, "compile", "-d", 'filepath=""', str(ROOT / "rules" / "yara"), "-o", str(ROOT / ".cache-yara-x.yarc")],
         capture_output=True,
         text=True,
         check=False,
@@ -110,10 +131,22 @@ def test_yara_scan_of_a_wide_tree_stays_quick(tmp_path: Path):
     started = time.perf_counter()
     hits = 0
     for path in tmp_path.glob("*.md"):
-        hits += len(rules.match(str(path)))
+        hits += len(yara_match(rules, path=str(path)))
     elapsed = time.perf_counter() - started
     assert hits == 0
     assert elapsed < 10
+
+
+def _default_filepath(rule: str) -> str:
+    if "Git_Hook" in rule:
+        return "/repo/.git/hooks/pre-commit"
+    if rule.startswith("SERAPH_MCP"):
+        return "/repo/mcp.json"
+    if "Instruction" in rule:
+        return "/repo/AGENTS.md"
+    if "Launch" in rule:
+        return "/users/dev/library/launchagents/com.example.plist"
+    return "/tmp/sample"
 
 
 def test_evasion_matrix():
@@ -128,7 +161,11 @@ def test_evasion_matrix():
             hits = [name for name, rule in sigma.items() if rule_matches(rule, case["event"])]
             matched = case["rule"] in hits
         else:
-            matched = any(hit.rule == case["rule"] for hit in rules.match(data=case["body"].encode()))
+            filepath = case.get("filepath") or _default_filepath(case["rule"])
+            matched = any(
+                hit.rule == case["rule"]
+                for hit in yara_match(rules, data=case["body"].encode(), filepath=filepath)
+            )
         if expect == "match":
             assert matched, case["name"]
         else:

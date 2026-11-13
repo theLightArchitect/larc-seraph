@@ -16,15 +16,15 @@ rule SERAPH_Git_Hook_Suspicious_Exec
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.0.0"
+        version = "1.2.0"
         severity = "high"
-        description = "A shell-shaped script pipes curl or wget into a shell, pipes base64 decode into a shell, or combines a network utility with an SSH, credential, or LaunchAgent path."
+        description = "A script under .git/hooks or .husky pipes a fetch into a shell, decodes into a shell, or posts a credential path. Sample hooks are excluded."
         attack_technique = "T1059.004, T1546"
         attack_tactic = "execution, persistence"
         reference = "https://attack.mitre.org/techniques/T1059/004/"
         reference_2 = "https://attack.mitre.org/techniques/T1546/"
         reference_3 = "https://git-scm.com/docs/githooks"
-        scope = "Executable Git hooks. The shebang is the scope signal. A hook that only runs a test suite is not a match. Plain curl without a shell pipe or a credential path is not a match."
+        scope = "Paths under .git/hooks/ or .husky/, excluding names that end in .sample. Set filepath. A hook that only runs a test suite is not a match."
         false_positives = "A hook that posts a local SSH path to an internal inventory host the operator actually runs. Read the URL. There is no dedicated ATT&CK sub-technique for Git hooks; T1546 is the parent."
         license = "Detection Rule License 1.1"
 
@@ -37,5 +37,7 @@ rule SERAPH_Git_Hook_Suspicious_Exec
         $persist = /(\.ssh\/|authorized_keys|LaunchAgents\/|LaunchDaemons\/)/ ascii
 
     condition:
+        not filepath matches /\.sample$/ and
+        (filepath matches /\.git\/hooks\/[^\/]+$/ or filepath matches /\.husky\/[^\/]+$/) and
         $shebang and ( $pipe or $pipe_zsh or $b64 or ( $net and $persist ) )
 }

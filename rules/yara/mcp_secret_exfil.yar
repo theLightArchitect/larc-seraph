@@ -29,11 +29,16 @@ rule SERAPH_MCP_Secret_Exfil
 
     strings:
         $mcp = "\"mcpServers\"" ascii
+        $mcp_yaml = /mcpServers[ \t]*:/ ascii
+        $mcp_toml = /mcp_servers[ \t]*=/ ascii
         $curl = /curl [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b/ nocase ascii
         $wget = /wget [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b/ nocase ascii
         $url = /https?:\/\/[^\s"']{0,180}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b/ nocase ascii
         $printenv = /printenv[^\n]{0,80}\|[^\n]{0,40}(curl |wget )/ nocase ascii
 
     condition:
-        $mcp and any of ($curl, $wget, $url, $printenv)
+        (
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+        ) and ($mcp or $mcp_yaml or $mcp_toml) and any of ($curl, $wget, $url, $printenv)
 }

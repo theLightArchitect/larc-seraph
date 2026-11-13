@@ -36,17 +36,17 @@
 
 <p class="eyebrow">SERAPH-YARA-006 · yara · <span class="sev sev-high">high</span></p>
 <h1>Instruction file contains Unicode tags or bidi overrides</h1>
-<p class="deck">A file contains Unicode tag characters (U+E0000 through U+E007F) or a bidi embedding or override control. Both are used to hide text from a human reader while leaving it in the bytes an agent will read.</p>
+<p class="deck">An instruction file contains Unicode tag characters or a bidi override. Subdivision-flag emoji (U+1F3F4 plus tags plus U+E007F) are ignored. Binaries are ignored.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1027/">T1027</a></div>
   <div><span>Tactic</span>defense-evasion</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>Agent instruction files such as AGENTS.md, CLAUDE.md, .cursorrules, and .github/copilot-instructions.md. The bytes are rare in ordinary prose, so the rule is content-wide.</div>
+  <div><span>Scope</span>AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs. Set filepath to the file path. Binaries and subdivision flags are skipped.</div>
 </div>
 <h2>False positives</h2>
-<ul><li>A linguistics note or a security write-up that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them. Zero-width space and emoji joiners are intentionally not matched.</li></ul>
+<ul><li>An instruction file that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them.</li></ul>
 <h2>References</h2>
 <ul><li><a href="https://attack.mitre.org/techniques/T1027/">https://attack.mitre.org/techniques/T1027/</a></li><li><a href="https://www.unicode.org/charts/PDF/UE0000.pdf">https://www.unicode.org/charts/PDF/UE0000.pdf</a></li><li><a href="https://www.usenix.org/conference/usenixsecurity22/presentation/boucher">https://www.usenix.org/conference/usenixsecurity22/presentation/boucher</a></li><li><a href="https://atlas.mitre.org/techniques/AML.T0051">https://atlas.mitre.org/techniques/AML.T0051</a></li></ul>
 <article class="prose">
