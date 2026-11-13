@@ -21,9 +21,9 @@ rule SERAPH_Instruction_Unsafe_Directive
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.6.0"
+        version = "1.7.0"
         severity = "high"
-        description = "An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential's vendor. Verbs include ask, request, seek, wait, and prompt. A Markdown heading, a same-line CLI flag, a read-only action such as listing files, and a bypass-permissions status label do not match."
+        description = "An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential's vendor. A normal flag such as --force does not suppress that. A Markdown heading, a table row, or a known permission flag such as --yolo or --dangerously-skip-permissions does."
         attack_technique = "T1567, T1562.001"
         attack_tactic = "exfiltration, defense-evasion"
         reference = "https://attack.mitre.org/techniques/T1567/"
@@ -53,11 +53,11 @@ rule SERAPH_Instruction_Unsafe_Directive
         $ui_onoff = /bypass[ \t]{1,8}permissions?[ \t]{1,8}(on|off)\b/ nocase ascii
         $ui_tail = /status bar|\bmode\b/ nocase ascii
         $homo = { 64 D0 BE 20 6E D0 BE 74 20 61 73 6B 20 66 D0 BE 72 20 63 D0 BE 6E 66 69 72 6D 61 74 69 D0 BE 6E }
-        $poison_flag = /--[A-Za-z0-9]/ ascii
+        $poison_flag = /--dangerously-skip-permissions|--yolo\b|--always-approve|--auto-approve|--trust-all-tools|--no-confirm\b|--permission-mode/ nocase ascii
         $poison_env = /_YES\b|_TOKEN\b|_KEY\b|_SECRET\b/ ascii
-        $poison_pipe = /\|[^\n]{0,80}(do not ask|disable confirmation|skip confirmation|auto-approve|bypass permission)|(do not ask|disable confirmation|skip confirmation|auto-approve|bypass permission)[^\n]{0,80}\|/ nocase ascii
+        $poison_pipe = /\|[^\n]{0,80}(do not ask|disable confirmation|skip confirmation|auto-approve|bypass permission|wait for approval|request permission)|(do not ask|disable confirmation|skip confirmation|auto-approve|bypass permission|wait for approval|request permission)[^\n]{0,80}\|/ nocase ascii
         $low = /rename_chat|\blisting\b|\blist\b|\bread\b|\bview\b|\bsearch\b|\bls\b|\bgit[ \t]+(status|log|diff)\b/ nocase ascii
-        $high = /(\bshell\b|\bexec\b|\bbash\b|\bcredentials?\b|\bsecrets?\b|\bcurl\b|\bwget\b|\bupload\b|\bdelet(e|ing|ed|es|ion)?\b|\bgit push\b|\bpayments?\b|id_ed25519|id_rsa|\.ssh\/)/ nocase ascii
+        $high = /(\bshell\b|\bexec\b|\bbash\b|\bcredentials?\b|\bsecrets?\b|\bcurl\b|\bwget\b|\bupload\b|\bdelet(e|ing|ed|es|ion)?\b|\brm\b|\bpublish\b|\bgit push\b|\bpayments?\b|id_ed25519|id_rsa|\.ssh\/)/ nocase ascii
         $line_file = /(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)[^\n]{0,320}(curl |wget )|(curl |wget )[^\n]{0,320}(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)/ nocase ascii
         $line_path = /(id_ed25519|id_rsa|\.ssh\/authorized_keys|\.aws\/credentials|\.netrc)[^\n]{0,180}https?:\/\/|https?:\/\/[^\n]{0,180}(id_ed25519|id_rsa|\.ssh\/authorized_keys|\.netrc)/ nocase ascii
         $line_cross = /(GITHUB_TOKEN|GH_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY)\b[^\n]{0,340}https?:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}|https?:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}[^\n]{0,340}(GITHUB_TOKEN|GH_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY)\b/ ascii
@@ -103,11 +103,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_do[i] + !b_do[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_do[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_do[i] and @b_do[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_do[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_do[i] < @poison_flag[k] and @poison_flag[k] - @b_do[i] < 160 and not for any n in (0..159) : (@b_do[i] + n < @poison_flag[k] and uint8(@b_do[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_do[i] and @b_do[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_do[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_do[i] < @poison_flag[k] and @poison_flag[k] - @b_do[i] < 160 and not for any n in (0..159) : (@b_do[i] + n < @poison_flag[k] and uint8(@b_do[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_do[i] and @b_do[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_do[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_do[i] < @high[h] and @high[h] - @b_do[i] < 200 and not for any n in (0..199) : (@b_do[i] + n < @high[h] and uint8(@b_do[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -164,11 +172,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_dont[i] + !b_dont[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_dont[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_dont[i] and @b_dont[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_dont[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_dont[i] < @poison_flag[k] and @poison_flag[k] - @b_dont[i] < 160 and not for any n in (0..159) : (@b_dont[i] + n < @poison_flag[k] and uint8(@b_dont[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_dont[i] and @b_dont[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_dont[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_dont[i] < @poison_flag[k] and @poison_flag[k] - @b_dont[i] < 160 and not for any n in (0..159) : (@b_dont[i] + n < @poison_flag[k] and uint8(@b_dont[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_dont[i] and @b_dont[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_dont[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_dont[i] < @high[h] and @high[h] - @b_dont[i] < 200 and not for any n in (0..199) : (@b_dont[i] + n < @high[h] and uint8(@b_dont[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -225,11 +241,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_never[i] + !b_never[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_never[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_never[i] and @b_never[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_never[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_never[i] < @poison_flag[k] and @poison_flag[k] - @b_never[i] < 160 and not for any n in (0..159) : (@b_never[i] + n < @poison_flag[k] and uint8(@b_never[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_never[i] and @b_never[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_never[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_never[i] < @poison_flag[k] and @poison_flag[k] - @b_never[i] < 160 and not for any n in (0..159) : (@b_never[i] + n < @poison_flag[k] and uint8(@b_never[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_never[i] and @b_never[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_never[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_never[i] < @high[h] and @high[h] - @b_never[i] < 200 and not for any n in (0..199) : (@b_never[i] + n < @high[h] and uint8(@b_never[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -286,11 +310,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_skip[i] + !b_skip[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_skip[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_skip[i] and @b_skip[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_skip[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_skip[i] < @poison_flag[k] and @poison_flag[k] - @b_skip[i] < 160 and not for any n in (0..159) : (@b_skip[i] + n < @poison_flag[k] and uint8(@b_skip[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_skip[i] and @b_skip[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_skip[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_skip[i] < @poison_flag[k] and @poison_flag[k] - @b_skip[i] < 160 and not for any n in (0..159) : (@b_skip[i] + n < @poison_flag[k] and uint8(@b_skip[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_skip[i] and @b_skip[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_skip[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_skip[i] < @high[h] and @high[h] - @b_skip[i] < 200 and not for any n in (0..199) : (@b_skip[i] + n < @high[h] and uint8(@b_skip[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -347,11 +379,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_disable[i] + !b_disable[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_disable[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_disable[i] and @b_disable[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_disable[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_disable[i] < @poison_flag[k] and @poison_flag[k] - @b_disable[i] < 160 and not for any n in (0..159) : (@b_disable[i] + n < @poison_flag[k] and uint8(@b_disable[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_disable[i] and @b_disable[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_disable[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_disable[i] < @poison_flag[k] and @poison_flag[k] - @b_disable[i] < 160 and not for any n in (0..159) : (@b_disable[i] + n < @poison_flag[k] and uint8(@b_disable[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_disable[i] and @b_disable[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_disable[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_disable[i] < @high[h] and @high[h] - @b_disable[i] < 200 and not for any n in (0..199) : (@b_disable[i] + n < @high[h] and uint8(@b_disable[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -418,11 +458,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @head_bypass[k] < @b_bypass[i] + !b_bypass[i] and
                     @head_bypass[k] + !head_bypass[k] > @b_bypass[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_bypass[i] and @b_bypass[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_bypass[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_bypass[i] < @poison_flag[k] and @poison_flag[k] - @b_bypass[i] < 160 and not for any n in (0..159) : (@b_bypass[i] + n < @poison_flag[k] and uint8(@b_bypass[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_bypass[i] and @b_bypass[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_bypass[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_bypass[i] < @poison_flag[k] and @poison_flag[k] - @b_bypass[i] < 160 and not for any n in (0..159) : (@b_bypass[i] + n < @poison_flag[k] and uint8(@b_bypass[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_bypass[i] and @b_bypass[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_bypass[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_bypass[i] < @high[h] and @high[h] - @b_bypass[i] < 200 and not for any n in (0..199) : (@b_bypass[i] + n < @high[h] and uint8(@b_bypass[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -479,11 +527,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_auto[i] + !b_auto[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_auto[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_auto[i] and @b_auto[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_auto[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_auto[i] < @poison_flag[k] and @poison_flag[k] - @b_auto[i] < 160 and not for any n in (0..159) : (@b_auto[i] + n < @poison_flag[k] and uint8(@b_auto[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_auto[i] and @b_auto[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_auto[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_auto[i] < @poison_flag[k] and @poison_flag[k] - @b_auto[i] < 160 and not for any n in (0..159) : (@b_auto[i] + n < @poison_flag[k] and uint8(@b_auto[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_auto[i] and @b_auto[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_auto[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_auto[i] < @high[h] and @high[h] - @b_auto[i] < 200 and not for any n in (0..199) : (@b_auto[i] + n < @high[h] and uint8(@b_auto[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -540,11 +596,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_prompt[i] + !b_prompt[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_prompt[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_prompt[i] and @b_prompt[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_prompt[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_prompt[i] < @poison_flag[k] and @poison_flag[k] - @b_prompt[i] < 160 and not for any n in (0..159) : (@b_prompt[i] + n < @poison_flag[k] and uint8(@b_prompt[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_prompt[i] and @b_prompt[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_prompt[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_prompt[i] < @poison_flag[k] and @poison_flag[k] - @b_prompt[i] < 160 and not for any n in (0..159) : (@b_prompt[i] + n < @poison_flag[k] and uint8(@b_prompt[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_prompt[i] and @b_prompt[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_prompt[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_prompt[i] < @high[h] and @high[h] - @b_prompt[i] < 200 and not for any n in (0..199) : (@b_prompt[i] + n < @high[h] and uint8(@b_prompt[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -601,11 +665,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_noneed[i] + !b_noneed[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_noneed[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_noneed[i] and @b_noneed[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_noneed[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_noneed[i] < @poison_flag[k] and @poison_flag[k] - @b_noneed[i] < 160 and not for any n in (0..159) : (@b_noneed[i] + n < @poison_flag[k] and uint8(@b_noneed[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_noneed[i] and @b_noneed[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_noneed[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_noneed[i] < @poison_flag[k] and @poison_flag[k] - @b_noneed[i] < 160 and not for any n in (0..159) : (@b_noneed[i] + n < @poison_flag[k] and uint8(@b_noneed[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_noneed[i] and @b_noneed[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_noneed[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_noneed[i] < @high[h] and @high[h] - @b_noneed[i] < 200 and not for any n in (0..199) : (@b_noneed[i] + n < @high[h] and uint8(@b_noneed[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -662,11 +734,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_without[i] + !b_without[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_without[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_without[i] and @b_without[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_without[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_without[i] < @poison_flag[k] and @poison_flag[k] - @b_without[i] < 160 and not for any n in (0..159) : (@b_without[i] + n < @poison_flag[k] and uint8(@b_without[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_without[i] and @b_without[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_without[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_without[i] < @poison_flag[k] and @poison_flag[k] - @b_without[i] < 160 and not for any n in (0..159) : (@b_without[i] + n < @poison_flag[k] and uint8(@b_without[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_without[i] and @b_without[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_without[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_without[i] < @high[h] and @high[h] - @b_without[i] < 200 and not for any n in (0..199) : (@b_without[i] + n < @high[h] and uint8(@b_without[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (
@@ -721,11 +801,19 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_request[i] + !b_request[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_request[i]
                 ) and
-                not for any k in (1..32) : (
-                    k <= #poison_flag and
-                    (
-                        (@poison_flag[k] < @b_request[i] and @b_request[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_request[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@b_request[i] < @poison_flag[k] and @poison_flag[k] - @b_request[i] < 160 and not for any n in (0..159) : (@b_request[i] + n < @poison_flag[k] and uint8(@b_request[i] + n) == 0x0A))
+                not (
+                    for any k in (1..32) : (
+                        k <= #poison_flag and
+                        (
+                            (@poison_flag[k] < @b_request[i] and @b_request[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_request[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                            (@b_request[i] < @poison_flag[k] and @poison_flag[k] - @b_request[i] < 160 and not for any n in (0..159) : (@b_request[i] + n < @poison_flag[k] and uint8(@b_request[i] + n) == 0x0A))
+                        )
+                    ) and not for any h in (1..8) : (
+                        h <= #high and
+                        (
+                            (@high[h] < @b_request[i] and @b_request[i] - @high[h] < 200 and not for any n in (0..199) : (@high[h] + n < @b_request[i] and uint8(@high[h] + n) == 0x0A)) or
+                            (@b_request[i] < @high[h] and @high[h] - @b_request[i] < 200 and not for any n in (0..199) : (@b_request[i] + n < @high[h] and uint8(@b_request[i] + n) == 0x0A))
+                        )
                     )
                 ) and
                 not for any k in (1..6) : (

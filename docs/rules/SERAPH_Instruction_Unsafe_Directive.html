@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-007 · yara · <span class="sev sev-high">high</span></p>
 <h1>Agent instructions request secret theft or skipped confirmation</h1>
-<p class="deck">An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential&#x27;s vendor. Verbs include ask, request, seek, wait, and prompt. A Markdown heading, a same-line CLI flag, a read-only action such as listing files, and a bypass-permissions status label do not match.</p>
+<p class="deck">An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential&#x27;s vendor. A normal flag such as --force does not suppress that. A Markdown heading, a table row, or a known permission flag such as --yolo or --dangerously-skip-permissions does.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>

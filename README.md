@@ -100,7 +100,7 @@ These are the misses recorded in [validation/evasion-matrix.yml](validation/evas
 - A package name that is not one JSON string, and a remote specifier more than 160 bytes after `npx`, `uvx`, or `npm exec`.
 - A bare `/tmp` grant with no further path segment.
 - A secret variable that is not on the short name list.
-- A zero-width mark between every letter of a confirmation-bypass sentence. A mark between the words is caught. U+200B with no other hidden-text signal is not. "Never request permission" needs a nearby high-risk action such as a shell command. Listing, reading, viewing, searching, `ls`, and `git status`, `log`, or `diff` do not count. A Markdown heading that only names the bypass does not match.
+- A zero-width mark between every letter of a confirmation-bypass sentence. A mark between the words is caught. U+200B with no other hidden-text signal is not. "Never request permission" needs a nearby high-risk action such as a shell command, `rm`, `publish`, or `git push`. Listing, reading, viewing, searching, `ls`, and `git status`, `log`, or `diff` do not count. A Markdown heading, a table row, or a known permission flag such as `--yolo` does not match. `--force` on an ordinary instruction line does not veto it.
 - Homoglyphs other than Cyrillic `o` in that same sentence.
 - `KeepAlive` set to the integer 1, and an SSH `-R` glued to its value with no space. A host-key option that lives only in `~/.ssh/config` is not in the plist.
 - A git hook with no shebang.
