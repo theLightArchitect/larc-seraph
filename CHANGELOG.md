@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.6 — 2026-11-13
+
+Mac validation of v0.1.4 and v0.1.5, which share the same rules, passed the eight adversarial cases and still had two blockers.
+
+- "Never request permission", and the same shape with ask, seek, wait, or prompt and confirmation, permission, approval, or consent, now matches when a high-risk action such as a shell command is nearby.
+- A Markdown heading no longer satisfies "bypass permission" on its own. A CLI flag on the same line still excludes that phrase after many earlier flags, not only the first six.
+- Listing, reading, viewing, searching, `ls`, and `git status`, `git log`, or `git diff` are treated as read-only, so "never ask for confirmation when listing files" does not match. A delete or a shell command still does.
+
+The repository stays private. This changelog entry is not a public release.
+
 ## v0.1.5 — 2026-11-13
 
 Pre-publish hygiene. No detection logic changed.

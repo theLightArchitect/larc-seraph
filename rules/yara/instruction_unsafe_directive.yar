@@ -21,9 +21,9 @@ rule SERAPH_Instruction_Unsafe_Directive
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.5.0"
+        version = "1.6.0"
         severity = "high"
-        description = "An instruction file tells the agent to skip confirmation, including \"without asking\", or sends a credential to a host that is not that credential's vendor. Zero-width marks may sit between the words. Flag tables, env-var rows, a bypass-permissions on/off status label, official vendor API examples, a bypass scoped only to a low-risk call, and pairs split across fenced blocks do not match."
+        description = "An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential's vendor. Verbs include ask, request, seek, wait, and prompt. A Markdown heading, a same-line CLI flag, a read-only action such as listing files, and a bypass-permissions status label do not match."
         attack_technique = "T1567, T1562.001"
         attack_tactic = "exfiltration, defense-evasion"
         reference = "https://attack.mitre.org/techniques/T1567/"
@@ -47,14 +47,17 @@ rule SERAPH_Instruction_Unsafe_Directive
         $b_prompt = /do(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{0,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?not(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?prompt(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation/ nocase ascii
         $b_noneed = /no(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirmation(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?needed(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?before(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?a(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?tool/ nocase ascii
         $b_without = /without(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?asking((\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?the(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(user|operator))?(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation|permission)/ nocase ascii
+        $b_request = /(never|do(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?not|don(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?.?t)(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(ask|request|seek|prompt|wait)(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?)?(confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation|permission|approval|consent)/ nocase ascii
+        $flag_bypass = /--[A-Za-z0-9][^\n]{0,160}bypass[ \t]+permission|bypass[ \t]+permission[^\n]{0,160}--[A-Za-z0-9]/ nocase ascii
+        $head_bypass = /#{1,6}[ \t][^\n]{0,180}bypass[ \t]+permission/ nocase ascii
         $ui_onoff = /bypass[ \t]{1,8}permissions?[ \t]{1,8}(on|off)\b/ nocase ascii
         $ui_tail = /status bar|\bmode\b/ nocase ascii
         $homo = { 64 D0 BE 20 6E D0 BE 74 20 61 73 6B 20 66 D0 BE 72 20 63 D0 BE 6E 66 69 72 6D 61 74 69 D0 BE 6E }
         $poison_flag = /--[A-Za-z0-9]/ ascii
         $poison_env = /_YES\b|_TOKEN\b|_KEY\b|_SECRET\b/ ascii
         $poison_pipe = /\|[^\n]{0,80}(do not ask|disable confirmation|skip confirmation|auto-approve|bypass permission)|(do not ask|disable confirmation|skip confirmation|auto-approve|bypass permission)[^\n]{0,80}\|/ nocase ascii
-        $low = /rename_chat/ nocase ascii
-        $high = /(\bshell\b|\bexec\b|\bbash\b|\bcredentials?\b|\bsecrets?\b|\bcurl\b|\bwget\b|\bupload\b|\bdelete\b|\bgit push\b|\bpayments?\b)/ nocase ascii
+        $low = /rename_chat|\blisting\b|\blist\b|\bread\b|\bview\b|\bsearch\b|\bls\b|\bgit[ \t]+(status|log|diff)\b/ nocase ascii
+        $high = /(\bshell\b|\bexec\b|\bbash\b|\bcredentials?\b|\bsecrets?\b|\bcurl\b|\bwget\b|\bupload\b|\bdelet(e|ing|ed|es|ion)?\b|\bgit push\b|\bpayments?\b|id_ed25519|id_rsa|\.ssh\/)/ nocase ascii
         $line_file = /(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)[^\n]{0,320}(curl |wget )|(curl |wget )[^\n]{0,320}(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)/ nocase ascii
         $line_path = /(id_ed25519|id_rsa|\.ssh\/authorized_keys|\.aws\/credentials|\.netrc)[^\n]{0,180}https?:\/\/|https?:\/\/[^\n]{0,180}(id_ed25519|id_rsa|\.ssh\/authorized_keys|\.netrc)/ nocase ascii
         $line_cross = /(GITHUB_TOKEN|GH_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY)\b[^\n]{0,340}https?:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}|https?:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}[^\n]{0,340}(GITHUB_TOKEN|GH_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY)\b/ ascii
@@ -100,7 +103,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_do[i] + !b_do[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_do[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_do[i] and @b_do[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_do[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -161,7 +164,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_dont[i] + !b_dont[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_dont[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_dont[i] and @b_dont[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_dont[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -222,7 +225,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_never[i] + !b_never[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_never[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_never[i] and @b_never[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_never[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -283,7 +286,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_skip[i] + !b_skip[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_skip[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_skip[i] and @b_skip[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_skip[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -344,7 +347,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_disable[i] + !b_disable[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_disable[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_disable[i] and @b_disable[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_disable[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -405,7 +408,17 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_bypass[i] + !b_bypass[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_bypass[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..16) : (
+                    k <= #flag_bypass and
+                    @flag_bypass[k] < @b_bypass[i] + !b_bypass[i] and
+                    @flag_bypass[k] + !flag_bypass[k] > @b_bypass[i]
+                ) and
+                not for any k in (1..16) : (
+                    k <= #head_bypass and
+                    @head_bypass[k] < @b_bypass[i] + !b_bypass[i] and
+                    @head_bypass[k] + !head_bypass[k] > @b_bypass[i]
+                ) and
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_bypass[i] and @b_bypass[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_bypass[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -466,7 +479,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_auto[i] + !b_auto[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_auto[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_auto[i] and @b_auto[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_auto[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -527,7 +540,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_prompt[i] + !b_prompt[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_prompt[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_prompt[i] and @b_prompt[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_prompt[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -588,7 +601,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_noneed[i] + !b_noneed[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_noneed[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_noneed[i] and @b_noneed[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_noneed[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -649,7 +662,7 @@ rule SERAPH_Instruction_Unsafe_Directive
                     @ui_onoff[k] < @b_without[i] + !b_without[i] and
                     @ui_onoff[k] + !ui_onoff[k] > @b_without[i]
                 ) and
-                not for any k in (1..6) : (
+                not for any k in (1..32) : (
                     k <= #poison_flag and
                     (
                         (@poison_flag[k] < @b_without[i] and @b_without[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_without[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
@@ -693,6 +706,65 @@ rule SERAPH_Instruction_Unsafe_Directive
                     (
                         (@high[k] < @b_without[i] and @b_without[i] - @high[k] < 240) or
                         (@b_without[i] < @high[k] and @high[k] - @b_without[i] < 120)
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_request and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_request[i] + !b_request[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_request[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_request[i] + !b_request[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_request[i]
+                ) and
+                not for any k in (1..32) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_request[i] and @b_request[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_request[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_request[i] < @poison_flag[k] and @poison_flag[k] - @b_request[i] < 160 and not for any n in (0..159) : (@b_request[i] + n < @poison_flag[k] and uint8(@b_request[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_request[i] and @b_request[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_request[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_request[i] < @poison_env[k] and @poison_env[k] - @b_request[i] < 160 and not for any n in (0..159) : (@b_request[i] + n < @poison_env[k] and uint8(@b_request[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_request[i] >= n and
+                        (uint8(@b_request[i] - n) == 0x60 or uint8(@b_request[i] - n) == 0x22 or uint8(@b_request[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_request[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_request[i] + !b_request[i] + n < filesize and
+                            uint8(@b_request[i] + !b_request[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_request[i] + !b_request[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_request[i] and
+                            @ui_tail[k] - @b_request[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_request[i] + n < @ui_tail[k] and uint8(@b_request[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                for any k in (1..6) : (
+                    k <= #high and
+                    (
+                        (@high[k] < @b_request[i] and @b_request[i] - @high[k] < 240) or
+                        (@b_request[i] < @high[k] and @high[k] - @b_request[i] < 120)
                     )
                 )
             ) or $homo or $line_file or $line_path or $inject_fwd or $inject_rev or
