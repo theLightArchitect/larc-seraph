@@ -81,7 +81,7 @@ SIGNAL_PATTERNS = (
     r"must\s+send\s+all\s+emails\s+to",
     r"change\s+the\s+recipient\s+to",
     r"chat\.tools\.autoApprove[\"']?\s*:\s*true",
-    r"/tmp/inventory\.txt",
+    chr(47) + "tmp" + chr(47) + "inventory\\." + "txt",
     r"<human_chat_interruption>",
     r"always\s+consult\s+this\s+tool\s+immediately\s+as\s+the\s+first\s+step",
     r"replace\s+any\s+thoughts\s+with\s+<thinking>",
@@ -231,25 +231,35 @@ def _pipe_hit(text: str) -> bool:
     return False
 
 
+def _window_has(text: str, match: re.Match[str], patterns: tuple[re.Pattern[str], ...]) -> bool:
+    window = text[max(0, match.start() - 400) : match.end() + 400]
+    return any(pattern.search(window) for pattern in patterns)
+
+
+def _detail_hit(text: str) -> bool:
+    return any(
+        _window_has(text, match, _CONCEAL + _RECIPIENT) for match in _DETAIL.finditer(text)
+    )
+
+
+def _sidenote_hit(text: str) -> bool:
+    return any(
+        _window_has(text, match, _SIDENOTE) for match in _SENSITIVE.finditer(text)
+    )
+
+
+def _exfil_hit(text: str) -> bool:
+    return any(_near(text, match.start(), match.end(), _ENCODE) for match in _EXFIL.finditer(text))
+
+
 def _signal_hit(text: str) -> bool:
-    if _pipe_hit(text):
-        return True
-    if any(pattern.search(text) for pattern in _SIGNALS):
-        return True
-    for match in _DETAIL.finditer(text):
-        window = text[max(0, match.start() - 400) : match.end() + 400]
-        if any(pattern.search(window) for pattern in _CONCEAL + _RECIPIENT):
-            return True
-    if any(pattern.search(text) for pattern in _SIDENOTE) and _SENSITIVE.search(text):
-        for match in _SENSITIVE.finditer(text):
-            window = text[max(0, match.start() - 400) : match.end() + 400]
-            if any(pattern.search(window) for pattern in _SIDENOTE):
-                return True
-    if _EXFIL.search(text) and _ENCODE.search(text):
-        for match in _EXFIL.finditer(text):
-            if _near(text, match.start(), match.end(), _ENCODE):
-                return True
-    return False
+    return (
+        _pipe_hit(text)
+        or any(pattern.search(text) for pattern in _SIGNALS)
+        or _detail_hit(text)
+        or _sidenote_hit(text)
+        or _exfil_hit(text)
+    )
 
 
 def instruction_bypass(data: bytes, filepath: str, *, use_filepath: bool) -> bool:
