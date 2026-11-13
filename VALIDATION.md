@@ -1,6 +1,6 @@
 # Validation
 
-larc-seraph v0.1.7. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
+larc-seraph v0.1.8. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
 
 This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
 

@@ -170,9 +170,9 @@ def test_non_unicode_fixtures_are_ascii():
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Claude.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Skill.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Gemini.md",
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/README.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case-upper/README.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Notes.md",
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Readme.MD",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case-mixed/Readme.MD",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/homo/GEMINI.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zw/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zw-gaps/SKILL.md",
@@ -220,6 +220,16 @@ def test_sigma_check_passes():
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_tracked_paths_do_not_collide_on_case():
+    """macOS and Windows check out only one of two paths that differ only by case."""
+    tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
+    folded: dict[str, list[str]] = {}
+    for path in tracked:
+        folded.setdefault(path.casefold(), []).append(path)
+    collisions = [paths for paths in folded.values() if len(paths) > 1]
+    assert collisions == []
 
 
 def test_rules_compile_as_one_yara_set():
