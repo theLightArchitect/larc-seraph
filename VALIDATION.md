@@ -2,7 +2,17 @@
 
 larc-seraph v0.1.9. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
 
-This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen. Detection logic is unchanged from v0.1.8, so the numbers below are the v0.1.8 runs. v0.1.9 adds the CI and release machinery around them.
+This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
+
+Detection logic did change in v0.1.9. `SERAPH-YARA-016` no longer lets a pin or an allowlisted scope anywhere in the file clear a second unpinned package. The Forge hidden-unicode rule no longer requires the file to mention its own name. English confirmation-bypass sentences moved from the YARA rule into `larc_seraph/phrases.py`. `SERAPH-SIGMA-018` is new. The corpus numbers below are from a local `tools/fp_scan.py` run after those changes (15615 files, 0 Forge hits, 0 path-scoped hits). They are not a claim that a GitHub Actions run of this commit has finished.
+
+GitHub Actions runs that already finished, on earlier commits of this pull request:
+
+- [43462188883](https://github.com/theLightArchitect/larc-seraph/actions/runs/43462188883) passed the project-basics workflow.
+- [43464643369](https://github.com/theLightArchitect/larc-seraph/actions/runs/43464643369) passed after the two-flavor Forge split, including a Forge compile with no externals and the corpus scan.
+- [43465953149](https://github.com/theLightArchitect/larc-seraph/actions/runs/43465953149) passed on `2ab1c79`. SonarCloud's quality gate passed on that commit. The hashed test lockfile is `requirements/test.txt`.
+
+Do not read those three runs as coverage of the 016 span fix, the hidden-unicode Forge change, the phrase split, or `SERAPH-SIGMA-018`. Those are in a later commit.
 
 ## What was run
 
@@ -15,7 +25,7 @@ This file is the methodology and the results. A green test run proves the fixtur
 | libyara | Pass. `yara-python` compiles the set. |
 | yara-x 1.23.0 | Pass. `yr compile rules/yara` with no externals exits 0 with no warning text. The path-scoped set compiles with `filepath` defined. |
 | Wide-tree speed | Pass. 400 benign Markdown files scanned in the unit test in under 10 seconds. The corpus scan below is the larger number. |
-| Benign corpus | Pass. 15615 files. Zero hits for the Forge flavor and zero hits for the path-scoped flavor. |
+| Benign corpus | Local pass after the review changes. 15615 files. Zero Forge hits. Zero path-scoped hits. The CLI scan does not apply `larc_seraph.phrases`. |
 | Metadata | Pass. Author is Kevin Francis Tan. Date, references, ATT&CK, severity, and false-positive notes are required by the test. Sigma UUIDs and YARA ids are unique. |
 | Evasion matrix | Pass. `validation/evasion-matrix.yml` is executed by pytest. Misses are asserted, not ignored. |
 
@@ -124,7 +134,10 @@ Not caught, on purpose or because the fix would be a different detector:
 | SERAPH-SIGMA-013 | T1543.001, T1543.004 | |
 | SERAPH-SIGMA-014 | T1572, T1021.004 | |
 | SERAPH-SIGMA-015 | T1059.004, T1105 | |
-| SERAPH-SIGMA-016 | T1059.004, T1105 | |
+| SERAPH-SIGMA-017 | T1059.004, T1105 | |
+| SERAPH-SIGMA-018 | T1059, T1195.002 | |
+
+`SERAPH-SIGMA-016` is retired. It was the terminal piped-shell rule and shared the number 016 with `SERAPH-YARA-016`. The rule is now `SERAPH-SIGMA-017`. Its Sigma UUID did not change. The metadata check fails if a three-digit number is used by both a YARA rule and a Sigma rule.
 
 Sigma tags are only the ATT&CK namespace. ATLAS ids are references and this table. pySigma rejects an `atlas` tag namespace.
 
@@ -139,6 +152,33 @@ Sigma tags are only the ATT&CK namespace. ATLAS ids are references and this tabl
 | User | `process.user_name` | `user.name` | `username` |
 
 Joining eslogger args with spaces drops quoting. A command whose only copy of a pipe character lived inside quotes that the collector already split can still match, which is what the samples do. A collector that drops args entirely will not fire command-line rules.
+
+## Instruction rule split
+
+`rules/src/yara/instruction_unsafe_directive.yar` was 952 lines. It is 59 lines in the source and 68 lines in the Forge copy. `larc_seraph/phrases.py` is 152 lines and holds the English confirmation-bypass checks. On the positive fixtures, 4 still match the YARA core (homoglyph, same-line credential fetch, ignore-previous-instructions next to a fetch) and 20 match only through the Python scanner. Negatives stayed silent under pytest. A YARA-only scanner, including YARA-Forge, misses those 20.
+
+## yaraQA 0.11.0
+
+Run on `rules/yara` (16 findings) and `rules/path-scoped` (14 findings). No critical findings. The short unanchored package regexes (RE1) were rewritten so each one contains the literal `args`. They did not recur.
+
+Left in place:
+
+- HS4 / HS3, high regex count. These rules match config syntax, not a malware byte string. Collapsing them reintroduces the 016 misses.
+- CF2, `math.min` in the instruction rules. That loop skips a file with a null in the first kilobyte so binaries do not match. Removing it would widen the rule onto binary files.
+- PA2, the four 3-byte bidi atoms in the hidden-unicode rule. U+202A, U+202B, U+202D, and U+202E are three UTF-8 bytes. Lengthening them would miss a lone override. The corpus stayed at zero hits with those atoms and with the Forge self-name gate removed.
+
+## Incident references
+
+Opened and cited:
+
+- Pillar Security, Rules File Backdoor (hidden Unicode in Cursor and Copilot rule files): https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents and the Security Affairs write-up of that research, https://securityaffairs.com/175593/hacking/rules-file-backdoor-ai-code-editors-silent-supply-chain-attacks.html . On `SERAPH-YARA-006`.
+- Snyk, malicious npm package `postmark-mcp` (versions from 1.0.16, BCC to giftshop.club, 2025-09-25): https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/ . On `SERAPH-YARA-016` and `SERAPH-YARA-004`.
+- Invariant Labs, MCP tool poisoning: https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks . On `SERAPH-YARA-005` and `SERAPH-YARA-007`.
+- OpenSourceMalware, Lazarus / Contagious Interview git pre-commit hooks (`curl | sh` and `wget | sh` to precommit.vercel.app): https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware . On `SERAPH-YARA-010` only. It is a git hook, not an MCP curl rule.
+- Broadcom, AMOS / Atomic Stealer ClickFix (paste into Terminal, LaunchAgent persistence): https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users . On `SERAPH-YARA-008`, `SERAPH-SIGMA-013`, and `SERAPH-SIGMA-017`.
+- Nx s1ngularity, August 2025. The payload started `claude --dangerously-skip-permissions`, `gemini --yolo`, and `q chat --trust-all-tools`. https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/ , https://www.wiz.io/blog/s1ngularity-supply-chain-attack , https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware . On `SERAPH-SIGMA-018`. The published payload did not name `codex`. The rule includes it as the same class of CLI.
+
+No public incident was opened for these rules, so none was invented: `SERAPH-YARA-001` (launch from a temp path), `SERAPH-YARA-002` (MCP curl piped to a shell), `SERAPH-YARA-003` (encoded exec), `SERAPH-YARA-009` (SSH reverse tunnel in a plist), `SERAPH-SIGMA-011` (authorized_keys), `SERAPH-SIGMA-012` (shell rc), `SERAPH-SIGMA-014` (SSH reverse with host-key checking off), `SERAPH-SIGMA-015` (agent-parent piped shell). They still cite ATT&CK.
 
 ## What this does not cover
 

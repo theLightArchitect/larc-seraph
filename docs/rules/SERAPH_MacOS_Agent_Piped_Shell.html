@@ -57,7 +57,7 @@
 <h2 id="limitations">Limitations</h2>
 <p>A LaunchAgent that later runs the same command has launchd as its parent, not the agent, so this rule will not see it. Use the plist rules for that stage. The python branch looks for <code>exec(</code> or <code>eval(</code> next to a decode call. Other interpreters are a gap. As with the rest of the Sigma set, the fields have to be the normalized contract or the rule is inert.</p>
 <h2 id="triage">Triage</h2>
-<p>Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-016, not this rule.</p>
+<p>Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-017, not this rule.</p>
 </article>
 <p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 

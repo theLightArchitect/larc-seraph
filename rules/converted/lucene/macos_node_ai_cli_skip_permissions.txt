@@ -1,0 +1,1 @@
+(process.parent.executable:(*\/node OR *\/npm OR *\/npx)) AND (process.executable:(*\/claude OR *\/gemini OR *\/q OR *\/codex)) AND (process.command_line:(*\-\-dangerously\-skip\-permissions* OR *\-\-yolo* OR *\-\-trust\-all\-tools*))

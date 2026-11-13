@@ -1,0 +1,15 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/negative/zsh_claude.json"
+  },
+  "record": {
+    "path": "/usr/local/bin/claude",
+    "cmdline": "claude --dangerously-skip-permissions -p inventory",
+    "username": "dev",
+    "parent_path": "/bin/zsh"
+  }
+}

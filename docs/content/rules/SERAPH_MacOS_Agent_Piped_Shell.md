@@ -14,4 +14,4 @@ A LaunchAgent that later runs the same command has launchd as its parent, not th
 
 ## Triage
 
-Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-016, not this rule.
+Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-017, not this rule.

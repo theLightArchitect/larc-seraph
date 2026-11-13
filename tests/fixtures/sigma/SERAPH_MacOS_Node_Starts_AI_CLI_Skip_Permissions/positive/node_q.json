@@ -1,0 +1,12 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions"
+  },
+  "Image": "/opt/homebrew/bin/q",
+  "ParentImage": "/usr/local/bin/node",
+  "CommandLine": "q chat --trust-all-tools --no-interactive inventory",
+  "User": "dev"
+}

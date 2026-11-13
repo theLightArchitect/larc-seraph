@@ -16,6 +16,14 @@ import yara
 
 from larc_seraph.eval import rule_matches
 from larc_seraph.inventory import ROOT, load_sigma_rules
+from larc_seraph.phrases import instruction_bypass
+
+
+class NamedHit:
+    """A scanner hit that did not come from libyara."""
+
+    def __init__(self, rule: str) -> None:
+        self.rule = rule
 
 
 def _yara_paths(flavor: str) -> list[Path]:
@@ -71,6 +79,7 @@ def yara_match(
     filepath: str | None = None,
     *,
     use_filepath: bool = True,
+    phrases: bool = True,
 ):
     """Match one file.
 
@@ -85,11 +94,19 @@ def yara_match(
     options: dict[str, object] = {}
     if use_filepath:
         options["externals"] = {"filepath": filepath}
-    if data is not None:
-        return rules.match(data=data, **options)
-    if path is None:
-        raise ValueError("path or data is required")
-    return rules.match(path, **options)
+    if data is None:
+        if path is None:
+            raise ValueError("path or data is required")
+        data = Path(path).read_bytes()
+    hits = list(rules.match(data=data, **options))
+    if not phrases:
+        return hits
+    names = {hit.rule for hit in hits}
+    core = "SERAPH_Instruction_Unsafe_Directive"
+    reported = f"{core}_Path" if use_filepath else core
+    if reported not in names and core not in names and instruction_bypass(data, filepath, use_filepath=use_filepath):
+        hits.append(NamedHit(reported))
+    return hits
 
 
 def scan_yara(targets: list[Path]) -> int:

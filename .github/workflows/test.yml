@@ -106,6 +106,7 @@ jobs:
             echo "Forge rules must not reference filepath" >&2
             exit 1
           fi
+          yr fmt --check rules/yara rules/path-scoped rules/src/yara
           yarac --fail-on-warnings --strict-escape rules/yara/*.yar /tmp/larc-seraph-forge.yac
           yr compile rules/yara -o /tmp/larc-seraph-forge.yarc
           yarac --fail-on-warnings --strict-escape -d filepath= rules/path-scoped/*.yar /tmp/larc-seraph-path.yac

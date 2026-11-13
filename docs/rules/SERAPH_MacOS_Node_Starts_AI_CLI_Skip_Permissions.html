@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>macOS node or npm started an AI CLI with a skip-permission flag · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">larc-seraph</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-SIGMA-018 · sigma · <span class="sev sev-high">high</span></p>
+<h1>macOS node or npm started an AI CLI with a skip-permission flag</h1>
+<p class="deck">Detects node, npm, or npx spawning claude, gemini, q, or codex with --dangerously-skip-permissions, --yolo, or --trust-all-tools. The August 2025 Nx s1ngularity payload did this for claude, gemini, and q. An interactive shell parent does not match. Field names are the larc-seraph normalized macOS contract.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/">T1059</a>, <a href="https://attack.mitre.org/techniques/T1195/002/">T1195.002</a></div>
+  <div><span>Tactic</span>execution, initial-access</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>macOS process creation events normalized to the larc-seraph field contract</div>
+</div>
+<h2>False positives</h2>
+<ul><li>A developer who launches one of these CLIs from a node or npm script with the skip flag on purpose. Read the command line.</li><li>The same flag from Terminal, iTerm, or zsh does not match. The parent has to be node, npm, or npx.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1059/">https://attack.mitre.org/techniques/T1059/</a></li><li><a href="https://attack.mitre.org/techniques/T1195/002/">https://attack.mitre.org/techniques/T1195/002/</a></li><li><a href="https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/">https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/</a></li><li><a href="https://www.wiz.io/blog/s1ngularity-supply-chain-attack">https://www.wiz.io/blog/s1ngularity-supply-chain-attack</a></li><li><a href="https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware">https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>The August 2025 Nx s1ngularity payload, running from a malicious npm release, started local AI CLIs with the flags that turn permission prompts off. Snyk, Wiz, and StepSecurity published the command lines: <code>claude --dangerously-skip-permissions</code>, <code>gemini --yolo</code>, and <code>q chat --trust-all-tools</code>. The stolen inventory then went to public GitHub repositories named <code>s1ngularity-repository</code>.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The parent has to be <code>node</code>, <code>npm</code>, or <code>npx</code>. The child has to be <code>claude</code>, <code>gemini</code>, <code>q</code>, or <code>codex</code>. The command line has to contain one of those three flags. A person who types the same flag into zsh or Terminal does not match. <code>codex</code> was not in the published payload. It is here because it is the same class of CLI and the same flag.</p>
+<h2 id="limitations">Limitations</h2>
+<p>A developer who really wants a node script to launch Claude with prompts disabled will match. The rule cannot see a flag that was passed through an environment variable or a response file. <code>Image</code> ending in <code>/q</code> is the Amazon Q CLI name from the incident. A different binary with that exact filename would match too.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the parent and the command line. An npm install that just finished, plus one of these flags, is the s1ngularity shape. A node test harness the team wrote on purpose is the false-positive note.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

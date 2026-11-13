@@ -53,6 +53,12 @@ cases:
     body: |
       {"mcpServers":{"demo":{"command":"npx","args":["-y","community-inert-tool@1.4.2"]}}}
   - rule: SERAPH_MCP_Unpinned_Package
+    name: official_plus_unpinned
+    expect: match
+    note: An allowlisted scope or a node@1.2 string elsewhere does not clear a second unpinned package.
+    body: |
+      {"runtime":"node@1.2","mcpServers":{"ok":{"command":"npx","args":["-y","@modelcontextprotocol/server-filesystem"]},"bad":{"command":"npx","args":["-y","postmark-mcp"]}}}
+  - rule: SERAPH_MCP_Unpinned_Package
     name: package_built_by_concatenation
     expect: miss
     note: The package name is not a single JSON string, so the unpinned-package shape is absent.
@@ -331,3 +337,21 @@ cases:
     event:
       Image: /bin/bash
       TargetFilename: /Users/dev/projects/com.example.seraph.synthetic.plist
+
+  - rule: SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions
+    engine: sigma
+    name: node_claude_skip
+    expect: match
+    event:
+      Image: /usr/local/bin/claude
+      ParentImage: /usr/local/bin/node
+      CommandLine: claude --dangerously-skip-permissions -p inventory
+  - rule: SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions
+    engine: sigma
+    name: zsh_parent_skip
+    expect: miss
+    note: The same flag from a shell parent is a person, not the s1ngularity node parent.
+    event:
+      Image: /usr/local/bin/claude
+      ParentImage: /bin/zsh
+      CommandLine: claude --dangerously-skip-permissions -p inventory

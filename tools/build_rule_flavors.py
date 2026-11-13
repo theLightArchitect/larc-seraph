@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,16 +22,47 @@ FORGE = ROOT / "rules" / "yara"
 PATH = ROOT / "rules" / "path-scoped"
 
 _RULE = re.compile(r"^rule\s+([A-Za-z0-9_]+)\s*\{", re.M)
-_ID = re.compile(r'id = "(SERAPH-YARA-\d+)"')
-_VERSION = re.compile(r'version = "(\d+)\.(\d+)\.(\d+)"')
+_ID = re.compile(r'id\s*=\s*"(SERAPH-YARA-\d+)"')
+_VERSION = re.compile(r'version\s*=\s*"(\d+)\.(\d+)\.(\d+)"')
+_MCP_BLOCK = re.compile(
+    r"\(\s*"
+    r"\(filepath == \"\" and (?P<empty>.*?)\) or\s*"
+    r"\(filepath != \"\" and filepath matches /\\\.\(json\|jsonc\|toml\|yml\|yaml\)"
+    r"\(\\\.bak\|\\\.backup\[\^\\/\]\*\)\?\$/i and\s*"
+    r"not filepath matches /\\\.\(md\|markdown\)\$/i\)\s*"
+    r"\)",
+    re.S,
+)
+_INSTRUCTION_BLOCK = re.compile(
+    r"\(\s*"
+    r"filepath matches /\(\\/\(agents\|claude\|gemini\)\\.md\$\)\|.*?"
+    r"filepath matches /\\\.\(json\|jsonc\)\$/i and \$desc\)\s*"
+    r"\)",
+    re.S,
+)
+_GIT_SAMPLE = re.compile(r"[ \t]*not filepath matches /\\\.sample\$/i and\n")
+_GIT_PATH = re.compile(
+    r"[ \t]*\(filepath matches /\\\.git\\/hooks\\/\[\^\\/\]\+\$/i or "
+    r"filepath matches /\\\.husky\\/\[\^\\/\]\+\$/i\) and\n"
+)
 
 _MCP_GATE = """(
-            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath == "" and (uint8(0) == 0x7B or $start_yaml or $start_toml)) or
             (filepath != "" and filepath matches /\\.(json|jsonc|toml|yml|yaml)(\\.bak|\\.backup[^\\/]*)?$/i and
                 not filepath matches /\\.(md|markdown)$/i)
         )"""
 
 _MCP_FORGE_GATE = """(
+            uint8(0) == 0x7B or $start_yaml or $start_toml
+        )"""
+
+_MCP_GATE_LEGACY = """(
+            (filepath == "" and uint8(0) == 0x7B) or
+            (filepath != "" and filepath matches /\\.(json|jsonc|toml|yml|yaml)(\\.bak|\\.backup[^\\/]*)?$/i and
+                not filepath matches /\\.(md|markdown)$/i)
+        )"""
+
+_MCP_FORGE_GATE_LEGACY = """(
             uint8(0) == 0x7B
         )"""
 
@@ -66,10 +99,15 @@ _SCOPES = {
         "does not match. A hook that only runs a test suite does not match."
     ),
     "instruction_hidden_unicode.yar": (
-        "Text with Unicode tags or bidi overrides that also contains an instruction marker "
-        "(agent instructions, AGENTS.md, CLAUDE.md, GEMINI.md, SKILL.md, .cursorrules, "
-        "copilot-instructions, or .cursor/rules/) or a JSON object that starts with { and has a description. "
-        "Binaries and subdivision flags are skipped."
+        "Text with a Unicode tag or a bidi override (LRE, RLE, LRO, RLO). "
+        "The portable rule does not require the file to mention its own name, because a real "
+        "CLAUDE.md or .cursor/rules file often does not. Subdivision-flag emoji and binaries do not match."
+    ),
+    "mcp_unpinned_package.yar": (
+        "JSON that starts with {, YAML that starts with mcpServers:, or TOML that starts with "
+        "[mcp_servers or mcp_servers =. Markdown docs do not match. Allowlisted scopes are "
+        "@modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a "
+        "version does not match. @latest is SERAPH-YARA-004."
     ),
     "instruction_unsafe_directive.yar": (
         "Text that tells an agent to skip confirmation before a high-risk action, or sends a credential "
@@ -117,10 +155,10 @@ def _replace_scope(name: str, text: str) -> str:
                 return match.group(0)
             return f'scope = "{current}{extra}"'
 
-        return re.sub(r'scope = "([^"]*)"', repl, text, count=1)
+        return re.sub(r'scope\s*=\s*"([^"]*)"', repl, text, count=1)
     if name not in _SCOPES:
         return text
-    return re.sub(r'scope = "[^"]*"', f'scope = "{_SCOPES[name]}"', text, count=1)
+    return re.sub(r'scope\s*=\s*"[^"]*"', f'scope = "{_SCOPES[name]}"', text, count=1)
 
 
 def _append_description(text: str, sentence: str) -> str:
@@ -130,7 +168,7 @@ def _append_description(text: str, sentence: str) -> str:
             return match.group(0)
         return f'description = "{current} {sentence}"'
 
-    return re.sub(r'description = "([^"]*)"', repl, text, count=1)
+    return re.sub(r'description\s*=\s*"([^"]*)"', repl, text, count=1)
 
 
 def forge_text(name: str, text: str) -> str:
@@ -142,22 +180,44 @@ def forge_text(name: str, text: str) -> str:
         "Content-only rule: it compiles with no externals.",
     )
     if name.startswith("mcp_"):
-        if _MCP_GATE not in updated:
+        match = _MCP_BLOCK.search(updated)
+        if not match:
             raise SystemExit(f"{name}: MCP path gate not found")
-        updated = updated.replace(_MCP_GATE, _MCP_FORGE_GATE, 1)
+        gate = "uint8(0) == 0x7B"
+        if "$start_yaml" in match.group("empty"):
+            gate = "uint8(0) == 0x7B or $start_yaml or $start_toml"
+        updated = _MCP_BLOCK.sub(f"(\n      {gate}\n    )", updated, count=1)
     elif name.startswith("instruction_"):
-        if _INSTRUCTION_GATE not in updated:
+        if not _INSTRUCTION_BLOCK.search(updated):
             raise SystemExit(f"{name}: instruction path gate not found")
-        updated = updated.replace(_INSTRUCTION_GATE, _INSTRUCTION_FORGE_GATE, 1)
-        updated = updated.replace("\n    condition:\n", "\n" + _MARKERS + "\n    condition:\n", 1)
+        if name == "instruction_hidden_unicode.yar":
+            # A real CLAUDE.md or .cursor/rules/*.mdc does not name itself.
+            # The tag and bidi bytes are the signal. The path-scoped twin keeps the path gate.
+            stripped, count = re.subn(
+                _INSTRUCTION_BLOCK.pattern + r"\s*and\s*",
+                "",
+                updated,
+                count=1,
+                flags=re.S,
+            )
+            if count != 1:
+                raise SystemExit(f"{name}: could not drop the self-name gate")
+            updated = re.sub(r"(?m)^[ \t]*\$desc\s*=.*\n", "", stripped, count=1)
+        else:
+            updated = _INSTRUCTION_BLOCK.sub(
+                "(\n      any of ($mark_*) or\n      ($desc and uint8(0) == 0x7B)\n    )",
+                updated,
+                count=1,
+            )
+            updated = updated.replace("\n  condition:\n", "\n" + _MARKERS + "\n  condition:\n", 1)
     elif name.startswith("git_hook_"):
-        if _GIT_LINES[0] not in updated or _GIT_LINES[1] not in updated:
+        if not _GIT_SAMPLE.search(updated) or not _GIT_PATH.search(updated):
             raise SystemExit(f"{name}: git path gate not found")
-        updated = updated.replace(_GIT_LINES[0], "        not $sample_banner and\n", 1)
-        updated = updated.replace(_GIT_LINES[1], "", 1)
+        updated = _GIT_SAMPLE.sub("    not $sample_banner and\n", updated, count=1)
+        updated = _GIT_PATH.sub("", updated, count=1)
         updated = updated.replace(
-            "\n    condition:\n",
-            '\n        $sample_banner = /To enable this hook, rename this file/ nocase ascii\n\n    condition:\n',
+            "\n  condition:\n",
+            '\n    $sample_banner = /To enable this hook, rename this file/ nocase ascii\n\n  condition:\n',
             1,
         )
     if "filepath" in updated:
@@ -195,13 +255,25 @@ def build() -> dict[str, str]:
     return output
 
 
+def _fmt(text: str) -> str:
+    with tempfile.NamedTemporaryFile("w", suffix=".yar", delete=False, encoding="utf-8") as handle:
+        handle.write(text)
+        name = handle.name
+    completed = subprocess.run(["yr", "fmt", name], check=False)
+    if completed.returncode not in (0, 1):
+        raise SystemExit(f"yr fmt failed on generated {name}")
+    formatted = Path(name).read_text(encoding="utf-8")
+    Path(name).unlink()
+    return formatted
+
+
 def write(output: dict[str, str]) -> None:
     FORGE.mkdir(parents=True, exist_ok=True)
     PATH.mkdir(parents=True, exist_ok=True)
     for relative, text in output.items():
         destination = ROOT / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(text, encoding="utf-8")
+        destination.write_text(_fmt(text), encoding="utf-8")
     expected = {Path(relative).name for relative in output if relative.startswith("rules/path-scoped/")}
     for stale in PATH.glob("*.yar"):
         if stale.name not in expected:
@@ -212,7 +284,7 @@ def check(output: dict[str, str]) -> int:
     drifted = []
     for relative, text in output.items():
         path = ROOT / relative
-        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+        if not path.is_file() or path.read_text(encoding="utf-8") != _fmt(text):
             drifted.append(relative)
     if drifted:
         print("rule flavors drifted from rules/src/yara:", file=sys.stderr)

@@ -27,6 +27,8 @@ YARA_META_KEYS = (
     "modified",
     "version",
     "severity",
+    "status",
+    "score",
     "description",
     "attack_technique",
     "attack_tactic",
@@ -125,7 +127,8 @@ SIGMA_IDS = {
     "SERAPH_MacOS_Interpreter_Drops_Launch_Plist": "SERAPH-SIGMA-013",
     "SERAPH_MacOS_SSH_Reverse_Lax_HostKey": "SERAPH-SIGMA-014",
     "SERAPH_MacOS_Agent_Piped_Shell": "SERAPH-SIGMA-015",
-    "SERAPH_MacOS_Terminal_Piped_Shell": "SERAPH-SIGMA-016",
+    "SERAPH_MacOS_Terminal_Piped_Shell": "SERAPH-SIGMA-017",
+    "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions": "SERAPH-SIGMA-018",
 }
 
 

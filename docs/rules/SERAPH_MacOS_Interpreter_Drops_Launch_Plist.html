@@ -48,7 +48,7 @@
 <h2>False positives</h2>
 <ul><li>Installers and Homebrew casks that drop a LaunchAgent from a shell script.</li><li>An operator scripting their own login job. Correlate with SERAPH-YARA-008 or SERAPH-YARA-009 before escalating.</li></ul>
 <h2>References</h2>
-<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li></ul>
+<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li><li><a href="https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users">https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users</a></li></ul>
 <article class="prose">
 <h2 id="threat">Threat</h2>
 <p>Creating the plist is the moment a login or boot job appears on disk. The content rules say whether the job is a shell in a user-writable path or an SSH tunnel. This rule says an interpreter wrote a plist under LaunchAgents or LaunchDaemons, which is the event you can see even when the file was deleted before a scanner reached it.</p>

@@ -1,0 +1,55 @@
+# SERAPH-SIGMA-018
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS node or npm started an AI CLI with a skip-permission flag
+name: SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions
+id: e09274cd-20af-442f-b61e-784182327a97
+status: experimental
+description: >
+  Detects node, npm, or npx spawning claude, gemini, q, or codex with
+  --dangerously-skip-permissions, --yolo, or --trust-all-tools. The August 2025
+  Nx s1ngularity payload did this for claude, gemini, and q. An interactive
+  shell parent does not match. Field names are the larc-seraph normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1059/
+  - https://attack.mitre.org/techniques/T1195/002/
+  - https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/
+  - https://www.wiz.io/blog/s1ngularity-supply-chain-attack
+  - https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS process creation events normalized to the larc-seraph field contract
+tags:
+  - attack.execution
+  - attack.initial-access
+  - attack.t1059
+  - attack.t1195.002
+logsource:
+  product: macos
+  category: process_creation
+  definition: larc-seraph normalized ESF exec event. ParentImage is node, npm, or npx. Image is the AI CLI.
+detection:
+  selection_parent:
+    ParentImage|endswith:
+      - '/node'
+      - '/npm'
+      - '/npx'
+  selection_cli:
+    Image|endswith:
+      - '/claude'
+      - '/gemini'
+      - '/q'
+      - '/codex'
+  selection_flag:
+    CommandLine|contains:
+      - '--dangerously-skip-permissions'
+      - '--yolo'
+      - '--trust-all-tools'
+  condition: selection_parent and selection_cli and selection_flag
+falsepositives:
+  - A developer who launches one of these CLIs from a node or npm script with the skip flag on purpose. Read the command line.
+  - The same flag from Terminal, iTerm, or zsh does not match. The parent has to be node, npm, or npx.
+level: high

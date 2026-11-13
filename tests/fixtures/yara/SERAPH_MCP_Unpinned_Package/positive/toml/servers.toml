@@ -1,0 +1,4 @@
+[mcp_servers.demo]
+command = "npx"
+args = ["-y", "seraph-inert-tool"]
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: match. inert.

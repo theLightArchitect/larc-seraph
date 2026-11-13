@@ -19,7 +19,7 @@ The docs site is [docs/index.html](docs/index.html). The threat model and field 
 
 ## What this is
 
-Seventeen experimental rules:
+Eighteen experimental rules:
 
 | ID | Engine | What it watches |
 | --- | --- | --- |
@@ -40,6 +40,7 @@ Seventeen experimental rules:
 | `SERAPH_MacOS_SSH_Reverse_Lax_HostKey` | Sigma | ssh reverse forward with host-key checking disabled |
 | `SERAPH_MacOS_Agent_Piped_Shell` | Sigma | Agent parent spawns a fetch or decode handed to a shell |
 | `SERAPH_MacOS_Terminal_Piped_Shell` | Sigma | Terminal or iTerm parent spawns a fetch or decode handed to a shell |
+| `SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions` | Sigma | node, npm, or npx starts an AI CLI with a skip-permission flag |
 
 Each rule carries author, date (2026-11-13), ATT&CK mapping, severity, scope, and a false-positive note. Status is experimental.
 
@@ -49,7 +50,9 @@ This is not an EDR, a blocker, or a claim of coverage. It is not offensive tooli
 
 Sigma rules assume a normalized macOS field contract (`Image`, `CommandLine`, `ParentImage`, `TargetFilename`, `User`). They do not match raw Apple unified logs until a translator maps Endpoint Security events onto those names. The threat model states that limit in full.
 
-`SERAPH-YARA-016` flags an unpinned registry package inside a JSON, TOML, or YAML MCP config. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted. A numeric version pin is not a match. A Markdown README that only quotes the config is not a match.
+`SERAPH-YARA-016` flags an unpinned registry package inside a JSON, TOML, or YAML MCP config. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted on that package entry. A numeric version on the package token is not a match, and a pin or an allowlisted package elsewhere in the file does not clear a second unpinned package. A Markdown README that only quotes the config is not a match.
+
+`SERAPH-YARA-016` and the old `SERAPH-SIGMA-016` used the same number. The terminal piped-shell rule is now `SERAPH-SIGMA-017`. Its Sigma UUID did not change. `SERAPH-SIGMA-018` is the Nx s1ngularity CLI rule. The metadata check rejects a repeated three-digit number across the two families. Rule names stay `SERAPH_*`. Neo23x0-style category prefixes (`MAL_`, `HKTL_`) classify malware families. These rules detect config and process shapes, and the catalog id is already the `SERAPH` number, so this pack does not add a second prefix.
 
 ## Quick start
 
@@ -148,7 +151,7 @@ These are the misses recorded in [validation/evasion-matrix.yml](validation/evas
 - A git hook with no shebang.
 - Shell startup files the path list does not name, such as Fish `config.fish`. `authorized_keys.bak` is not in the path list. A project file that still ends in `.zshrc` does match.
 - A plist that is not under LaunchAgents or LaunchDaemons.
-- An MCP file that contains both a pinned package and an unpinned one can suppress `SERAPH-YARA-016`, because a numeric version anywhere in the file clears it.
+- English confirmation-bypass sentences are matched by `larc_seraph.phrases` inside the CLI. The YARA core for `SERAPH_Instruction_Unsafe_Directive` keeps the homoglyph, the same-line credential fetch, and "ignore previous instructions" next to a fetch. A YARA-only scanner misses the paraphrases.
 - osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire. A piped shell whose parent is launchd is left to the plist rules.
 - The Forge flavor misses a YAML or TOML MCP config that does not start with `{`, and a confirmation sentence whose only instruction signal is the file name. The path-scoped rules still catch those. Forge matches a hook payload that is not under `.git/hooks` or `.husky`. The path-scoped rule does not.
 - The benign corpus is a sample of public trees, not every workstation. The Mac scans are summarized in VALIDATION.md.
@@ -177,23 +180,27 @@ Point Forge, or any scanner that cannot set externals, at `rules/yara` only. Do 
 
 What the Forge flavor uses instead of the path:
 
-- MCP rules match a file whose first byte is `{` and that contains an `mcpServers` object. Markdown, and YAML or TOML that does not start with `{`, do not match.
-- Instruction rules match when the bytes contain an instruction marker (`agent instructions`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `copilot-instructions`, or `.cursor/rules/`) or a JSON object with a `description`.
+- MCP rules other than `SERAPH-YARA-016` match a file whose first byte is `{` and that contains an `mcpServers` object. Markdown, and YAML or TOML that does not start with `{`, do not match. `SERAPH-YARA-016` also matches a file that starts with `mcpServers:` or `[mcp_servers` / `mcp_servers =`.
+- `SERAPH_Instruction_Unsafe_Directive` matches when the bytes contain an instruction marker (`agent instructions`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `copilot-instructions`, or `.cursor/rules/`) or a JSON object with a `description`. The English paraphrases are not in this rule. `larc_seraph.phrases` adds them when you use the CLI.
+- `SERAPH_Instruction_Hidden_Unicode` matches the tag and bidi bytes without requiring the file to name itself.
 - The git-hook rule matches a shebang plus the payload, and it skips a file that contains git's sample banner (`To enable this hook, rename this file`).
 - The two plist rules never used a path. They are only in `rules/yara`.
 
-That is narrower than the path-scoped rules in three places, and wider in one:
+That is narrower than the path-scoped rules in some places, and wider in others:
 
 - A bare `do not ask for confirmation` in a file named `AGENTS.md` matches the path-scoped rule and does not match Forge. The evasion case `bare_sentence_without_instruction_marker` is that gap.
-- A YAML or TOML MCP config whose first byte is not `{` matches the path-scoped rule when the path ends in `.yml`, `.yaml`, or `.toml`, and does not match Forge.
+- A YAML or TOML MCP config whose first byte is not `{` matches the path-scoped rule when the path ends in `.yml`, `.yaml`, or `.toml`. Forge matches it only for `SERAPH-YARA-016`, and only when the file starts with `mcpServers:` or `[mcp_servers` / `mcp_servers =`.
+- A bidi override or Unicode tag in a file that is not an instruction path matches Forge and not the path-scoped rule. `tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Notes.md` is that case. A real `CLAUDE.md` or `.cursor/rules/style.mdc` that never writes its own name matches both.
 - A hook payload in a file whose name ends in `.sample` is skipped by the path-scoped rule. Forge skips it only when the body contains the sample banner.
 - A hook payload that is not under `.git/hooks` or `.husky` is silent for the path-scoped rule and matches Forge. `tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/negative/loose/pre-commit` is that case.
 
-Checked against [YARA-Forge](https://github.com/YARAHQ/yara-forge) `qa/rule_qa.py`: the metadata it normalizes is present (`description`, `author`, `date`, `modified`, `reference`, `id`), plus `version` and ATT&CK in `attack_technique` and `attack_tactic`. No private rules, and no `elf`, `cuckoo`, or `magic` import. This pack does not set a forge `score` or a sample `hash`. Ids are `SERAPH-YARA-NNN`, not UUIDs. The repository is not in `yara-forge-config.yml` until a forge maintainer adds it. yaraQA's string-performance score is not run here.
+Checked against [YARA-Forge](https://github.com/YARAHQ/yara-forge) `qa/rule_qa.py`: the metadata it normalizes is present (`description`, `author`, `date`, `modified`, `reference`, `id`), plus `version` and ATT&CK in `attack_technique` and `attack_tactic`. No private rules, and no `elf`, `cuckoo`, or `magic` import. The meta `score` is the author's confidence from 0 to 100. It is not Forge's computed quality score, and this pack does not set a sample `hash`. Ids are `SERAPH-YARA-NNN`, not UUIDs. The repository is not in `yara-forge-config.yml` until a forge maintainer adds it. YARA-Forge's own README says the repositories it collects have been carefully selected, and "Adding unvetted sources is not supported." Submission comes after a maintainer adopts the pack. It is not a pull request this repository can open on its own.
+
+`yr fmt --check` runs in CI on `rules/yara`, `rules/path-scoped`, and `rules/src/yara`. yaraQA 0.11.0 findings that remain are listed in [VALIDATION.md](VALIDATION.md).
 
 ## CI and releases
 
-Pull requests and pushes to `main` run [`.github/workflows/test.yml`](.github/workflows/test.yml): pytest, `yarac --fail-on-warnings`, `yr compile`, `sigma check`, the rule-metadata check, the benign-corpus scan, a docs drift check, gitleaks on the git history, and a `Signed-off-by` check on pull request commits. Actions are pinned by commit SHA. The workflow token can read repository contents.
+Pull requests and pushes to `main` run [`.github/workflows/test.yml`](.github/workflows/test.yml): pytest, `yarac --fail-on-warnings`, `yr compile`, `yr fmt --check`, `sigma check`, the rule-metadata check, the benign-corpus scan, a docs drift check, gitleaks on the git history, and a `Signed-off-by` check on pull request commits. Actions are pinned by commit SHA. The workflow token can read repository contents.
 
 Pushing a tag `vX.Y.Z` runs those tests and then [`.github/workflows/release.yml`](.github/workflows/release.yml), which publishes the GitHub Release. The release job is the one token that can write contents. Tag the commit yourself after CI on `main` is green. The version in `pyproject.toml` has to match the tag, and `CHANGELOG.md` needs a section for it.
 

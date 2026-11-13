@@ -6,11 +6,11 @@
 
 ## Why this rule
 
-The command has to be npx or uvx inside an MCP server map. A bare name, or a scoped name, matches when the same file has no numeric version. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted because those scopes are how the vendors tell people to start their own servers. A community scope such as `@example/tool` matches. A `name@1.2.3` pin does not.
+The command has to be npx or uvx inside an MCP server map. A bare name, or a scoped name, matches when that package token has no numeric version. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted on the matched entry, not for the whole file. A community scope such as `@example/tool` matches. A `name@1.2.3` pin, or a stray `node@1.2` elsewhere in the file, does not clear a second unpinned package.
 
 ## Limitations
 
-The allowlist is a choice, not a proof of integrity. A package on an allowlisted scope can still be the wrong package. A file that also contains some other numeric `@1` suppresses the whole file, which is a gap when one server is pinned and another is not. Upstream READMEs that show `uvx mcp-server-time` match, and that hit is recorded in the benign-corpus report.
+The allowlist is a choice, not a proof of integrity. A package on an allowlisted scope can still be the wrong package. A pin has to be on the package token itself. Upstream READMEs that show `uvx mcp-server-time` match, and that hit is recorded in the benign-corpus report.
 
 ## Triage
 

@@ -15,7 +15,11 @@ YARA ships as two flavors generated from `rules/src/yara` by `python tools/build
 - `rules/yara` is the Forge flavor. Canonical rule names and `SERAPH-YARA-NNN` ids. It must compile with no externals. Do not write `filepath` in that tree.
 - `rules/path-scoped` is the path-scoped flavor. Names end in `_Path`, ids end in `-PATH`, and the rules read `filepath`. The CLI uses this set plus the plist rules.
 
-Pass `filepath` as the path is stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. The Forge flavor cannot see that string. MCP rules there require a leading `{`. Instruction rules there require an in-file marker such as `agent instructions` or `AGENTS.md`. The git-hook rule there skips git's sample banner instead of a `.sample` filename.
+Pass `filepath` as the path is stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. The Forge flavor cannot see that string. MCP rules there require a leading `{`, except `SERAPH-YARA-016`, which also accepts a file that starts with `mcpServers:` or `[mcp_servers`. `SERAPH_Instruction_Unsafe_Directive` on Forge requires an in-file marker such as `agent instructions` or `AGENTS.md`. `SERAPH_Instruction_Hidden_Unicode` on Forge does not: the tag and bidi bytes are the signal, because a real `CLAUDE.md` or `.cursor/rules` file often does not name itself. The git-hook rule there skips git's sample banner instead of a `.sample` filename.
+
+English confirmation-bypass sentences are not in the YARA rule. They live in `larc_seraph/phrases.py`. The CLI reports them under the same rule name. Keep that module and the YARA core in step when you change the phrase list.
+
+YARA descriptions start with `Detects `. Each YARA rule has `status` (`experimental` until there is fleet evidence) and `score` (an integer from 0 to 100). Names stay `SERAPH_*`. This pack does not add Neo23x0 category prefixes such as `MAL_` or `HKTL_`. Those prefixes classify malware families. The `SERAPH-YARA` / `SERAPH-SIGMA` id is the catalog key, and the three-digit number is unique across both families.
 
 Sigma rules use the normalized macOS field contract: `Image`, `CommandLine`, `ParentImage`, `TargetFilename`, `User`. They do not match raw Apple unified logs. Status stays `experimental` until there is fleet evidence. Do not widen a condition to make a failing fixture pass.
 
@@ -28,9 +32,11 @@ Every YARA rule has these meta strings:
 | `author` | Person responsible for the rule |
 | `date` | `YYYY-MM-DD`, first publication of the rule |
 | `modified` | `YYYY-MM-DD` |
-| `description` | What the rule matches |
+| `description` | Starts with `Detects ` |
 | `reference` | `https://` URL. Extra URLs use `reference_2`, `reference_3` |
-| `id` | `SERAPH-YARA-NNN`, unique in the pack |
+| `id` | `SERAPH-YARA-NNN`. The number is unique across YARA and Sigma |
+| `status` | `experimental`, `test`, `stable`, or `deprecated` |
+| `score` | Integer `0` through `100` |
 | `version` | Rule version, such as `1.1.0` |
 | `attack_technique` | ATT&CK technique ids, comma-separated: `T1059.004, T1105` |
 | `attack_tactic` | ATT&CK tactic names, comma-separated |

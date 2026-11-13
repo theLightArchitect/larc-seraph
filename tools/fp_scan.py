@@ -135,7 +135,12 @@ def scan(files: list[Path], flavor: str) -> tuple[dict[str, list[str]], float]:
     started = time.perf_counter()
     for path in files:
         try:
-            matched = yara_match(rules, path=str(path), use_filepath=flavor != "forge")
+            matched = yara_match(
+                rules,
+                path=str(path),
+                use_filepath=flavor != "forge",
+                phrases=False,
+            )
         except Exception:
             continue
         for hit in matched:

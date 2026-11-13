@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-008 · yara · <span class="sev sev-high">high</span></p>
 <h1>LaunchAgent plist runs a shell from a user-writable path</h1>
-<p class="deck">A launchd plist sets RunAtLoad and KeepAlive, either as a boolean or a dictionary, names a shell or interpreter, and passes a path under /Users, /tmp, /var/folders, /var/tmp, or /dev/shm.</p>
+<p class="deck">Detects a launchd plist that sets RunAtLoad and KeepAlive, either as a boolean or a dictionary, names a shell or interpreter, and passes a path under /Users, /tmp, /var/folders, /var/tmp, or /dev/shm.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -48,7 +48,7 @@
 <h2>False positives</h2>
 <ul><li>A developer LaunchAgent that reloads a personal script from the home directory on login. Homebrew prefixes and /usr/local are not in the writable set, so those jobs are not matched.</li></ul>
 <h2>References</h2>
-<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li><li><a href="https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html">https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html</a></li></ul>
+<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li><li><a href="https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html">https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html</a></li><li><a href="https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users">https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users</a></li></ul>
 <article class="prose">
 <h2 id="threat">Threat</h2>
 <p>A LaunchAgent with RunAtLoad starts at login. Boolean KeepAlive starts it again if it exits. Pointed at a shell and a script under the home directory, a temp directory, or a cache, that is a persistence job whose payload the user, or anything running as the user, can rewrite.</p>

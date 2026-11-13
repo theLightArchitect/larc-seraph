@@ -1,0 +1,33 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/negative/zsh_claude.json"
+  },
+  "record": {
+    "event_type": "exec",
+    "process": {
+      "executable": {
+        "path": "/bin/zsh"
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "exec": {
+        "args": [
+          "claude",
+          "--dangerously-skip-permissions",
+          "-p",
+          "inventory"
+        ],
+        "target": {
+          "executable": {
+            "path": "/usr/local/bin/claude"
+          }
+        }
+      }
+    }
+  }
+}

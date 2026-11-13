@@ -13,6 +13,7 @@ description: >
 references:
   - https://attack.mitre.org/techniques/T1543/001/
   - https://attack.mitre.org/techniques/T1543/004/
+  - https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users
 author: Kevin Francis Tan / Light Architects
 date: 2026-11-13
 modified: 2026-11-13

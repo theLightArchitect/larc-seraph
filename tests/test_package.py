@@ -62,4 +62,4 @@ def test_release_archive_contains_rules_and_licenses():
     sigma = [name for name in names if name.startswith(prefix + "rules/sigma/") and name.endswith(".yml")]
     assert len(yara) == 11
     assert len(scoped) == 9
-    assert len(sigma) == 6
+    assert len(sigma) == 7

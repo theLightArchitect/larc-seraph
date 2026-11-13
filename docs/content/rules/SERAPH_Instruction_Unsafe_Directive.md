@@ -6,7 +6,7 @@ Instruction files are policy. Two policies are worth a look without any further 
 
 ## Why this rule
 
-The scanner passes `filepath`. The rule only then looks at instruction names and at JSON tool descriptions. A confirmation phrase has to be an instruction: a Markdown table row, a `--flag` on the same line, an `ENV_VAR` token on the same line, or a backticked status label such as `` `bypass permissions on` `` does not count. `auto-approve all tools` also needs an imperative cue such as "you must". "Without asking the user for confirmation" counts, and so does "do not ask" and "never ask". A zero-width mark (U+200B, U+200C, U+200D, U+2060, or U+FEFF) may sit between those words. A bypass that only covers a low-risk call such as `rename_chat` does not count. An unconstrained "do not ask for confirmation", or the same sentence next to a shell command, a delete, or a secret, still does. A credential and a network sink have to share a command line or one fenced block. A token sent to its own vendor host, and the word webhookSecret, do not count. A credential file or a token sent to a different host still does.
+The YARA rule is a short core: a Cyrillic homoglyph of "do not ask", a credential path on the same line as curl or wget, and "ignore previous instructions" on the same line as a fetch. The English paraphrases live in `larc_seraph.phrases` and the CLI adds that hit under the same rule name. A YARA-only scanner, including YARA-Forge, does not see those sentences. The phrase module still ignores a Markdown table row, a heading, a known permission flag such as `--yolo`, and a bypass that only covers a read-only action. A zero-width mark may sit between the words. A token sent to its own vendor host does not count.
 
 ## Limitations
 

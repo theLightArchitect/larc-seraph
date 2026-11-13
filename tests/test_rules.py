@@ -52,10 +52,10 @@ def sigma_by_name():
 def test_pack_has_the_planned_rule_count():
     records = load_records()
     kinds = {record.kind for record in records}
-    assert len(records) == 17
+    assert len(records) == 18
     assert kinds == {"yara", "sigma"}
     assert sum(record.kind == "yara" for record in records) == 11
-    assert sum(record.kind == "sigma" for record in records) == 6
+    assert sum(record.kind == "sigma" for record in records) == 7
 
 
 def test_rule_flavors_match_the_source():
@@ -142,7 +142,15 @@ def test_every_rule_has_labelled_fixtures(yara_rules, sigma_by_name):
 FORGE_BROADER = {
     "SERAPH_Git_Hook_Suspicious_Exec": {
         "negative/loose/pre-commit",
-    }
+    },
+    # The portable hidden-unicode rule has no path. These files carry the bidi
+    # byte and are silent only because the path-scoped rule checks the name.
+    "SERAPH_Instruction_Hidden_Unicode": {
+        "negative/vendor/CHANGELOG.md",
+        "negative/case/Notes.md",
+        "negative/case-mixed/Readme.MD",
+        "negative/case-upper/README.md",
+    },
 }
 
 
@@ -227,6 +235,8 @@ def test_non_unicode_fixtures_are_ascii():
     allowed = {
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tags/AGENTS.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/bidi/CLAUDE.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/pillar/CLAUDE.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/pillar/.cursor/rules/style.mdc",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/flag/AGENTS.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/bin/AGENTS.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tool/mcp.json",
@@ -367,7 +377,7 @@ def _canon(name: str) -> str:
 def _instruction_hits(yara_rules, text: str) -> set[str]:
     return {
         _canon(match.rule)
-        for match in yara_rules.match(data=text.encode(), externals={"filepath": "/repo/SKILL.md"})
+        for match in yara_match(yara_rules, data=text.encode(), filepath="/repo/SKILL.md")
     }
 
 

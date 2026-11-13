@@ -1,0 +1,1 @@
+parent_process_path IN ("*/node", "*/npm", "*/npx") process_path IN ("*/claude", "*/gemini", "*/q", "*/codex") process IN ("*--dangerously-skip-permissions*", "*--yolo*", "*--trust-all-tools*")

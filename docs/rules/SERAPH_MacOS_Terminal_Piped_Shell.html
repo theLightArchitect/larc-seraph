@@ -34,7 +34,7 @@
   <main id="content">
     <div class="wrap">
 
-<p class="eyebrow">SERAPH-SIGMA-016 · sigma · <span class="sev sev-high">high</span></p>
+<p class="eyebrow">SERAPH-SIGMA-017 · sigma · <span class="sev sev-high">high</span></p>
 <h1>macOS terminal parent started a shell that pipes a fetch or a decode</h1>
 <p class="deck">A Terminal, iTerm, or login shell spawned a shell whose command line pipes curl, wget, or fetch into a shell, or calls exec or eval on a download or a base64 decode. This is the interactive-shell case. The agent-parent case is SERAPH-SIGMA-015. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
@@ -48,7 +48,7 @@
 <h2>False positives</h2>
 <ul><li>An operator who intentionally runs an upstream install line from Terminal. Read the URL before paging.</li><li>A shell whose parent path merely contains the substring Terminal.</li></ul>
 <h2>References</h2>
-<ul><li><a href="https://attack.mitre.org/techniques/T1059/004/">https://attack.mitre.org/techniques/T1059/004/</a></li><li><a href="https://attack.mitre.org/techniques/T1105/">https://attack.mitre.org/techniques/T1105/</a></li></ul>
+<ul><li><a href="https://attack.mitre.org/techniques/T1059/004/">https://attack.mitre.org/techniques/T1059/004/</a></li><li><a href="https://attack.mitre.org/techniques/T1105/">https://attack.mitre.org/techniques/T1105/</a></li><li><a href="https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users">https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users</a></li></ul>
 <article class="prose">
 <h2 id="threat">Threat</h2>
 <p>SERAPH-SIGMA-015 only looks at agent parents. The same line typed in Terminal, iTerm, or a login shell is the gap that rule left open. Installers still teach people to pipe a fetch into a shell, and an unattended session can do it too.</p>

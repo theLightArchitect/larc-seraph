@@ -6,7 +6,7 @@ Agent instruction files are read by a model and, usually, glanced at by a person
 
 ## Why this rule
 
-The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. It does not match zero-width space, word joiner, or emoji joiners. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The positive fixtures are labelled, one with a tag-encoded inert word and one with a single override at the end of the file so the heading stays readable.
+The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. It does not match zero-width space, word joiner, or emoji joiners. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The path-scoped rule still requires an instruction path or a JSON tool description. The Forge copy does not, because a real `CLAUDE.md` or `.cursor/rules/style.mdc` often never writes its own name. That copy is wider: a changelog that embeds a bidi override matches Forge and stays silent for the path-scoped rule.
 
 ## Limitations
 

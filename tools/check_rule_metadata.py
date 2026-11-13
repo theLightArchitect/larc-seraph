@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from larc_seraph.inventory import PATH_YARA_DIR, SIGMA_DIR, YARA_DIR, parse_yara_meta  # noqa: E402
+from larc_seraph.inventory import PATH_YARA_DIR, SIGMA_DIR, SIGMA_IDS, YARA_DIR, parse_yara_meta  # noqa: E402
 from larc_seraph.inventory import load_sigma_rules  # noqa: E402
 
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -30,9 +30,13 @@ _YARA_REQUIRED = (
     "reference",
     "id",
     "version",
+    "status",
+    "score",
     "attack_technique",
     "attack_tactic",
 )
+_YARA_STATUS = {"experimental", "test", "stable", "deprecated"}
+_SERAPH_ID = re.compile(r"^(SERAPH-(?:YARA|SIGMA)-(\d{3}))(?:-PATH)?$")
 _SIGMA_STATUS = {"experimental", "test", "stable", "deprecated", "unsupported"}
 _SIGMA_LEVEL = {"informational", "low", "medium", "high", "critical"}
 
@@ -44,7 +48,13 @@ def _nonempty(meta: dict[str, str], key: str) -> str | None:
     return None
 
 
-def _check_yara_file(path: Path, seen: dict[str, str], *, forge: bool) -> list[str]:
+def _check_yara_file(
+    path: Path,
+    seen: dict[str, str],
+    numbers: dict[str, str],
+    *,
+    forge: bool,
+) -> list[str]:
     problems: list[str] = []
     text = path.read_text(encoding="utf-8")
     if forge and "filepath" in text:
@@ -70,6 +80,15 @@ def _check_yara_file(path: Path, seen: dict[str, str], *, forge: bool) -> list[s
         problems.append(f"{name}: modified is not YYYY-MM-DD")
     if meta.get("reference") and not meta["reference"].startswith("https://"):
         problems.append(f"{name}: reference is not an https URL")
+    description = meta.get("description", "")
+    if description and not description.startswith("Detects "):
+        problems.append(f"{name}: description must start with 'Detects '")
+    status = meta.get("status", "")
+    if status and status not in _YARA_STATUS:
+        problems.append(f"{name}: unknown status {status}")
+    score = meta.get("score", "")
+    if score and not (score.isdigit() and 0 <= int(score) <= 100):
+        problems.append(f"{name}: score must be an integer from 0 to 100")
     technique = meta.get("attack_technique", "")
     if technique and not _TECHNIQUE.match(technique):
         problems.append(f"{name}: attack_technique is not ATT&CK technique ids")
@@ -84,22 +103,36 @@ def _check_yara_file(path: Path, seen: dict[str, str], *, forge: bool) -> list[s
         if rule_id in seen:
             problems.append(f"{name}: duplicate id {rule_id} (also {seen[rule_id]})")
         seen[rule_id] = name
+        note_seraph_number(rule_id, name, numbers, problems)
     return problems
 
 
-def check_yara() -> list[str]:
+def note_seraph_number(rule_id: str, label: str, numbers: dict[str, str], problems: list[str]) -> None:
+    """The three-digit suffix is unique across YARA and Sigma. A -PATH twin shares its number."""
+    matched = _SERAPH_ID.match(rule_id)
+    if not matched:
+        return
+    canonical, number = matched.group(1), matched.group(2)
+    previous = numbers.get(number)
+    if previous and previous != canonical:
+        problems.append(f"{label}: SERAPH number {number} is also {previous}")
+    else:
+        numbers[number] = canonical
+
+
+def check_yara(numbers: dict[str, str]) -> list[str]:
     problems: list[str] = []
     seen: dict[str, str] = {}
     paths = sorted(YARA_DIR.glob("*.yar"))
     if not paths:
         return ["rules/yara has no .yar files"]
     for path in paths:
-        problems.extend(_check_yara_file(path, seen, forge=True))
+        problems.extend(_check_yara_file(path, seen, numbers, forge=True))
     twins = sorted(PATH_YARA_DIR.glob("*.yar"))
     if len(twins) != 9:
         problems.append(f"rules/path-scoped has {len(twins)} rules, expected 9")
     for path in twins:
-        problems.extend(_check_yara_file(path, seen, forge=False))
+        problems.extend(_check_yara_file(path, seen, numbers, forge=False))
     return problems
 
 
@@ -111,7 +144,7 @@ def _logsource_value(logsource: object, field: str) -> str:
     return str(getattr(logsource, field, "") or "")
 
 
-def check_sigma() -> list[str]:
+def check_sigma(numbers: dict[str, str]) -> list[str]:
     problems: list[str] = []
     seen: dict[str, str] = {}
     if not list(SIGMA_DIR.glob("*.yml")):
@@ -149,11 +182,21 @@ def check_sigma() -> list[str]:
         positives = [item for item in (rule.falsepositives or []) if str(item).strip()]
         if not positives:
             problems.append(f"{label}: missing falsepositives")
+        header = path.read_text(encoding="utf-8").splitlines()[0]
+        comment_id = header.removeprefix("# ").strip()
+        catalog_id = SIGMA_IDS.get(rule.name or "", "")
+        if not catalog_id:
+            problems.append(f"{label}: no SERAPH sigma id in the catalog")
+        elif comment_id != catalog_id:
+            problems.append(f"{label}: header {comment_id} does not match catalog {catalog_id}")
+        else:
+            note_seraph_number(catalog_id, label, numbers, problems)
     return problems
 
 
 def main() -> int:
-    problems = check_yara() + check_sigma()
+    numbers: dict[str, str] = {}
+    problems = check_yara(numbers) + check_sigma(numbers)
     if problems:
         print("rule metadata check failed:", file=sys.stderr)
         for problem in problems:
