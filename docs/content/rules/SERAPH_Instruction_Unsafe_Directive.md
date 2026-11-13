@@ -6,7 +6,7 @@ Instruction files are policy. Two policies are worth a look without any further 
 
 ## Why this rule
 
-The YARA rule is a short core: a Cyrillic homoglyph of "do not ask", a credential path on the same line as curl or wget, and "ignore previous instructions" on the same line as a fetch. The English paraphrases live in `larc_seraph.phrases` and the CLI adds that hit under the same rule name. A YARA-only scanner, including YARA-Forge, does not see those sentences. The phrase module still ignores a Markdown table row, a heading, a known permission flag such as `--yolo`, and a bypass that only covers a read-only action. A zero-width mark may sit between the words. A token sent to its own vendor host does not count.
+The sentence list lives in `larc_seraph.phrases`. `tools/build_phrase_rules.py` writes those sentences into this YARA rule, so a YARA-only scanner and the CLI match the same fixtures. The rule ignores a Markdown table row, a heading, a known permission flag such as `--yolo`, and a bypass that only covers a read-only action. A zero-width mark may sit between the words. A token sent to its own vendor host does not count.
 
 ## Limitations
 

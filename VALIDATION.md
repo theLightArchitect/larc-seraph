@@ -4,7 +4,7 @@ larc-seraph v0.1.9. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-
 
 This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
 
-Detection logic did change in v0.1.9. `SERAPH-YARA-016` no longer lets a pin or an allowlisted scope anywhere in the file clear a second unpinned package. The Forge hidden-unicode rule no longer requires the file to mention its own name. English confirmation-bypass sentences moved from the YARA rule into `larc_seraph/phrases.py`. `SERAPH-SIGMA-018` is new. The corpus numbers below are from a local `tools/fp_scan.py` run after those changes (15615 files, 0 Forge hits, 0 path-scoped hits). They are not a claim that a GitHub Actions run of this commit has finished.
+Detection logic did change in v0.1.9. `SERAPH-YARA-016` no longer lets a pin or an allowlisted scope anywhere in the file clear a second unpinned package. The Forge hidden-unicode rule no longer requires the file to mention its own name. English confirmation-bypass sentences are generated into the YARA rule from `larc_seraph/phrases.py`, and YARA and the CLI now have parity on the instruction fixtures. `SERAPH-SIGMA-018` is new. The corpus numbers below are from a local `tools/fp_scan.py` run. They are not a claim that a GitHub Actions run of a later commit has finished until that run is linked here.
 
 GitHub Actions runs that already finished, on earlier commits of this pull request:
 
@@ -153,9 +153,9 @@ Sigma tags are only the ATT&CK namespace. ATLAS ids are references and this tabl
 
 Joining eslogger args with spaces drops quoting. A command whose only copy of a pipe character lived inside quotes that the collector already split can still match, which is what the samples do. A collector that drops args entirely will not fire command-line rules.
 
-## Instruction rule split
+## Instruction rule parity
 
-`rules/src/yara/instruction_unsafe_directive.yar` was 952 lines. It is 59 lines in the source and 68 lines in the Forge copy. `larc_seraph/phrases.py` is 152 lines and holds the English confirmation-bypass checks. On the positive fixtures, 4 still match the YARA core (homoglyph, same-line credential fetch, ignore-previous-instructions next to a fetch) and 20 match only through the Python scanner. Negatives stayed silent under pytest. A YARA-only scanner, including YARA-Forge, misses those 20.
+`larc_seraph/phrases.py` is the sentence list. `tools/build_phrase_rules.py` writes `rules/src/yara/instruction_unsafe_directive.yar`, and the flavor builder copies it into `rules/yara` and `rules/path-scoped`. YARA and the CLI match the same positive instruction fixtures, including the confirmation-bypass sentences and the concealment, recipient, sidenote, auto-approve, pipe, inventory, and prompt-injection signals added with them. Both stay silent on the negatives. A `curl | sh` line in an instruction file matches unless the URL is a known installer host (`github.com`, `githubusercontent.com`, `google.com`, `antigravity.google`, and the other hosts named in `INSTALLER_HOST_PATTERN`). A zero-width mark may sit between words. Forge still requires an in-file instruction marker. The path-scoped rule still uses the path. The local corpus after this generation is 15615 files, 0 Forge hits, 0 path-scoped hits.
 
 ## yaraQA 0.11.0
 

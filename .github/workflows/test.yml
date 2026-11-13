@@ -106,6 +106,8 @@ jobs:
             echo "Forge rules must not reference filepath" >&2
             exit 1
           fi
+          python tools/build_phrase_rules.py --check
+          python tools/build_rule_flavors.py --check
           yr fmt --check rules/yara rules/path-scoped rules/src/yara
           yarac --fail-on-warnings --strict-escape rules/yara/*.yar /tmp/larc-seraph-forge.yac
           yr compile rules/yara -o /tmp/larc-seraph-forge.yarc

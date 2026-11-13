@@ -160,6 +160,34 @@ def _path_rule_name(record) -> str:
     return f"{record.name}_Path"
 
 
+def test_instruction_fixtures_match_without_the_phrase_module(yara_rules, forge_rules):
+    """YARA alone has to agree with the CLI on this rule's fixtures."""
+    rule = "SERAPH_Instruction_Unsafe_Directive"
+    positive, negative = fixture_dirs("yara", rule)
+    rows = []
+    for kind, folder in (("positive", positive), ("negative", negative)):
+        for path in sorted(item for item in folder.rglob("*") if item.is_file()):
+            cli_path = {match.rule for match in yara_match(yara_rules, path=str(path), phrases=True)}
+            yara_path = {match.rule for match in yara_match(yara_rules, path=str(path), phrases=False)}
+            cli_forge = {match.rule for match in yara_match(forge_rules, path=str(path), use_filepath=False, phrases=True)}
+            yara_forge = {match.rule for match in yara_match(forge_rules, path=str(path), use_filepath=False, phrases=False)}
+            path_name = f"{rule}_Path"
+            cli_hit = path_name in cli_path
+            yara_hit = path_name in yara_path
+            forge_cli = rule in cli_forge
+            forge_yara = rule in yara_forge
+            rows.append((kind, path.relative_to(folder.parent).as_posix(), yara_hit, cli_hit, forge_yara, forge_cli))
+            if kind == "positive":
+                assert yara_hit and cli_hit, (path, yara_hit, cli_hit)
+                assert forge_yara and forge_cli, (path, forge_yara, forge_cli)
+            else:
+                assert not yara_hit and not cli_hit, (path, yara_path, cli_path)
+                relative = path.relative_to(folder.parent).as_posix()
+                if relative not in FORGE_BROADER.get(rule, set()):
+                    assert not forge_yara and not forge_cli, (path, yara_forge, cli_forge)
+    assert rows
+
+
 def test_yara_fixtures_match_only_the_documented_rule(yara_rules):
     for record in load_yara_records():
         expected = _path_rule_name(record)

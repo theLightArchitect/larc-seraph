@@ -151,7 +151,7 @@ These are the misses recorded in [validation/evasion-matrix.yml](validation/evas
 - A git hook with no shebang.
 - Shell startup files the path list does not name, such as Fish `config.fish`. `authorized_keys.bak` is not in the path list. A project file that still ends in `.zshrc` does match.
 - A plist that is not under LaunchAgents or LaunchDaemons.
-- English confirmation-bypass sentences are matched by `larc_seraph.phrases` inside the CLI. The YARA core for `SERAPH_Instruction_Unsafe_Directive` keeps the homoglyph, the same-line credential fetch, and "ignore previous instructions" next to a fetch. A YARA-only scanner misses the paraphrases.
+- English confirmation-bypass sentences are generated into `SERAPH_Instruction_Unsafe_Directive` from `larc_seraph.phrases`. A YARA-only scanner and the CLI match the same instruction fixtures.
 - osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire. A piped shell whose parent is launchd is left to the plist rules.
 - The Forge flavor misses a YAML or TOML MCP config that does not start with `{`, and a confirmation sentence whose only instruction signal is the file name. The path-scoped rules still catch those. Forge matches a hook payload that is not under `.git/hooks` or `.husky`. The path-scoped rule does not.
 - The benign corpus is a sample of public trees, not every workstation. The Mac scans are summarized in VALIDATION.md.
@@ -181,7 +181,7 @@ Point Forge, or any scanner that cannot set externals, at `rules/yara` only. Do 
 What the Forge flavor uses instead of the path:
 
 - MCP rules other than `SERAPH-YARA-016` match a file whose first byte is `{` and that contains an `mcpServers` object. Markdown, and YAML or TOML that does not start with `{`, do not match. `SERAPH-YARA-016` also matches a file that starts with `mcpServers:` or `[mcp_servers` / `mcp_servers =`.
-- `SERAPH_Instruction_Unsafe_Directive` matches when the bytes contain an instruction marker (`agent instructions`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `copilot-instructions`, or `.cursor/rules/`) or a JSON object with a `description`. The English paraphrases are not in this rule. `larc_seraph.phrases` adds them when you use the CLI.
+- `SERAPH_Instruction_Unsafe_Directive` matches when the bytes contain an instruction marker (`agent instructions`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `copilot-instructions`, or `.cursor/rules/`) or a JSON object with a `description`, and the sentence list generated from `larc_seraph.phrases`.
 - `SERAPH_Instruction_Hidden_Unicode` matches the tag and bidi bytes without requiring the file to name itself.
 - The git-hook rule matches a shebang plus the payload, and it skips a file that contains git's sample banner (`To enable this hook, rename this file`).
 - The two plist rules never used a path. They are only in `rules/yara`.

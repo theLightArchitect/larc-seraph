@@ -110,10 +110,10 @@ _SCOPES = {
         "version does not match. @latest is SERAPH-YARA-004."
     ),
     "instruction_unsafe_directive.yar": (
-        "Text that tells an agent to skip confirmation before a high-risk action, or sends a credential "
-        "to a host that is not that credential's vendor, and that contains an instruction marker or a JSON "
-        "description. A Markdown heading, a table row, or a known permission flag such as --yolo does not match. "
-        "A token sent to its own vendor host does not match."
+        "Text with an instruction marker or a JSON description that asks to skip confirmation, "
+        "hides that sentence with a Cyrillic o, posts a credential path, or sends a listed token "
+        "to a non-vendor host. The sentence list is generated from larc_seraph.phrases. "
+        "A heading, a table row, a status label, or a known permission flag does not match."
     ),
 }
 
@@ -295,10 +295,20 @@ def check(output: dict[str, str]) -> int:
     return 0
 
 
+def _phrases(check: bool) -> int:
+    command = [sys.executable, str(ROOT / "tools" / "build_phrase_rules.py")]
+    if check:
+        command.append("--check")
+    return subprocess.run(command, check=False).returncode
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build Forge and path-scoped YARA flavors.")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
+    phrase_status = _phrases(args.check)
+    if phrase_status != 0:
+        return phrase_status
     output = build()
     if args.check:
         return check(output)

@@ -17,7 +17,7 @@ YARA ships as two flavors generated from `rules/src/yara` by `python tools/build
 
 Pass `filepath` as the path is stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. The Forge flavor cannot see that string. MCP rules there require a leading `{`, except `SERAPH-YARA-016`, which also accepts a file that starts with `mcpServers:` or `[mcp_servers`. `SERAPH_Instruction_Unsafe_Directive` on Forge requires an in-file marker such as `agent instructions` or `AGENTS.md`. `SERAPH_Instruction_Hidden_Unicode` on Forge does not: the tag and bidi bytes are the signal, because a real `CLAUDE.md` or `.cursor/rules` file often does not name itself. The git-hook rule there skips git's sample banner instead of a `.sample` filename.
 
-English confirmation-bypass sentences are not in the YARA rule. They live in `larc_seraph/phrases.py`. The CLI reports them under the same rule name. Keep that module and the YARA core in step when you change the phrase list.
+English confirmation-bypass sentences live in `larc_seraph/phrases.py`. `python tools/build_phrase_rules.py` writes them into the YARA rule, and `python tools/build_rule_flavors.py` writes both flavors. CI fails if either file drifts. A positive instruction fixture that the CLI matches and YARA does not also fails CI.
 
 YARA descriptions start with `Detects `. Each YARA rule has `status` (`experimental` until there is fleet evidence) and `score` (an integer from 0 to 100). Names stay `SERAPH_*`. This pack does not add Neo23x0 category prefixes such as `MAL_` or `HKTL_`. Those prefixes classify malware families. The `SERAPH-YARA` / `SERAPH-SIGMA` id is the catalog key, and the three-digit number is unique across both families.
 
