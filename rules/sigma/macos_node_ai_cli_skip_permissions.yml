@@ -6,10 +6,12 @@ name: SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions
 id: e09274cd-20af-442f-b61e-784182327a97
 status: experimental
 description: >
-  Detects node, npm, or npx spawning claude, gemini, q, or codex with
-  --dangerously-skip-permissions, --yolo, or --trust-all-tools. The August 2025
-  Nx s1ngularity payload did this for claude, gemini, and q. An interactive
-  shell parent does not match. Field names are the larc-seraph normalized macOS contract.
+  Detects a JavaScript runtime or package manager starting claude, gemini, q, or
+  codex with a flag that turns permission prompts off. The August 2025 Nx
+  s1ngularity payload did this for claude, gemini, and q. gemini and codex are
+  node scripts, so the executed image is node and the CLI is the script path in
+  the command line. An interactive shell parent does not match. Field names are
+  the larc-seraph normalized macOS contract.
 references:
   - https://attack.mitre.org/techniques/T1059/
   - https://attack.mitre.org/techniques/T1195/002/
@@ -30,26 +32,50 @@ tags:
 logsource:
   product: macos
   category: process_creation
-  definition: larc-seraph normalized ESF exec event. ParentImage is node, npm, or npx. Image is the AI CLI.
+  definition: larc-seraph normalized ESF exec event. ParentImage is the runtime that spawned the CLI. The CLI is named by Image, or by the script path in CommandLine.
 detection:
   selection_parent:
     ParentImage|endswith:
       - '/node'
+      - '/nodejs'
       - '/npm'
       - '/npx'
-  selection_cli:
+      - '/pnpm'
+      - '/yarn'
+      - '/bun'
+      - '/deno'
+      - '/bin/sh'
+  selection_cli_image:
     Image|endswith:
       - '/claude'
       - '/gemini'
       - '/q'
       - '/codex'
+  selection_cli_versioned:
+    Image|contains: '/claude/versions/'
+  selection_cli_script:
+    CommandLine|contains:
+      - '/claude '
+      - '/gemini '
+      - '/codex '
+      - '/claude-code/cli.js'
   selection_flag:
     CommandLine|contains:
       - '--dangerously-skip-permissions'
+      - '--permission-mode bypassPermissions'
+      - '--permission-mode=bypassPermissions'
       - '--yolo'
+      - '--approval-mode yolo'
+      - '--approval-mode=yolo'
+      - '--dangerously-bypass-approvals-and-sandbox'
       - '--trust-all-tools'
-  condition: selection_parent and selection_cli and selection_flag
+  selection_gemini_short:
+    CommandLine|contains|all:
+      - 'gemini '
+      - ' -y'
+  condition: selection_parent and 1 of selection_cli_* and (selection_flag or selection_gemini_short)
 falsepositives:
-  - A developer who launches one of these CLIs from a node or npm script with the skip flag on purpose. Read the command line.
-  - The same flag from Terminal, iTerm, or zsh does not match. The parent has to be node, npm, or npx.
+  - A developer who launches one of these CLIs from a node, npm, bun, or deno script with the flag on purpose. Read the command line.
+  - A /bin/sh script that starts the CLI with the flag. /bin/sh is listed because child_process.exec puts it between node and the CLI.
+  - The same flag from Terminal, iTerm, zsh, or bash does not match.
 level: high

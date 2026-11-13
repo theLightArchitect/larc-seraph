@@ -1,0 +1,22 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/positive/node_codex_script.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "process": {
+      "executable": "/usr/local/bin/node",
+      "command_line": "node /opt/homebrew/bin/codex exec --dangerously-bypass-approvals-and-sandbox inventory",
+      "parent": {
+        "executable": "/usr/local/bin/node"
+      }
+    },
+    "user": {
+      "name": "dev"
+    }
+  }
+}

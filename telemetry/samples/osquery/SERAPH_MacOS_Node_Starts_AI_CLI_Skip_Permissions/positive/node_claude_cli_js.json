@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/positive/node_claude_cli_js.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "path": "/usr/local/bin/node",
+    "cmdline": "node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js --dangerously-skip-permissions -p inventory",
+    "username": "dev",
+    "parent_path": "/usr/local/bin/node"
+  }
+}

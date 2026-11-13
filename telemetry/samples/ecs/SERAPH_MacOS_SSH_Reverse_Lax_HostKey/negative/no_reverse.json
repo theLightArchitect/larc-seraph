@@ -4,7 +4,8 @@
     "schema": "ecs",
     "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey",
     "expected": "no-match",
-    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/negative/no_reverse.json"
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/negative/no_reverse.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
   },
   "record": {
     "process": {

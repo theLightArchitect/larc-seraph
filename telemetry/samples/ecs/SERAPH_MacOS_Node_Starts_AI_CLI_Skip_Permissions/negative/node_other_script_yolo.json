@@ -1,0 +1,22 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/negative/node_other_script_yolo.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "process": {
+      "executable": "/usr/local/bin/node",
+      "command_line": "node build.js --yolo",
+      "parent": {
+        "executable": "/usr/local/bin/node"
+      }
+    },
+    "user": {
+      "name": "dev"
+    }
+  }
+}

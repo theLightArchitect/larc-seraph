@@ -1,0 +1,12 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions"
+  },
+  "Image": "/usr/local/bin/node",
+  "ParentImage": "/usr/local/bin/node",
+  "CommandLine": "node /opt/homebrew/bin/gemini --yolo -p inventory",
+  "User": "dev"
+}
