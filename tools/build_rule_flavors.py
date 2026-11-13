@@ -40,10 +40,11 @@ _INSTRUCTION_BLOCK = re.compile(
     r"\)",
     re.S,
 )
+_BINARY_GUARD = re.compile(r"[ \t]*not for 8 i in \(0\.\.math\.min\(1023, filesize - 1\)\):[^\n]*\) and\n")
 _GIT_SAMPLE = re.compile(r"[ \t]*not filepath matches /\\\.sample\$/i and\n")
 _GIT_PATH = re.compile(
-    r"[ \t]*\(filepath matches /\\\.git\\/hooks\\/\[\^\\/\]\+\$/i or "
-    r"filepath matches /\\\.husky\\/\[\^\\/\]\+\$/i\) and\n"
+    r"(?:[ \t]*//[^\n]*core\.hooksPath[^\n]*\n)?"
+    r"[ \t]*\(filepath matches /\\\.git\\/hooks\\/[^\n]*\) and\n"
 )
 
 _MCP_GATE = """(
@@ -101,11 +102,13 @@ _SCOPES = {
     "instruction_hidden_unicode.yar": (
         "Text with a Unicode tag or a bidi override (LRE, RLE, LRO, RLO). "
         "The portable rule does not require the file to mention its own name, because a real "
-        "CLAUDE.md or .cursor/rules file often does not. Subdivision-flag emoji and binaries do not match."
+        "CLAUDE.md or .cursor/rules file often does not. The England, Scotland, and Wales flag emoji do not match. "
+        "A file whose first kilobyte holds eight or more control bytes is treated as binary and skipped."
     ),
     "mcp_unpinned_package.yar": (
-        "JSON that starts with {, YAML that starts with mcpServers:, or TOML that starts with "
-        "[mcp_servers or mcp_servers =. Markdown docs do not match. Allowlisted scopes are "
+        "A JSON object at the start of the file (after an optional BOM or blank space), "
+        "YAML that starts with mcpServers:, or TOML that starts with [mcp_servers or mcp_servers =. "
+        "Markdown docs do not match. Allowlisted scopes are "
         "@modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a "
         "version does not match. @latest is SERAPH-YARA-004."
     ),
@@ -148,8 +151,9 @@ def _replace_scope(name: str, text: str) -> str:
         def repl(match: re.Match[str]) -> str:
             current = match.group(1)
             extra = (
-                " The Forge rule also requires the first byte to be {. "
-                "YAML or TOML that does not start with {, and Markdown, do not match."
+                " The Forge rule has no path. It needs a JSON object at the start of the file "
+                "(after an optional BOM or blank space), a top-level mcpServers: key, "
+                "or an mcp_servers table. A JSONC file that opens with a comment, and Markdown, do not match."
             )
             if extra.strip() in current:
                 return match.group(0)
@@ -183,9 +187,10 @@ def forge_text(name: str, text: str) -> str:
         match = _MCP_BLOCK.search(updated)
         if not match:
             raise SystemExit(f"{name}: MCP path gate not found")
-        gate = "uint8(0) == 0x7B"
-        if "$start_yaml" in match.group("empty"):
-            gate = "uint8(0) == 0x7B or $start_yaml or $start_toml"
+        # The no-path branch of the source gate is the whole Forge gate.
+        gate = match.group("empty").strip()
+        if gate.startswith("(") and gate.endswith(")"):
+            gate = gate[1:-1]
         updated = _MCP_BLOCK.sub(f"(\n      {gate}\n    )", updated, count=1)
     elif name.startswith("instruction_"):
         if not _INSTRUCTION_BLOCK.search(updated):
@@ -238,6 +243,11 @@ def path_text(text: str) -> str:
         updated,
         "Path-scoped variant. It requires the filepath external and is not for YARA-Forge.",
     )
+    # The path is the evidence that this is an instruction file, so the binary
+    # guard is dropped. A leading MZ or a few control bytes cannot switch the rule off.
+    updated, dropped = _BINARY_GUARD.subn("", updated, count=1)
+    if dropped and "math." not in updated:
+        updated = updated.replace('import "math"\n\n', "", 1)
     return updated
 
 

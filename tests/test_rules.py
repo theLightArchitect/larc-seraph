@@ -52,10 +52,10 @@ def sigma_by_name():
 def test_pack_has_the_planned_rule_count():
     records = load_records()
     kinds = {record.kind for record in records}
-    assert len(records) == 18
+    assert len(records) == 17
     assert kinds == {"yara", "sigma"}
     assert sum(record.kind == "yara" for record in records) == 11
-    assert sum(record.kind == "sigma" for record in records) == 7
+    assert sum(record.kind == "sigma" for record in records) == 6
 
 
 def test_rule_flavors_match_the_source():
@@ -266,7 +266,13 @@ def test_non_unicode_fixtures_are_ascii():
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/pillar/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/pillar/.cursor/rules/style.mdc",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/flag/AGENTS.md",
-        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/bin/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/bin/blob.bin",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/flags/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/gate-nul/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/gate-mz/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/flags-first/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/chunked/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/other-flag/AGENTS.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tool/mcp.json",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/vendor/CHANGELOG.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/case/SKILL.md",

@@ -15,7 +15,7 @@ rule SERAPH_MCP_Encoded_Exec {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.3.0"
+    version          = "1.4.0"
     severity         = "high"
     status           = "experimental"
     score            = "75"
@@ -25,7 +25,7 @@ rule SERAPH_MCP_Encoded_Exec {
     reference        = "https://attack.mitre.org/techniques/T1027/"
     reference_2      = "https://attack.mitre.org/techniques/T1140/"
     reference_3      = "https://attack.mitre.org/techniques/T1059/004/"
-    scope            = "MCP client configs that contain an mcpServers object. A long token alone is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule also requires the first byte to be {. YAML or TOML that does not start with {, and Markdown, do not match."
+    scope            = "MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. A long token alone is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule has no path. It needs a JSON object at the start of the file (after an optional BOM or blank space), a top-level mcpServers: key, or an mcp_servers table. A JSONC file that opens with a comment, and Markdown, do not match."
     false_positives  = "A server whose documented command line legitimately shells out through a decode step. Rare in MCP configs. The rule does not flag a bare base64 blob."
     license          = "Detection Rule License 1.1"
 
@@ -33,6 +33,17 @@ rule SERAPH_MCP_Encoded_Exec {
     $mcp        = "\"mcpServers\"" ascii
     $mcp_yaml   = /mcpServers[ \t]*:/ ascii
     $mcp_toml   = /mcp_servers[ \t]*=/ ascii
+    $mcp_table  = /\[mcp_servers[.\]]/ ascii
+    // VS Code writes "servers" and Zed writes "context_servers". "servers" is a
+    // common key, so it only counts beside a command key.
+    $mcp_vscode = /"servers"[ \t\r\n]*:[ \t\r\n]*\{/ ascii
+    $mcp_zed    = "\"context_servers\"" ascii
+    $cmd_key    = /(["' \t\n{,]|^)command["']?[ \t]*[:=]/ ascii
+    // With no path to consult, the file has to be text (fewer than eight control bytes in
+    // the first kilobyte), and the condition accepts a JSON object after an optional
+    // BOM and blank space (a leading comment is not accepted, because source files start that way), a top-level mcpServers: key, or an mcp_servers table.
+    $yaml_top   = /(^|\n)mcpServers[ \t]*:/ ascii
+    $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
     $dec_sh     = /base64[ \t]+(-[dD]|--decode)\b[^\n]{0,80}\|\s*(ba)?sh\b/ nocase ascii
     $dec_zsh    = /base64[ \t]+(-[dD]|--decode)\b[^\n]{0,80}\|\s*zsh\b/ nocase ascii
     $py_fwd     = /b64decode.{0,80}(eval|exec)\s*\(/s nocase ascii
@@ -42,6 +53,12 @@ rule SERAPH_MCP_Encoded_Exec {
 
   condition:
     (
-      uint8(0) == 0x7B
-    ) and ($mcp or $mcp_yaml or $mcp_toml) and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev, $urllib, $urllib_rev)
+      not for 8 i in (0..1023): (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27)) and (for any i in (0..4095): (
+          uint8(i) == 0x7B and
+          for all j in (0..i): (
+            j == i or uint8(j) == 0x20 or uint8(j) == 0x09 or uint8(j) == 0x0A or uint8(j) == 0x0D or
+            uint8(j) == 0xEF or uint8(j) == 0xBB or uint8(j) == 0xBF
+          )
+        ) or $yaml_top or $toml_top)
+    ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev, $urllib, $urllib_rev)
 }

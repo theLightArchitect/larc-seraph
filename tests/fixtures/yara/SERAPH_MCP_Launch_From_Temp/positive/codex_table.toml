@@ -1,0 +1,3 @@
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: match. inert.
+[mcp_servers.demo]
+command = "/tmp/seraph-noop"

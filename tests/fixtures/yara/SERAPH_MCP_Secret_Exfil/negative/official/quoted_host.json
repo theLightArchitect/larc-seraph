@@ -1,0 +1,17 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MCP_Secret_Exfil"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "curl --silent -H \"Authorization: Bearer $GITHUB_TOKEN\" \"https://api.github.com\""
+      ]
+    }
+  }
+}

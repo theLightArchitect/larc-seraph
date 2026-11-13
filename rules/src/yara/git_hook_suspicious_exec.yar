@@ -15,11 +15,11 @@ rule SERAPH_Git_Hook_Suspicious_Exec {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.3.0"
+    version          = "1.4.0"
     severity         = "high"
     status           = "experimental"
     score            = "75"
-    description      = "Detects a script under .git/hooks or .husky that pipes a fetch into a shell, decodes into a shell, or posts a credential path. Sample hooks are excluded."
+    description      = "Detects a script under .git/hooks, .githooks, or .husky that pipes a fetch into a shell, decodes into a shell, or posts a credential path. Sample hooks are excluded."
     attack_technique = "T1059.004, T1546"
     attack_tactic    = "execution, persistence"
     reference        = "https://attack.mitre.org/techniques/T1059/004/"
@@ -40,6 +40,7 @@ rule SERAPH_Git_Hook_Suspicious_Exec {
 
   condition:
     not filepath matches /\.sample$/i and
-    (filepath matches /\.git\/hooks\/[^\/]+$/i or filepath matches /\.husky\/[^\/]+$/i) and
+    // .githooks is the usual core.hooksPath name. Husky 9 keeps its hooks one level down, in .husky/_/.
+    (filepath matches /\.git\/hooks\/[^\/]+$/i or filepath matches /\.githooks\/[^\/]+$/i or filepath matches /\.husky\/([^\/]+\/)*[^\/]+$/i) and
     $shebang and ($pipe or $pipe_zsh or $b64 or ($net and $persist))
 }

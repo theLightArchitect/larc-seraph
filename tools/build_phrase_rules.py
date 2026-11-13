@@ -19,13 +19,14 @@ sys.path.insert(0, str(ROOT))
 
 from larc_seraph.phrases import (  # noqa: E402
     ABSOLUTE_VETO_PATTERNS,
+    BINARY_GUARD_YARA,
     CONFIRM_PATTERNS,
     CRED_FORWARD,
     CRED_REVERSE,
     HIGH_PATTERNS,
     HIGH_WORD_PATTERN,
     HOMO_HEX,
-    INSTALLER_URLS,
+    INSTALLER_PIPE_PATTERN,
     INJECT_FORWARD,
     INJECT_REVERSE,
     LOW_PATTERN,
@@ -53,20 +54,19 @@ def to_yara(pattern: str) -> str:
     """Translate one phrase-module regex into a YARA regex body."""
     text = pattern.replace("(?:", "(")
     text = re.sub(r"(?<!\\)\.", r"[^\\n]", text)
+    text = text.replace(r"\s{", _GAP + "{")
     text = text.replace(r"\s+", _GAP + "+")
     text = text.replace(r"\s*", _GAP + "*")
     text = text.replace(r"\s", _GAP + "+")
     text = text.replace(r"\w", "[A-Za-z0-9_]")
     text = re.sub(r"(?<!\\)/", r"\\/", text)
+    # YARA's strict-escape check rejects an escaped double quote.
+    text = text.replace('\\"', '"')
     return text
 
 
-def _installer_regex() -> str:
-    """Exact URL prefixes. The character after the prefix ends the URL."""
-    choices = []
-    for url in INSTALLER_URLS:
-        choices.append(to_yara(re.escape(url)) + r"(\/|[ \t?]|$)")
-    return "(" + "|".join(choices) + ")"
+# The YARA spelling of phrases.HOST_END_PATTERN. A vendor host has to end here.
+_HOST_END = r"""(\/|\?|#|[ \t\r\n]|$|\\?["')>`]([ \t\r\n,;\]}]|$))"""
 
 
 def _line(body: str) -> str:
@@ -80,58 +80,51 @@ def _line(body: str) -> str:
     )
 
 
+# yara-x warns on a loop over (1..#string), and the pack compiles with no
+# warnings. Inner checks therefore use the at / in operators and match counts,
+# which have no bound. Only the outermost loop keeps one, and it is large.
+_OUTER = 256
+
+
+def _span(name: str) -> str:
+    return f"(@{name}[i]..@{name}[i] + !{name}[i] - 1)"
+
+
+def _around(name: str, reach: int) -> str:
+    return f"(math.max(0, @{name}[i] - {reach})..@{name}[i] + {reach})"
+
+
 def _occurrence(name: str, *, needs_high: bool) -> str:
-    window = (
-        f"@soft[j] >= @{name}[i] and @soft[j] < @{name}[i] + !{name}[i]"
-    )
-    high = f"@high[j] >= @{name}[i] and @high[j] < @{name}[i] + !{name}[i]"
-    bad = f"@bad[j] >= @{name}[i] and @bad[j] < @{name}[i] + !{name}[i]"
-    text = f"""for any i in (1..8): (
+    span = _span(name)
+    text = f"""for any i in (1..{_OUTER}): (
         i <= #{name} and
-        not for any j in (1..8): (
-          j <= #bad and {bad}
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and {window}
-          ) and not for any j in (1..8): (
-            j <= #high and {high}
-          )
-        )"""
+        not $bad in {span} and
+        not ($soft in {span} and not $high in {span})"""
     if needs_high:
         text += f""" and
-        for any j in (1..8): (
-          j <= #high and {high}
-        )"""
+        $high in {span}"""
     return text + "\n      )"
 
 
-def _token_block(name: str, vendor: str) -> str:
-    return f"""for any i in (1..8): (
+def _token_block(name: str, vendor: str | None) -> str:
+    near = _around(name, 200)
+    if vendor is None:
+        foreign = f"$url in {near}"
+    else:
+        # Every vendor URL is also a $url match at the same offset, so more URLs
+        # than vendor URLs in the window means one of them is foreign.
+        foreign = f"#url in {near} > #{vendor} in {near}"
+    return f"""for any i in (1..{_OUTER}): (
         i <= #{name} and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @{name}[i] and
-          @{name}[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #{vendor} and @{vendor}[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @{name}[i] and
-            @{name}[i] + 200 >= @fetch[f]
-          )
-        )
+        {foreign} and
+        $fetch in {near}
       )"""
 
 
 def _near(left: str, right: str) -> str:
-    return f"""for any i in (1..8): (
+    return f"""for any i in (1..{_OUTER}): (
         i <= #{left} and
-        for any j in (1..8): (
-          j <= #{right} and
-          @{right}[j] + 400 >= @{left}[i] and
-          @{left}[i] + 400 >= @{right}[j]
-        )
+        ${right} in {_around(left, 400)}
       )"""
 
 
@@ -148,7 +141,7 @@ def render() -> str:
         "    $bad              = /"
         + "|".join(to_yara(item) for item in ABSOLUTE_VETO_PATTERNS)
         + "/ nocase ascii",
-        "    $url              = /https?:\\/\\/[A-Za-z0-9.-]{1,80}\\.[A-Za-z]{2,}/ nocase ascii",
+        "    $url              = /https?:\\/\\/[^ \\t\\r\\n\"'\\/?#\\\\]{1,255}/ nocase ascii",
         "    $fetch            = /(curl |wget )/ nocase ascii",
     ]
     confirm_names: list[str] = []
@@ -161,32 +154,23 @@ def render() -> str:
         name = f"h{index}"
         high_names.append(name)
         strings.append(f"    ${name} = {_line(to_yara(pattern))}")
-    hosts: dict[str, str] = {}
-    for token in TOKENS:
-        host = VENDOR_HOST[token]
-        hosts.setdefault(host, token)
-    token_names: list[tuple[str, str]] = []
-    for host, token in hosts.items():
+    token_names: list[tuple[str, str | None]] = []
+    for host in dict.fromkeys(VENDOR_HOST.values()):
         slug = host.split(".")[0]
         names = [item for item, value in VENDOR_HOST.items() if value == host]
-        token_name = f"tok_{slug}"
-        vendor_name = f"ven_{slug}"
+        strings.append(f"    $tok_{slug} = /\\b(" + "|".join(names) + ")\\b/ ascii")
         strings.append(
-            "    $"
-            + token_name
-            + " = /\\b("
-            + "|".join(names)
-            + ")\\b/ ascii"
-        )
-        strings.append(
-            "    $"
-            + vendor_name
-            + " = /https?:\\/\\/([A-Za-z0-9-]+\\.)*"
+            f"    $ven_{slug} = /https?:\\/\\/([A-Za-z0-9-]+\\.)*"
             + host.replace(".", "\\.")
+            + _HOST_END
             + "/ nocase ascii"
         )
-        token_names.append((token_name, vendor_name))
-        del token
+        token_names.append((f"tok_{slug}", f"ven_{slug}"))
+    # A token with no vendor host. Any URL beside it and a fetch is a match.
+    orphans = [token for token in TOKENS if token not in VENDOR_HOST]
+    if orphans:
+        strings.append("    $tok_novendor = /\\b(" + "|".join(orphans) + ")\\b/ ascii")
+        token_names.append(("tok_novendor", None))
 
     signal_names: list[str] = []
     for index, pattern in enumerate(SIGNAL_PATTERNS, start=1):
@@ -200,7 +184,7 @@ def render() -> str:
     strings.append(f"    $exfil            = /{to_yara(EXFIL_PATTERN)}/ nocase ascii")
     strings.append(f"    $encode           = /{to_yara(ENCODE_PATTERN)}/ nocase ascii")
     strings.append(f"    $pipe             = /{to_yara(PIPE_PATTERN)}/ nocase ascii")
-    strings.append(f"    $installer        = /{_installer_regex()}/ nocase ascii")
+    strings.append(f"    $installer        = /{to_yara(INSTALLER_PIPE_PATTERN)}/ nocase ascii")
 
     parts = [
         _occurrence(name, needs_high=False) for name in confirm_names
@@ -214,12 +198,9 @@ def render() -> str:
     parts.append("(" + " or ".join(_near(f"side{index}", "sensitive") for index in (1, 2)) + ")")
     parts.append(_near("exfil", "encode"))
     parts.append(
-        """for any i in (1..8): (
-        i <= #pipe and
-        not for any j in (1..8): (
-          j <= #installer and @installer[j] >= @pipe[i] and @installer[j] < @pipe[i] + !pipe[i]
-        )
-      )"""
+        # Each listed installer line is also a $pipe match at the same offset,
+        # so more pipes than installer lines means one pipe is not listed.
+        "#pipe > #installer"
     )
     phrase_condition = " or\n      ".join(parts)
     body = f"""/*
@@ -244,11 +225,11 @@ rule SERAPH_Instruction_Unsafe_Directive {{
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.9.0"
+    version          = "1.10.0"
     severity         = "high"
     status           = "experimental"
     score            = "70"
-    description      = "Detects a confirmation-bypass sentence, a Cyrillic homoglyph of that sentence, a credential path next to curl or wget, ignore-previous-instructions next to a fetch, or a listed API token next to a URL that is not that token's vendor. The sentence list is generated from larc_seraph.phrases. A Markdown heading, a table row, a backticked status label, or a known permission flag does not match. A read-only action does not match unless a high-risk action is on the same line."
+    description      = "Detects a confirmation-bypass sentence, a Cyrillic homoglyph of that sentence, a credential path next to curl or wget, ignore-previous-instructions next to a fetch, or a listed API token next to a fetch and a URL whose host is not that token's vendor. A pipe into a shell matches unless the whole command is one listed first-party installer line. The sentence list is generated from larc_seraph.phrases. A Markdown heading, a table row, a backticked status label, or a known permission flag does not match. A read-only action does not match unless a high-risk action is on the same line."
     attack_technique = "T1567, T1562.001"
     attack_tactic    = "exfiltration, defense-evasion"
     reference        = "https://attack.mitre.org/techniques/T1567/"
@@ -267,7 +248,7 @@ rule SERAPH_Instruction_Unsafe_Directive {{
     reference_14     = "https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/"
     reference_15     = "https://www.wiz.io/blog/s1ngularity-supply-chain-attack"
     scope            = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON tool descriptions, any case. Set filepath to the path as stored. The phrases are the same list the CLI evaluates."
-    false_positives  = "A team that writes the same sentence as a real policy. A credential file and a fetch on one example line. Homoglyphs other than Cyrillic o are not in the list."
+    false_positives  = "A team that writes the same sentence as a real policy. A credential file and a fetch on one example line. A vendor install line that pipes into a shell and is not on the short installer list. Homoglyphs other than Cyrillic o are not in the list."
     license          = "Detection Rule License 1.1"
 
   strings:
@@ -275,12 +256,7 @@ rule SERAPH_Instruction_Unsafe_Directive {{
 
   condition:
     filesize > 0 and filesize < 5000000 and
-    not (uint32(0) == 0x464c457f) and
-    not (uint32(0) == 0xfeedfacf or uint32(0) == 0xfeedface or uint32(0) == 0xcffaedfe or uint32(0) == 0xbebafeca) and
-    not (uint16(0) == 0x5a4d) and
-    not (uint32(0) == 0x04034b50) and
-    not (uint16(0) == 0x8b1f) and
-    not for any i in (0..math.min(1023, filesize - 1)): (uint8(i) == 0) and
+    {BINARY_GUARD_YARA} and
     (
       filepath matches /(\\/(agents|claude|gemini)\\.md$)|(\\/\\.cursorrules$)|(\\/skill\\.md$)|(\\/copilot-instructions\\.md$)|(\\/\\.cursor\\/rules\\/)|(\\.mdc$)/i or
       (filepath matches /\\.(json|jsonc)$/i and $desc)

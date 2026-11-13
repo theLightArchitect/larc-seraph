@@ -15,7 +15,7 @@ rule SERAPH_MCP_Unpinned_Package_Path {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.3.0"
+    version          = "1.4.0"
     severity         = "medium"
     status           = "experimental"
     score            = "55"
@@ -25,7 +25,7 @@ rule SERAPH_MCP_Unpinned_Package_Path {
     reference        = "https://attack.mitre.org/techniques/T1195/002/"
     reference_2      = "https://modelcontextprotocol.io/specification/2025-06-18"
     reference_3      = "https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/"
-    scope            = "JSON, TOML, or YAML MCP configs. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a version does not match. @latest is SERAPH-YARA-004."
+    scope            = "JSON, TOML, or YAML MCP configs, including Codex mcp_servers tables, a VS Code servers object, and Zed context_servers. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a version does not match. @latest is SERAPH-YARA-004."
     false_positives  = "A community MCP server installed the way its README shows, with npx and no version. The allowlist is short on purpose. Review the package name."
     license          = "Detection Rule License 1.1"
 
@@ -34,6 +34,9 @@ rule SERAPH_MCP_Unpinned_Package_Path {
     $mcp_yaml       = /mcpServers[ \t]*:/ ascii
     $mcp_toml       = /mcp_servers[ \t]*=/ ascii
     $mcp_toml_table = /\[mcp_servers/ ascii
+    // VS Code writes "servers" and Zed writes "context_servers".
+    $mcp_vscode     = /"servers"[ \t\r\n]*:[ \t\r\n]*\{/ ascii
+    $mcp_zed        = "\"context_servers\"" ascii
     $start_yaml     = /^mcpServers[ \t]*:/ ascii
     $start_toml     = /^(\[mcp_servers|mcp_servers[ \t]*=)/ ascii
     $cmd_json       = /['"]command['"][ \t]*:[ \t]*['"](npx|uvx)['"]/ nocase ascii
@@ -56,34 +59,32 @@ rule SERAPH_MCP_Unpinned_Package_Path {
 
   condition:
     (
-      (filepath == "" and (uint8(0) == 0x7B or $start_yaml or $start_toml)) or
+      (filepath == "" and not for 8 i in (0..1023): (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27)) and (for any i in (0..4095): (
+            uint8(i) == 0x7B and
+            for all j in (0..i): (
+              j == i or uint8(j) == 0x20 or uint8(j) == 0x09 or uint8(j) == 0x0A or uint8(j) == 0x0D or
+              uint8(j) == 0xEF or uint8(j) == 0xBB or uint8(j) == 0xBF
+            )
+          ) or $start_yaml or $start_toml)) or
       (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
         not filepath matches /\.(md|markdown)$/i)
-    ) and ($mcp_json or $mcp_yaml or $mcp_toml or $mcp_toml_table) and ($cmd_json or $cmd_yaml or $cmd_toml) and (
+    ) and ($mcp_json or $mcp_yaml or $mcp_toml or $mcp_toml_table or $mcp_vscode or $mcp_zed) and ($cmd_json or $cmd_yaml or $cmd_toml) and (
       $flag_bare or $bare_flag or $one or $first_bare or $first_bare_nl or $yaml_pack or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #flag_scoped and
-        not for any k in (1..8): (
-          k <= #off and @off[k] > @flag_scoped[i] and @off[k] < @flag_scoped[i] + !flag_scoped[i]
-        )
+        not $off in (@flag_scoped[i] + 1..@flag_scoped[i] + !flag_scoped[i] - 1)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #scoped_flag and
-        not for any k in (1..8): (
-          k <= #off and @off[k] > @scoped_flag[i] and @off[k] < @scoped_flag[i] + !scoped_flag[i]
-        )
+        not $off in (@scoped_flag[i] + 1..@scoped_flag[i] + !scoped_flag[i] - 1)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #first_scoped and
-        not for any k in (1..8): (
-          k <= #off and @off[k] > @first_scoped[i] and @off[k] < @first_scoped[i] + !first_scoped[i]
-        )
+        not $off in (@first_scoped[i] + 1..@first_scoped[i] + !first_scoped[i] - 1)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #yaml_scoped and
-        not for any k in (1..8): (
-          k <= #off and @off[k] > @yaml_scoped[i] and @off[k] < @yaml_scoped[i] + !yaml_scoped[i]
-        )
+        not $off in (@yaml_scoped[i] + 1..@yaml_scoped[i] + !yaml_scoped[i] - 1)
       )
     )
 }

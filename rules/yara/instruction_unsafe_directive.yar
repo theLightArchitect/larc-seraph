@@ -20,11 +20,11 @@ rule SERAPH_Instruction_Unsafe_Directive {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.10.0"
+    version          = "1.11.0"
     severity         = "high"
     status           = "experimental"
     score            = "70"
-    description      = "Detects a confirmation-bypass sentence, a Cyrillic homoglyph of that sentence, a credential path next to curl or wget, ignore-previous-instructions next to a fetch, or a listed API token next to a URL that is not that token's vendor. The sentence list is generated from larc_seraph.phrases. A Markdown heading, a table row, a backticked status label, or a known permission flag does not match. A read-only action does not match unless a high-risk action is on the same line. Content-only rule: it compiles with no externals."
+    description      = "Detects a confirmation-bypass sentence, a Cyrillic homoglyph of that sentence, a credential path next to curl or wget, ignore-previous-instructions next to a fetch, or a listed API token next to a fetch and a URL whose host is not that token's vendor. A pipe into a shell matches unless the whole command is one listed first-party installer line. The sentence list is generated from larc_seraph.phrases. A Markdown heading, a table row, a backticked status label, or a known permission flag does not match. A read-only action does not match unless a high-risk action is on the same line. Content-only rule: it compiles with no externals."
     attack_technique = "T1567, T1562.001"
     attack_tactic    = "exfiltration, defense-evasion"
     reference        = "https://attack.mitre.org/techniques/T1567/"
@@ -43,7 +43,7 @@ rule SERAPH_Instruction_Unsafe_Directive {
     reference_14     = "https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/"
     reference_15     = "https://www.wiz.io/blog/s1ngularity-supply-chain-attack"
     scope            = "Text with an instruction marker or a JSON description that asks to skip confirmation, hides that sentence with a Cyrillic o, posts a credential path, or sends a listed token to a non-vendor host. The sentence list is generated from larc_seraph.phrases. A heading, a table row, a status label, or a known permission flag does not match."
-    false_positives  = "A team that writes the same sentence as a real policy. A credential file and a fetch on one example line. Homoglyphs other than Cyrillic o are not in the list."
+    false_positives  = "A team that writes the same sentence as a real policy. A credential file and a fetch on one example line. A vendor install line that pipes into a shell and is not on the short installer list. Homoglyphs other than Cyrillic o are not in the list."
     license          = "Detection Rule License 1.1"
 
   strings:
@@ -56,7 +56,7 @@ rule SERAPH_Instruction_Unsafe_Directive {
     $high            = /(\bshell\b|\bexec\b|\bbash\b|\bcredentials?\b|\bsecrets?\b|\bcurl\b|\bwget\b|\bupload\b|\bdelet(e|ing|ed|es|ion)?\b|\brm\b|\bpublish\b|\bgit push\b|\bpayments?\b|id_ed25519|id_rsa|\.ssh\/)/ nocase ascii
     $soft            = /(--dangerously-skip-permissions|--yolo\b|--always-approve|--auto-approve|--trust-all-tools|--no-confirm\b|--permission-mode)|((rename_chat|\blisting\b|\blist\b|\bread\b|\bview\b|\bsearch\b|\bls\b|\bgit[ \t]+(status|log|diff)\b))/ nocase ascii
     $bad             = /--[A-Za-z0-9][^\n]{0,40}(skip confirmation|confirm)|`[^`]{0,40}bypass([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+permissions?[^`]{0,40}`/ nocase ascii
-    $url             = /https?:\/\/[A-Za-z0-9.-]{1,80}\.[A-Za-z]{2,}/ nocase ascii
+    $url             = /https?:\/\/[^ \t\r\n"'\/?#\\]{1,255}/ nocase ascii
     $fetch           = /(curl |wget )/ nocase ascii
     $c1              = /(^|\n)[ \t]*(do([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+not([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+ask([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+confirm|[^#|\n][^\n]{0,240}do([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+not([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+ask([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+confirm)[^\n]*/ nocase ascii
     $c2              = /(^|\n)[ \t]*(don[^\n]?t([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+ask([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+confirm|[^#|\n][^\n]{0,240}don[^\n]?t([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+ask([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+confirm)[^\n]*/ nocase ascii
@@ -73,24 +73,23 @@ rule SERAPH_Instruction_Unsafe_Directive {
     $h2              = /(^|\n)[ \t]*(never([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+(request|seek|wait)([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+(for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+)?(confirm[A-Za-z0-9_]*|permission|approval|consent)|[^#|\n][^\n]{0,240}never([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+(request|seek|wait)([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+(for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+)?(confirm[A-Za-z0-9_]*|permission|approval|consent))[^\n]*/ nocase ascii
     $h3              = /(^|\n)[ \t]*((do([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+not|don[^\n]?t)([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+wait([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+(for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+)?(confirm[A-Za-z0-9_]*|permission|approval|consent)|[^#|\n][^\n]{0,240}(do([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+not|don[^\n]?t)([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+wait([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+(for([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+)?(confirm[A-Za-z0-9_]*|permission|approval|consent))[^\n]*/ nocase ascii
     $tok_github      = /\b(GITHUB_TOKEN|GH_TOKEN)\b/ ascii
-    $ven_github      = /https?:\/\/([A-Za-z0-9-]+\.)*github\.com/ nocase ascii
+    $ven_github      = /https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
     $tok_openai      = /\b(OPENAI_API_KEY)\b/ ascii
-    $ven_openai      = /https?:\/\/([A-Za-z0-9-]+\.)*openai\.com/ nocase ascii
+    $ven_openai      = /https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
     $tok_anthropic   = /\b(ANTHROPIC_API_KEY)\b/ ascii
-    $ven_anthropic   = /https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com/ nocase ascii
-    $tok_amazonaws   = /\b(AWS_SECRET_ACCESS_KEY)\b/ ascii
-    $ven_amazonaws   = /https?:\/\/([A-Za-z0-9-]+\.)*amazonaws\.com/ nocase ascii
+    $ven_anthropic   = /https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
     $tok_npmjs       = /\b(NPM_TOKEN)\b/ ascii
-    $ven_npmjs       = /https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org/ nocase ascii
+    $ven_npmjs       = /https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
     $tok_cursor      = /\b(CURSOR_API_KEY)\b/ ascii
-    $ven_cursor      = /https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com/ nocase ascii
+    $ven_cursor      = /https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
+    $tok_novendor    = /\b(AWS_SECRET_ACCESS_KEY)\b/ ascii
     $s1              = /do([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+not([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+mention([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+this([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+to([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+the([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+user/ nocase ascii
     $s2              = /don[^\n]?t([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+notify([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+the([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+user/ nocase ascii
     $s3              = /no([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+need([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+to([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+mention([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+this([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+to([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+the([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+user/ nocase ascii
     $s4              = /do([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+this([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+secretly,?([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+never([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+mentioning/ nocase ascii
     $s5              = /must([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+send([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+all([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+emails([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+to/ nocase ascii
     $s6              = /change([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+the([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+recipient([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+to/ nocase ascii
-    $s7              = /chat\.tools\.autoApprove[\"']?([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)*:([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)*true/ nocase ascii
+    $s7              = /chat\.tools\.autoApprove["']?([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)*:([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)*true/ nocase ascii
     $s8              = /\/tmp\/inventory\.txt/ nocase ascii
     $s9              = /<human_chat_interruption>/ nocase ascii
     $s10             = /always([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+consult([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+this([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+tool([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+immediately([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+as([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+the([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+first([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+step/ nocase ascii
@@ -100,13 +99,13 @@ rule SERAPH_Instruction_Unsafe_Directive {
     $s14             = /include([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+everything([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+between[^\n]{0,80}in([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+a([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+comment([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+at([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+the([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+end([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+of([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+every([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+file/ nocase ascii
     $s15             = /\b(run|invoke|launch|start|execute)\b[^\n]{0,80}(--dangerously-skip-permissions|--yolo\b|--trust-all-tools)/ nocase ascii
     $detail          = /mere([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+implementation([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+detail/ nocase ascii
-    $side1           = /pass([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+its([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+content([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+as([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+['\"]?sidenote/ nocase ascii
+    $side1           = /pass([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+its([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+content([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+as([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+['"]?sidenote/ nocase ascii
     $side2           = /before([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+using([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+this([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+tool,?([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+read/ nocase ascii
     $sensitive       = /~\/\.cursor\/mcp\.json|~\/\.ssh\/id_rsa/ ascii
     $exfil           = /(!\[[^\n]{0,120}\]|```mermaid|graph([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+TD)[^\n]{0,240}(\?data=|webhook\.site)/ nocase ascii
     $encode          = /url[- ]?encode/ nocase ascii
     $pipe            = /(curl|wget)[^\n]{0,180}\|([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)*(ba)?sh\b/ nocase ascii
-    $installer       = /(https:\/\/antigravity\.google\/cli\/install\.sh(\/|[ \t?]|$)|https:\/\/raw\.githubusercontent\.com\/pproenca\/agent\-tui\/master\/install\.sh(\/|[ \t?]|$)|https:\/\/sh\.rustup\.rs(\/|[ \t?]|$)|https:\/\/get\.docker\.com(\/|[ \t?]|$)|https:\/\/deno\.land\/install\.sh(\/|[ \t?]|$)|https:\/\/bun\.com\/install(\/|[ \t?]|$)|https:\/\/astral\.sh\/uv\/install\.sh(\/|[ \t?]|$)|https:\/\/raw\.githubusercontent\.com\/Homebrew\/install\/HEAD\/install\.sh(\/|[ \t?]|$))/ nocase ascii
+    $installer       = /(^|\n|`)[ \t]*(\$[ \t]+)?(curl|wget)(([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF){1,2}(-[fsSLqO]{1,5}-?|--proto|['"]=https['"]|--tlsv1\.2|--silent|--show-error|--fail|--location)){0,4}([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF){1,2}['"]?(https:\/\/antigravity\.google\/cli\/install\.sh|https:\/\/sh\.rustup\.rs|https:\/\/get\.docker\.com|https:\/\/deno\.land\/install\.sh|https:\/\/bun\.com\/install|https:\/\/astral\.sh\/uv\/install\.sh|https:\/\/raw\.githubusercontent\.com\/Homebrew\/install\/HEAD\/install\.sh)['"]?([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF){0,2}\|([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF){0,2}(ba)?sh([ \t]+-s[^\n|;&`]{0,40})?[ \t]*(`|\r?\n|$)/ nocase ascii
 
     $mark_phrase  = /agent instructions/ nocase ascii
     $mark_agents  = /AGENTS\.md/ nocase ascii
@@ -119,289 +118,114 @@ rule SERAPH_Instruction_Unsafe_Directive {
 
   condition:
     filesize > 0 and filesize < 5000000 and
-    not (uint32(0) == 0x464c457f) and
-    not (uint32(0) == 0xfeedfacf or uint32(0) == 0xfeedface or uint32(0) == 0xcffaedfe or uint32(0) == 0xbebafeca) and
-    not (uint16(0) == 0x5a4d) and
-    not (uint32(0) == 0x04034b50) and
-    not (uint16(0) == 0x8b1f) and
-    not for any i in (0..math.min(1023, filesize - 1)): (uint8(i) == 0) and
+    not for 8 i in (0..math.min(1023, filesize - 1)): (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27)) and
     (
       any of ($mark_*) or
       ($desc and uint8(0) == 0x7B)
     ) and (
       $homo or $file_then_fetch or $fetch_then_file or $inject_fwd or $inject_rev or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c1 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c1[i] and @bad[j] < @c1[i] + !c1[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c1[i] and @soft[j] < @c1[i] + !c1[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c1[i] and @high[j] < @c1[i] + !c1[i]
-          )
-        )
+        not $bad in (@c1[i]..@c1[i] + !c1[i] - 1) and
+        not ($soft in (@c1[i]..@c1[i] + !c1[i] - 1) and not $high in (@c1[i]..@c1[i] + !c1[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c2 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c2[i] and @bad[j] < @c2[i] + !c2[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c2[i] and @soft[j] < @c2[i] + !c2[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c2[i] and @high[j] < @c2[i] + !c2[i]
-          )
-        )
+        not $bad in (@c2[i]..@c2[i] + !c2[i] - 1) and
+        not ($soft in (@c2[i]..@c2[i] + !c2[i] - 1) and not $high in (@c2[i]..@c2[i] + !c2[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c3 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c3[i] and @bad[j] < @c3[i] + !c3[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c3[i] and @soft[j] < @c3[i] + !c3[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c3[i] and @high[j] < @c3[i] + !c3[i]
-          )
-        )
+        not $bad in (@c3[i]..@c3[i] + !c3[i] - 1) and
+        not ($soft in (@c3[i]..@c3[i] + !c3[i] - 1) and not $high in (@c3[i]..@c3[i] + !c3[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c4 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c4[i] and @bad[j] < @c4[i] + !c4[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c4[i] and @soft[j] < @c4[i] + !c4[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c4[i] and @high[j] < @c4[i] + !c4[i]
-          )
-        )
+        not $bad in (@c4[i]..@c4[i] + !c4[i] - 1) and
+        not ($soft in (@c4[i]..@c4[i] + !c4[i] - 1) and not $high in (@c4[i]..@c4[i] + !c4[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c5 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c5[i] and @bad[j] < @c5[i] + !c5[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c5[i] and @soft[j] < @c5[i] + !c5[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c5[i] and @high[j] < @c5[i] + !c5[i]
-          )
-        )
+        not $bad in (@c5[i]..@c5[i] + !c5[i] - 1) and
+        not ($soft in (@c5[i]..@c5[i] + !c5[i] - 1) and not $high in (@c5[i]..@c5[i] + !c5[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c6 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c6[i] and @bad[j] < @c6[i] + !c6[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c6[i] and @soft[j] < @c6[i] + !c6[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c6[i] and @high[j] < @c6[i] + !c6[i]
-          )
-        )
+        not $bad in (@c6[i]..@c6[i] + !c6[i] - 1) and
+        not ($soft in (@c6[i]..@c6[i] + !c6[i] - 1) and not $high in (@c6[i]..@c6[i] + !c6[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c7 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c7[i] and @bad[j] < @c7[i] + !c7[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c7[i] and @soft[j] < @c7[i] + !c7[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c7[i] and @high[j] < @c7[i] + !c7[i]
-          )
-        )
+        not $bad in (@c7[i]..@c7[i] + !c7[i] - 1) and
+        not ($soft in (@c7[i]..@c7[i] + !c7[i] - 1) and not $high in (@c7[i]..@c7[i] + !c7[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c8 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c8[i] and @bad[j] < @c8[i] + !c8[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c8[i] and @soft[j] < @c8[i] + !c8[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c8[i] and @high[j] < @c8[i] + !c8[i]
-          )
-        )
+        not $bad in (@c8[i]..@c8[i] + !c8[i] - 1) and
+        not ($soft in (@c8[i]..@c8[i] + !c8[i] - 1) and not $high in (@c8[i]..@c8[i] + !c8[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c9 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c9[i] and @bad[j] < @c9[i] + !c9[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c9[i] and @soft[j] < @c9[i] + !c9[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c9[i] and @high[j] < @c9[i] + !c9[i]
-          )
-        )
+        not $bad in (@c9[i]..@c9[i] + !c9[i] - 1) and
+        not ($soft in (@c9[i]..@c9[i] + !c9[i] - 1) and not $high in (@c9[i]..@c9[i] + !c9[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c10 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c10[i] and @bad[j] < @c10[i] + !c10[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c10[i] and @soft[j] < @c10[i] + !c10[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c10[i] and @high[j] < @c10[i] + !c10[i]
-          )
-        )
+        not $bad in (@c10[i]..@c10[i] + !c10[i] - 1) and
+        not ($soft in (@c10[i]..@c10[i] + !c10[i] - 1) and not $high in (@c10[i]..@c10[i] + !c10[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #c11 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @c11[i] and @bad[j] < @c11[i] + !c11[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @c11[i] and @soft[j] < @c11[i] + !c11[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @c11[i] and @high[j] < @c11[i] + !c11[i]
-          )
-        )
+        not $bad in (@c11[i]..@c11[i] + !c11[i] - 1) and
+        not ($soft in (@c11[i]..@c11[i] + !c11[i] - 1) and not $high in (@c11[i]..@c11[i] + !c11[i] - 1))
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #h1 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @h1[i] and @bad[j] < @h1[i] + !h1[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @h1[i] and @soft[j] < @h1[i] + !h1[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @h1[i] and @high[j] < @h1[i] + !h1[i]
-          )
-        ) and
-        for any j in (1..8): (
-          j <= #high and @high[j] >= @h1[i] and @high[j] < @h1[i] + !h1[i]
-        )
+        not $bad in (@h1[i]..@h1[i] + !h1[i] - 1) and
+        not ($soft in (@h1[i]..@h1[i] + !h1[i] - 1) and not $high in (@h1[i]..@h1[i] + !h1[i] - 1)) and
+        $high in (@h1[i]..@h1[i] + !h1[i] - 1)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #h2 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @h2[i] and @bad[j] < @h2[i] + !h2[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @h2[i] and @soft[j] < @h2[i] + !h2[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @h2[i] and @high[j] < @h2[i] + !h2[i]
-          )
-        ) and
-        for any j in (1..8): (
-          j <= #high and @high[j] >= @h2[i] and @high[j] < @h2[i] + !h2[i]
-        )
+        not $bad in (@h2[i]..@h2[i] + !h2[i] - 1) and
+        not ($soft in (@h2[i]..@h2[i] + !h2[i] - 1) and not $high in (@h2[i]..@h2[i] + !h2[i] - 1)) and
+        $high in (@h2[i]..@h2[i] + !h2[i] - 1)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #h3 and
-        not for any j in (1..8): (
-          j <= #bad and @bad[j] >= @h3[i] and @bad[j] < @h3[i] + !h3[i]
-        ) and not (
-          for any j in (1..8): (
-            j <= #soft and @soft[j] >= @h3[i] and @soft[j] < @h3[i] + !h3[i]
-          ) and not for any j in (1..8): (
-            j <= #high and @high[j] >= @h3[i] and @high[j] < @h3[i] + !h3[i]
-          )
-        ) and
-        for any j in (1..8): (
-          j <= #high and @high[j] >= @h3[i] and @high[j] < @h3[i] + !h3[i]
-        )
+        not $bad in (@h3[i]..@h3[i] + !h3[i] - 1) and
+        not ($soft in (@h3[i]..@h3[i] + !h3[i] - 1) and not $high in (@h3[i]..@h3[i] + !h3[i] - 1)) and
+        $high in (@h3[i]..@h3[i] + !h3[i] - 1)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #tok_github and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @tok_github[i] and
-          @tok_github[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #ven_github and @ven_github[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @tok_github[i] and
-            @tok_github[i] + 200 >= @fetch[f]
-          )
-        )
+        #url in (math.max(0, @tok_github[i] - 200)..@tok_github[i] + 200) > #ven_github in (math.max(0, @tok_github[i] - 200)..@tok_github[i] + 200) and
+        $fetch in (math.max(0, @tok_github[i] - 200)..@tok_github[i] + 200)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #tok_openai and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @tok_openai[i] and
-          @tok_openai[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #ven_openai and @ven_openai[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @tok_openai[i] and
-            @tok_openai[i] + 200 >= @fetch[f]
-          )
-        )
+        #url in (math.max(0, @tok_openai[i] - 200)..@tok_openai[i] + 200) > #ven_openai in (math.max(0, @tok_openai[i] - 200)..@tok_openai[i] + 200) and
+        $fetch in (math.max(0, @tok_openai[i] - 200)..@tok_openai[i] + 200)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #tok_anthropic and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @tok_anthropic[i] and
-          @tok_anthropic[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #ven_anthropic and @ven_anthropic[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @tok_anthropic[i] and
-            @tok_anthropic[i] + 200 >= @fetch[f]
-          )
-        )
+        #url in (math.max(0, @tok_anthropic[i] - 200)..@tok_anthropic[i] + 200) > #ven_anthropic in (math.max(0, @tok_anthropic[i] - 200)..@tok_anthropic[i] + 200) and
+        $fetch in (math.max(0, @tok_anthropic[i] - 200)..@tok_anthropic[i] + 200)
       ) or
-      for any i in (1..8): (
-        i <= #tok_amazonaws and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @tok_amazonaws[i] and
-          @tok_amazonaws[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #ven_amazonaws and @ven_amazonaws[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @tok_amazonaws[i] and
-            @tok_amazonaws[i] + 200 >= @fetch[f]
-          )
-        )
-      ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #tok_npmjs and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @tok_npmjs[i] and
-          @tok_npmjs[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #ven_npmjs and @ven_npmjs[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @tok_npmjs[i] and
-            @tok_npmjs[i] + 200 >= @fetch[f]
-          )
-        )
+        #url in (math.max(0, @tok_npmjs[i] - 200)..@tok_npmjs[i] + 200) > #ven_npmjs in (math.max(0, @tok_npmjs[i] - 200)..@tok_npmjs[i] + 200) and
+        $fetch in (math.max(0, @tok_npmjs[i] - 200)..@tok_npmjs[i] + 200)
       ) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #tok_cursor and
-        for any j in (1..8): (
-          j <= #url and
-          @url[j] + 200 >= @tok_cursor[i] and
-          @tok_cursor[i] + 200 >= @url[j] and
-          not for any k in (1..8): (
-            k <= #ven_cursor and @ven_cursor[k] == @url[j]
-          ) and
-          for any f in (1..8): (
-            f <= #fetch and
-            @fetch[f] + 200 >= @tok_cursor[i] and
-            @tok_cursor[i] + 200 >= @fetch[f]
-          )
-        )
+        #url in (math.max(0, @tok_cursor[i] - 200)..@tok_cursor[i] + 200) > #ven_cursor in (math.max(0, @tok_cursor[i] - 200)..@tok_cursor[i] + 200) and
+        $fetch in (math.max(0, @tok_cursor[i] - 200)..@tok_cursor[i] + 200)
+      ) or
+      for any i in (1..256): (
+        i <= #tok_novendor and
+        $url in (math.max(0, @tok_novendor[i] - 200)..@tok_novendor[i] + 200) and
+        $fetch in (math.max(0, @tok_novendor[i] - 200)..@tok_novendor[i] + 200)
       ) or
       $s1 or
       $s2 or
@@ -418,77 +242,36 @@ rule SERAPH_Instruction_Unsafe_Directive {
       $s13 or
       $s14 or
       $s15 or
-      (for any i in (1..8): (
+      (for any i in (1..256): (
           i <= #detail and
-          for any j in (1..8): (
-            j <= #s1 and
-            @s1[j] + 400 >= @detail[i] and
-            @detail[i] + 400 >= @s1[j]
-          )
-        ) or for any i in (1..8): (
+          $s1 in (math.max(0, @detail[i] - 400)..@detail[i] + 400)
+        ) or for any i in (1..256): (
           i <= #detail and
-          for any j in (1..8): (
-            j <= #s2 and
-            @s2[j] + 400 >= @detail[i] and
-            @detail[i] + 400 >= @s2[j]
-          )
-        ) or for any i in (1..8): (
+          $s2 in (math.max(0, @detail[i] - 400)..@detail[i] + 400)
+        ) or for any i in (1..256): (
           i <= #detail and
-          for any j in (1..8): (
-            j <= #s3 and
-            @s3[j] + 400 >= @detail[i] and
-            @detail[i] + 400 >= @s3[j]
-          )
-        ) or for any i in (1..8): (
+          $s3 in (math.max(0, @detail[i] - 400)..@detail[i] + 400)
+        ) or for any i in (1..256): (
           i <= #detail and
-          for any j in (1..8): (
-            j <= #s4 and
-            @s4[j] + 400 >= @detail[i] and
-            @detail[i] + 400 >= @s4[j]
-          )
-        ) or for any i in (1..8): (
+          $s4 in (math.max(0, @detail[i] - 400)..@detail[i] + 400)
+        ) or for any i in (1..256): (
           i <= #detail and
-          for any j in (1..8): (
-            j <= #s5 and
-            @s5[j] + 400 >= @detail[i] and
-            @detail[i] + 400 >= @s5[j]
-          )
-        ) or for any i in (1..8): (
+          $s5 in (math.max(0, @detail[i] - 400)..@detail[i] + 400)
+        ) or for any i in (1..256): (
           i <= #detail and
-          for any j in (1..8): (
-            j <= #s6 and
-            @s6[j] + 400 >= @detail[i] and
-            @detail[i] + 400 >= @s6[j]
-          )
+          $s6 in (math.max(0, @detail[i] - 400)..@detail[i] + 400)
         )) or
-      (for any i in (1..8): (
+      (for any i in (1..256): (
           i <= #side1 and
-          for any j in (1..8): (
-            j <= #sensitive and
-            @sensitive[j] + 400 >= @side1[i] and
-            @side1[i] + 400 >= @sensitive[j]
-          )
-        ) or for any i in (1..8): (
+          $sensitive in (math.max(0, @side1[i] - 400)..@side1[i] + 400)
+        ) or for any i in (1..256): (
           i <= #side2 and
-          for any j in (1..8): (
-            j <= #sensitive and
-            @sensitive[j] + 400 >= @side2[i] and
-            @side2[i] + 400 >= @sensitive[j]
-          )
+          $sensitive in (math.max(0, @side2[i] - 400)..@side2[i] + 400)
         )) or
-      for any i in (1..8): (
+      for any i in (1..256): (
         i <= #exfil and
-        for any j in (1..8): (
-          j <= #encode and
-          @encode[j] + 400 >= @exfil[i] and
-          @exfil[i] + 400 >= @encode[j]
-        )
+        $encode in (math.max(0, @exfil[i] - 400)..@exfil[i] + 400)
       ) or
-      for any i in (1..8): (
-        i <= #pipe and
-        not for any j in (1..8): (
-          j <= #installer and @installer[j] >= @pipe[i] and @installer[j] < @pipe[i] + !pipe[i]
-        )
-      )
+      #pipe > #installer
     )
 }
