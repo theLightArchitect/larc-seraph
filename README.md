@@ -19,7 +19,7 @@ The docs site is [docs/index.html](docs/index.html). The threat model and field 
 
 ## What this is
 
-Eighteen experimental rules:
+Seventeen experimental rules:
 
 | ID | Engine | What it watches |
 | --- | --- | --- |
@@ -39,8 +39,7 @@ Eighteen experimental rules:
 | `SERAPH_MacOS_Interpreter_Drops_Launch_Plist` | Sigma | Interpreter writes a LaunchAgent or LaunchDaemon plist |
 | `SERAPH_MacOS_SSH_Reverse_Lax_HostKey` | Sigma | ssh reverse forward with host-key checking disabled |
 | `SERAPH_MacOS_Agent_Piped_Shell` | Sigma | Agent parent spawns a fetch or decode handed to a shell |
-| `SERAPH_MacOS_Terminal_Piped_Shell` | Sigma | Terminal or iTerm parent spawns a fetch or decode handed to a shell |
-| `SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions` | Sigma | node, npm, or npx starts an AI CLI with a skip-permission flag |
+| `SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions` | Sigma | A JavaScript runtime or package manager starts an AI CLI with a skip-permission flag |
 
 Each rule carries author, date (2026-11-13), ATT&CK mapping, severity, scope, and a false-positive note. Status is experimental.
 
@@ -52,7 +51,7 @@ Sigma rules assume a normalized macOS field contract (`Image`, `CommandLine`, `P
 
 `SERAPH-YARA-016` flags an unpinned registry package inside a JSON, TOML, or YAML MCP config. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted on that package entry. A numeric version on the package token is not a match, and a pin or an allowlisted package elsewhere in the file does not clear a second unpinned package. A Markdown README that only quotes the config is not a match.
 
-`SERAPH-YARA-016` and the old `SERAPH-SIGMA-016` used the same number. The terminal piped-shell rule is now `SERAPH-SIGMA-017`. Its Sigma UUID did not change. `SERAPH-SIGMA-018` is the Nx s1ngularity CLI rule. The metadata check rejects a repeated three-digit number across the two families. Rule names stay `SERAPH_*`. Neo23x0-style category prefixes (`MAL_`, `HKTL_`) classify malware families. These rules detect config and process shapes, and the catalog id is already the `SERAPH` number, so this pack does not add a second prefix.
+`SERAPH-SIGMA-016` and `SERAPH-SIGMA-017` are retired numbers. Both belonged to the terminal piped-shell rule, which is removed. A command typed or pasted into Terminal is parsed by the interactive shell: each side of the pipe is its own process, and no process's arguments contain the pipe, so a single-event rule cannot see it. `SERAPH-SIGMA-018` is the Nx s1ngularity CLI rule. The metadata check rejects a repeated three-digit number across the two families. Rule names stay `SERAPH_*`. Neo23x0-style category prefixes (`MAL_`, `HKTL_`) classify malware families. These rules detect config and process shapes, and the catalog id is already the `SERAPH` number, so this pack does not add a second prefix.
 
 ## Quick start
 
@@ -75,13 +74,14 @@ How to run the metadata check, `sigma check`, the benign-corpus scan, and the do
 Pass `filepath` as the path is stored. Use forward slashes. Quote the yara-x define so the shell does not eat the quotes.
 
 ```bash
-# Forge / no externals
-yara rules/yara /abs/path
+# Forge / no externals. libyara takes rule files, yara-x takes the directory.
+yara rules/yara/*.yar /abs/path
 yr scan rules/yara /abs/path
 
-# Path-scoped, when you know the path
-yara -d filepath=/abs/path rules/path-scoped /abs/path
-yr scan --define 'filepath="/abs/path"' rules/path-scoped /abs/path
+# Path-scoped, when you know the path. The two plist rules never read a path
+# and live only in rules/yara, so name them too.
+yara -d filepath=/abs/path rules/path-scoped/*.yar rules/yara/launchplist_*.yar /abs/path
+yr scan --define 'filepath="/abs/path"' rules/path-scoped rules/yara/launchplist_ssh_reverse_tunnel.yar rules/yara/launchplist_writable_interpreter.yar /abs/path
 ```
 
 ```python
@@ -145,15 +145,22 @@ These are the misses recorded in [validation/evasion-matrix.yml](validation/evas
 - A package name that is not one JSON string, and a remote specifier more than 160 bytes after `npx`, `uvx`, or `npm exec`.
 - A bare `/tmp` grant with no further path segment.
 - A secret variable that is not on the short name list.
-- A zero-width mark between every letter of a confirmation-bypass sentence. A mark between the words is caught. U+200B with no other hidden-text signal is not. "Never request permission" needs a nearby high-risk action such as a shell command, `rm`, `publish`, or `git push`. Listing, reading, viewing, searching, `ls`, and `git status`, `log`, or `diff` do not count. A Markdown heading, a table row, or a known permission flag such as `--yolo` does not match. `--force` on an ordinary instruction line does not veto it.
+- A zero-width mark inside a word of a confirmation-bypass sentence, when the scanner is YARA alone. The CLI strips those characters first and does match. A mark between the words is caught by both. U+200B with no other hidden-text signal is not. "Never request permission" needs a nearby high-risk action such as a shell command, `rm`, `publish`, or `git push`. Listing, reading, viewing, searching, `ls`, and `git status`, `log`, or `diff` do not count. A Markdown heading, a table row, or a known permission flag such as `--yolo` does not match. `--force` on an ordinary instruction line does not veto it.
 - Homoglyphs other than Cyrillic `o` in that same sentence.
 - `KeepAlive` set to the integer 1, and an SSH `-R` glued to its value with no space. A host-key option that lives only in `~/.ssh/config` is not in the plist.
 - A git hook with no shebang.
 - Shell startup files the path list does not name, such as Fish `config.fish`. `authorized_keys.bak` is not in the path list. A project file that still ends in `.zshrc` does match.
 - A plist that is not under LaunchAgents or LaunchDaemons.
-- English confirmation-bypass sentences are generated into `SERAPH_Instruction_Unsafe_Directive` from `larc_seraph.phrases`. A YARA-only scanner and the CLI match the same instruction fixtures.
+- English confirmation-bypass sentences are generated into `SERAPH_Instruction_Unsafe_Directive` from `larc_seraph.phrases`. A YARA-only scanner and the CLI agree on every committed instruction fixture. They are not identical outside those fixtures. The CLI also matches a curly apostrophe in "don't", a no-break or em space between words, a high-risk word on the line above or below, a phrase that starts more than 240 bytes into its line, a pipe followed by a newline, and a file over 5 MB. YARA alone misses those.
+- The instruction rule judges the first 256 occurrences of each phrase. More decoy lines than that can hide a later one from YARA alone. Tag characters and pipes into a shell are counted with no bound.
+- A pipe into a shell in an instruction file matches unless the whole command is one listed first-party installer line. It has to start a line (or follow a shell prompt or a backtick), use only options from a short closed list, name one exact URL from `INSTALLER_URLS`, and pipe into `sh` or `bash` with nothing after it but `-s` arguments. A second URL, a header, a path or query after the URL, any other option, an environment prefix, or a script name after the shell keeps the match. No third-party repository is on the list, so a vendor install line that is not listed matches too.
+- The Forge instruction rules skip a file whose first kilobyte holds eight or more control bytes. A file padded that way is not scanned by Forge. The path-scoped rules have no such check.
+- A vendor host only counts when the URL's authority ends there. An IP address or a bare host name is a URL like any other.
+- An AWS secret has no vendor host. `AWS_SECRET_ACCESS_KEY` beside a fetch and any URL matches.
+- Zed's older nested form, `"command": {"path": ...}`, is not read by `SERAPH-YARA-001`. JSON string escapes such as `\u002f` or `\/` hide a path or a pipe from every MCP rule, because the rules read bytes and do not parse JSON.
+- `SERAPH-SIGMA-018` reads `claude-code/cli.js` in the command line for an npm-installed Claude. It does not know `q chat -a`, `copilot --allow-all-tools`, or `cursor-agent --force`. A `/bin/sh` parent matches, because `child_process.exec` puts a shell between node and the CLI, so a shell script that starts the CLI with the flag matches too.
 - osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire. A piped shell whose parent is launchd is left to the plist rules.
-- The Forge flavor misses a YAML or TOML MCP config that does not start with `{`, and a confirmation sentence whose only instruction signal is the file name. The path-scoped rules still catch those. Forge matches a hook payload that is not under `.git/hooks` or `.husky`. The path-scoped rule does not.
+- The Forge flavor misses a JSONC MCP config that opens with a comment, a YAML config whose `mcpServers:` key is not at the start of a line, and a confirmation sentence whose only instruction signal is the file name. The path-scoped rules still catch those. Forge matches a hook payload that is not under `.git/hooks`, `.githooks`, or `.husky`. The path-scoped rule does not.
 - The benign corpus is a sample of public trees, not every workstation. The Mac scans are summarized in VALIDATION.md.
 
 ## Validation
@@ -180,23 +187,23 @@ Point Forge, or any scanner that cannot set externals, at `rules/yara` only. Do 
 
 What the Forge flavor uses instead of the path:
 
-- MCP rules other than `SERAPH-YARA-016` match a file whose first byte is `{` and that contains an `mcpServers` object. Markdown, and YAML or TOML that does not start with `{`, do not match. `SERAPH-YARA-016` also matches a file that starts with `mcpServers:` or `[mcp_servers` / `mcp_servers =`.
+- MCP rules match a text file that opens with a JSON object (after an optional BOM or blank space, within the first 4 KB), has a top-level `mcpServers:` key, or has an `mcp_servers` table or assignment at the start of a line. The file also has to contain a server map: `mcpServers`, Codex `[mcp_servers.<name>]`, Zed `context_servers`, or a VS Code `servers` object beside a `command` key. Markdown and a JSONC file that opens with a comment do not match. `SERAPH-YARA-016` accepts the YAML and TOML forms only at the start of the file.
 - `SERAPH_Instruction_Unsafe_Directive` matches when the bytes contain an instruction marker (`agent instructions`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `copilot-instructions`, or `.cursor/rules/`) or a JSON object with a `description`, and the sentence list generated from `larc_seraph.phrases`.
-- `SERAPH_Instruction_Hidden_Unicode` matches the tag and bidi bytes without requiring the file to name itself.
+- `SERAPH_Instruction_Hidden_Unicode` matches the tag and bidi bytes without requiring the file to name itself. Every tag character counts, however many flag emoji come first. Only the England, Scotland, and Wales flag sequences are exempt.
 - The git-hook rule matches a shebang plus the payload, and it skips a file that contains git's sample banner (`To enable this hook, rename this file`).
 - The two plist rules never used a path. They are only in `rules/yara`.
 
 That is narrower than the path-scoped rules in some places, and wider in others:
 
 - A bare `do not ask for confirmation` in a file named `AGENTS.md` matches the path-scoped rule and does not match Forge. The evasion case `bare_sentence_without_instruction_marker` is that gap.
-- A YAML or TOML MCP config whose first byte is not `{` matches the path-scoped rule when the path ends in `.yml`, `.yaml`, or `.toml`. Forge matches it only for `SERAPH-YARA-016`, and only when the file starts with `mcpServers:` or `[mcp_servers` / `mcp_servers =`.
+- A JSONC MCP config that opens with a comment matches the path-scoped rule by its extension. Forge does not match it, because source files open with a comment too.
 - A bidi override or Unicode tag in a file that is not an instruction path matches Forge and not the path-scoped rule. `tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Notes.md` is that case. A real `CLAUDE.md` or `.cursor/rules/style.mdc` that never writes its own name matches both.
 - A hook payload in a file whose name ends in `.sample` is skipped by the path-scoped rule. Forge skips it only when the body contains the sample banner.
-- A hook payload that is not under `.git/hooks` or `.husky` is silent for the path-scoped rule and matches Forge. `tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/negative/loose/pre-commit` is that case.
+- A hook payload that is not under `.git/hooks`, `.githooks`, or `.husky` is silent for the path-scoped rule and matches Forge. `tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/negative/loose/pre-commit` is that case.
 
 Checked against [YARA-Forge](https://github.com/YARAHQ/yara-forge) `qa/rule_qa.py`: the metadata it normalizes is present (`description`, `author`, `date`, `modified`, `reference`, `id`), plus `version` and ATT&CK in `attack_technique` and `attack_tactic`. No private rules, and no `elf`, `cuckoo`, or `magic` import. The meta `score` is the author's confidence from 0 to 100. It is not Forge's computed quality score, and this pack does not set a sample `hash`. Ids are `SERAPH-YARA-NNN`, not UUIDs. The repository is not in `yara-forge-config.yml` until a forge maintainer adds it. YARA-Forge's own README says the repositories it collects have been carefully selected, and "Adding unvetted sources is not supported." Submission comes after a maintainer adopts the pack. It is not a pull request this repository can open on its own.
 
-`yr fmt --check` runs in CI on `rules/yara`, `rules/path-scoped`, and `rules/src/yara`. yaraQA 0.11.0 findings that remain are listed in [VALIDATION.md](VALIDATION.md).
+`yr fmt --check` runs in CI on `rules/yara`, `rules/path-scoped`, and `rules/src/yara`. The yaraQA 0.11.0 findings in [VALIDATION.md](VALIDATION.md) were recorded before the review fixes and have not been re-run.
 
 ## CI and releases
 
@@ -204,7 +211,7 @@ Pull requests and pushes to `main` run [`.github/workflows/test.yml`](.github/wo
 
 Pushing a tag `vX.Y.Z` runs those tests and then [`.github/workflows/release.yml`](.github/workflows/release.yml), which publishes the GitHub Release. The release job is the one token that can write contents. Tag the commit yourself after CI on `main` is green. The version in `pyproject.toml` has to match the tag, and `CHANGELOG.md` needs a section for it.
 
-The benign-corpus scan clones public trees at job time. A new hit fails the job. The allowlist is empty. A failed clone also fails the job.
+The benign-corpus scan clones public trees at job time. A new hit fails the job. `validation/fp-allowlist.txt` holds one accepted hit. A failed clone also fails the job.
 
 ## Project docs
 

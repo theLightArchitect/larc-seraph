@@ -4,7 +4,7 @@ larc-seraph v0.1.9. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-
 
 This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
 
-Detection logic did change in v0.1.9. `SERAPH-YARA-016` no longer lets a pin or an allowlisted scope anywhere in the file clear a second unpinned package. The Forge hidden-unicode rule no longer requires the file to mention its own name. English confirmation-bypass sentences are generated into the YARA rule from `larc_seraph/phrases.py`, and YARA and the CLI now have parity on the instruction fixtures. `SERAPH-SIGMA-018` is new. The corpus numbers below are from a local `tools/fp_scan.py` run. They are not a claim that a GitHub Actions run of a later commit has finished until that run is linked here.
+Detection logic did change in v0.1.9. `SERAPH-YARA-016` no longer lets a pin or an allowlisted scope anywhere in the file clear a second unpinned package. The Forge hidden-unicode rule no longer requires the file to mention its own name. English confirmation-bypass sentences are generated into the YARA rule from `larc_seraph/phrases.py`, and YARA and the CLI now have parity on the instruction fixtures. `SERAPH-SIGMA-018` is new. A review of this branch then changed the rules again: the installer exemption is one exact command shape with no third-party URL, a vendor host has to end where the URL's authority ends, the binary check no longer trips on two letters or one NUL, tag characters and pipes are counted with no bound, the git-hook path covers `.githooks` and nested `.husky`, the MCP rules read Codex tables and the VS Code and Zed keys, `SERAPH-SIGMA-017` is removed, and `SERAPH-SIGMA-018` reads the command line. The corpus numbers below are from a local `tools/fp_scan.py` run. They are not a claim that a GitHub Actions run of a later commit has finished until that run is linked here.
 
 GitHub Actions runs that already finished, on earlier commits of this pull request:
 
@@ -21,11 +21,11 @@ Do not read those three runs as coverage of the 016 span fix, the hidden-unicode
 | pytest fixture truth table | Pass. Each positive matches only its rule. Each negative and the known-good set matches nothing. |
 | Sigma `sigma check --fail-on-issues` | Pass, with the D3FEND tag validator excluded. This pack has no D3FEND tags, and that validator downloads an ontology before it looks at the namespace. ATT&CK tags are still checked. |
 | pySigma conversion | Pass. Lucene via `pipelines/ecs-macos.yml` and Splunk via `pipelines/splunk-macos.yml`. Output is in `rules/converted/`. |
-| Telemetry round-trip | Pass. Every Sigma rule has eslogger, ECS, and osquery samples, positive and negative. `larc_seraph.translate` maps them onto the field contract and the evaluator agrees with the fixture. |
+| Telemetry round-trip | Pass, as a check of the field mapping only. Every Sigma rule has eslogger, ECS, and osquery samples, positive and negative. They are built from the Sigma fixtures by `tools/build_telemetry_samples.py`, not captured from a collector, so this does not show that a real exec or file event has the shape a rule expects. |
 | libyara | Pass. `yara-python` compiles the set. |
 | yara-x 1.23.0 | Pass. `yr compile rules/yara` with no externals exits 0 with no warning text. The path-scoped set compiles with `filepath` defined. |
 | Wide-tree speed | Pass. 400 benign Markdown files scanned in the unit test in under 10 seconds. The corpus scan below is the larger number. |
-| Benign corpus | Local pass after the review changes. 15615 files. Zero Forge hits. Zero path-scoped hits. The CLI scan does not apply `larc_seraph.phrases`. |
+| Benign corpus | Local pass after the review fixes. 15627 files. Zero Forge hits. One path-scoped hit, which is the accepted entry in `validation/fp-allowlist.txt`. The corpus scan does not apply `larc_seraph.phrases`. |
 | Metadata | Pass. Author is Kevin Francis Tan. Date, references, ATT&CK, severity, and false-positive notes are required by the test. Sigma UUIDs and YARA ids are unique. |
 | Evasion matrix | Pass. `validation/evasion-matrix.yml` is executed by pytest. Misses are asserted, not ignored. |
 
@@ -46,7 +46,9 @@ Homebrew cask Ruby files were not a separate tree. The servers and gemini-cli tr
 
 ### Hits
 
-After v0.1.1 the Linux corpus scan reports no hits. The three v0.1.0 hits were a unit test and two Markdown READMEs. Those files are not JSON, TOML, or YAML configs, so the MCP rules no longer see them. The allowlist is empty on purpose. A new hit fails `tools/fp_scan.py`.
+After v0.1.1 the Linux corpus scan reported no hits. The three v0.1.0 hits were a unit test and two Markdown READMEs. Those files are not JSON, TOML, or YAML configs, so the MCP rules no longer see them.
+
+The corpus now has one accepted hit. `google-gemini/gemini-cli` ships `.gemini/skills/agent-tui/SKILL.md`, which pipes `raw.githubusercontent.com/pproenca/agent-tui/master/install.sh` into a shell. That is a third-party repository's mutable branch, and the path-scoped instruction rule points at it. It is listed in `validation/fp-allowlist.txt` and is not exempted in the rule. Any other hit fails `tools/fp_scan.py`. An older copy of `openai/codex`'s `AGENTS.md` ("do not ask for approval to run it") also matches the path-scoped rule. Upstream's file is a short stub today, so the clean result depends on what upstream ships.
 
 ## Real macOS host
 
@@ -78,17 +80,17 @@ v0.1.6 on a Mac produced 14 hits: 3 expected and 11 true positives, with no fals
 The CLI uses the path-scoped rules. Pass `filepath` as the path is stored, with forward slashes. Do not lowercase it. `rules/yara` is the Forge flavor and compiles with no externals.
 
 ```bash
-yara rules/yara /abs/path
-yara -d filepath=/abs/path rules/path-scoped /abs/path
+yara rules/yara/*.yar /abs/path
+yara -d filepath=/abs/path rules/path-scoped/*.yar rules/yara/launchplist_*.yar /abs/path
 yr scan rules/yara /abs/path
-yr scan --define 'filepath="/abs/path"' rules/path-scoped /abs/path
+yr scan --define 'filepath="/abs/path"' rules/path-scoped rules/yara/launchplist_ssh_reverse_tunnel.yar rules/yara/launchplist_writable_interpreter.yar /abs/path
 ```
 
 ```python
 rules.match(path, externals={"filepath": path})
 ```
 
-Quote the YARA-X `--define` value. A bare confirmation sentence in a file named `AGENTS.md` matches the path-scoped rule only. A hook payload outside `.git/hooks` and `.husky` matches the Forge rule only.
+Quote the YARA-X `--define` value. A bare confirmation sentence in a file named `AGENTS.md` matches the path-scoped rule only. A hook payload outside `.git/hooks`, `.githooks`, and `.husky` matches the Forge rule only. libyara's `yara` takes rule files, so the commands name `*.yar`. The two plist rules live only in `rules/yara`.
 
 ## Evasion
 
@@ -104,7 +106,7 @@ Not caught, on purpose or because the fix would be a different detector:
 | Remote URL more than 160 bytes after `npx`, or an unquoted `https://` used only as a Markdown link | Tightened so READMEs that link the word npx do not match. The rule's window is 160 bytes. |
 | Bare `/tmp` with no further path segment | A directory grant, not a launched binary. |
 | Custom secret variable name | The name list is finite. |
-| Zero-width mark between every letter | One mark is tolerated. A mark per letter is not. |
+| Zero-width mark inside a word, YARA alone | YARA allows a mark between words. The CLI strips every mark first and does match. |
 | U+200B with no other hidden-text signal | Too common to treat as instructions. |
 | `KeepAlive` integer 1 | Not a boolean and not a dictionary. |
 | Host-key option only in `~/.ssh/config` | The plist does not contain it. |
@@ -134,10 +136,9 @@ Not caught, on purpose or because the fix would be a different detector:
 | SERAPH-SIGMA-013 | T1543.001, T1543.004 | |
 | SERAPH-SIGMA-014 | T1572, T1021.004 | |
 | SERAPH-SIGMA-015 | T1059.004, T1105 | |
-| SERAPH-SIGMA-017 | T1059.004, T1105 | |
 | SERAPH-SIGMA-018 | T1059, T1195.002 | |
 
-`SERAPH-SIGMA-016` is retired. It was the terminal piped-shell rule and shared the number 016 with `SERAPH-YARA-016`. The rule is now `SERAPH-SIGMA-017`. Its Sigma UUID did not change. The metadata check fails if a three-digit number is used by both a YARA rule and a Sigma rule.
+`SERAPH-SIGMA-016` and `SERAPH-SIGMA-017` are retired. Both numbers belonged to the terminal piped-shell rule. It needed one exec event whose parent was Terminal, iTerm, or `login` and whose command line held the pipe. A pipeline typed or pasted into a terminal never produces that event: the interactive shell parses the pipe, each side is its own process with the shell as parent, and no argument list contains the pipe. `bash -c "$(curl ...)"` has its substitution expanded before the exec. The rule could only match the fixture written for it, so it is removed. The metadata check fails if a three-digit number is used by both a YARA rule and a Sigma rule.
 
 Sigma tags are only the ATT&CK namespace. ATLAS ids are references and this table. pySigma rejects an `atlas` tag namespace.
 
@@ -155,9 +156,17 @@ Joining eslogger args with spaces drops quoting. A command whose only copy of a 
 
 ## Instruction rule parity
 
-`larc_seraph/phrases.py` is the sentence list. `tools/build_phrase_rules.py` writes `rules/src/yara/instruction_unsafe_directive.yar`, and the flavor builder copies it into `rules/yara` and `rules/path-scoped`. YARA and the CLI match the same positive instruction fixtures, including the confirmation-bypass sentences and the concealment, recipient, sidenote, auto-approve, pipe, inventory, and prompt-injection signals added with them. Both stay silent on the negatives. A `curl | sh` line in an instruction file matches unless the URL is one exact entry in `INSTALLER_URLS` (scheme, host, and path). `github.com`, `raw.githubusercontent.com`, `gist.githubusercontent.com`, and `google.com` are not exempt as hosts. A lookalike such as `sh.rustup.rs.attacker.example` still matches. A zero-width mark may sit between words. Forge still requires an in-file instruction marker. The path-scoped rule still uses the path. The local corpus after this generation is 15615 files, 0 Forge hits, 0 path-scoped hits.
+`larc_seraph/phrases.py` is the sentence list. `tools/build_phrase_rules.py` writes `rules/src/yara/instruction_unsafe_directive.yar`, and the flavor builder copies it into `rules/yara` and `rules/path-scoped`. YARA and the CLI match the same committed positive instruction fixtures, and both stay silent on the negatives. That is a statement about the fixtures. Outside them the CLI matches some inputs that YARA alone misses: a curly apostrophe in "don't", a zero-width mark inside a word, a no-break or em space between words, a high-risk word on an adjacent line, a phrase more than 240 bytes into its line, a pipe followed by a newline, and a file over 5 MB.
+
+A `curl | sh` line in an instruction file matches unless the whole command is one listed installer line. The fetch tool has to be in command position: at the start of a line, after a shell prompt, or after a backtick. Up to four options from a closed list may follow (`-fsSL` style short flags, `--proto '=https'`, `--tlsv1.2`, and a few long forms), then one exact `INSTALLER_URLS` entry, the pipe, `sh` or `bash`, and at most `-s` arguments. A second URL, a header, a path or a query after the URL, `-K`, `-x`, `wget -i`, an environment prefix such as `PATH=./bin:$PATH`, `./bin/curl`, or a script name after the shell keeps the match. No host is exempt, and no third-party repository is listed. A lookalike such as `sh.rustup.rs.attacker.example` still matches. A listed line is always one pipe match, so the generated rule compares the number of pipes with the number of listed lines and needs no loop.
+
+A vendor host for a token has to end at a slash, a query, a fragment, a space, or the end of the file. A quote or a bracket ends it only when the token ends there too. `github.com.attacker.example`, `github.com@attacker.example`, `github.com\@attacker.example`, and `"https://github.com"@attacker.example` are not GitHub. Any authority counts as a URL, so a token sent to an IP address matches. `AWS_SECRET_ACCESS_KEY` has no vendor host, because a SigV4 secret is never sent and anyone can own a bucket under `amazonaws.com`.
+
+Inner checks use the `at` and `in` operators and match counts, which have no bound. The outer loop over each phrase stops at 256 occurrences, because yara-x warns on a loop over a match count and this pack compiles with no warnings. Forge still requires an in-file instruction marker. The path-scoped rule still uses the path, and it has no binary check: a file named `AGENTS.md` is read as instructions whatever its first bytes are. The Forge rules skip a file whose first kilobyte holds eight or more control bytes. The local corpus after these changes is 15627 files, 0 Forge hits, and 1 accepted path-scoped hit.
 
 ## yaraQA 0.11.0
+
+_Audit pending._ The numbers in this section were recorded before the review fixes above. yaraQA has not been re-run on the changed rules, and the loops it flagged have been rewritten.
 
 Run on `rules/yara` (16 findings) and `rules/path-scoped` (14 findings). No critical findings. The short unanchored package regexes (RE1) were rewritten so each one contains the literal `args`. They did not recur.
 
@@ -171,14 +180,14 @@ Left in place:
 
 Opened and cited:
 
-- Pillar Security, Rules File Backdoor (hidden Unicode in Cursor and Copilot rule files): https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents and the Security Affairs write-up of that research, https://securityaffairs.com/175593/hacking/rules-file-backdoor-ai-code-editors-silent-supply-chain-attacks.html . On `SERAPH-YARA-006`.
-- Snyk, malicious npm package `postmark-mcp` (versions from 1.0.16, BCC to giftshop.club, 2025-09-25): https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/ . On `SERAPH-YARA-016` and `SERAPH-YARA-004`.
-- Invariant Labs, MCP tool poisoning: https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks . On `SERAPH-YARA-005` and `SERAPH-YARA-007`.
-- OpenSourceMalware, Lazarus / Contagious Interview git pre-commit hooks (`curl | sh` and `wget | sh` to precommit.vercel.app): https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware . On `SERAPH-YARA-010` only. It is a git hook, not an MCP curl rule.
-- Broadcom, AMOS / Atomic Stealer ClickFix (paste into Terminal, LaunchAgent persistence): https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users . On `SERAPH-YARA-008`, `SERAPH-SIGMA-013`, and `SERAPH-SIGMA-017`.
-- Nx s1ngularity, August 2025. The payload started `claude --dangerously-skip-permissions`, `gemini --yolo`, and `q chat --trust-all-tools`. https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/ , https://www.wiz.io/blog/s1ngularity-supply-chain-attack , https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware . On `SERAPH-SIGMA-018`. The published payload did not name `codex`. The rule includes it as the same class of CLI.
+- Pillar Security, Rules File Backdoor (hidden Unicode in Cursor and Copilot rule files): https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents and the Security Affairs write-up of that research, https://securityaffairs.com/175593/hacking/rules-file-backdoor-ai-code-editors-silent-supply-chain-attacks.html . On `SERAPH-YARA-006`. Pillar names zero-width joiners and bidirectional markers. This rule covers tag characters and the four bidi overrides. It does not cover a zero-width encoding.
+- Snyk, malicious npm package `postmark-mcp` (versions from 1.0.16, BCC to giftshop.club, 2025-09-25): https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/ . On `SERAPH-YARA-016` and `SERAPH-YARA-004`. A config pinned to a backdoored version is a clean result for these rules. A pin stops a silent update. It does not vouch for the version.
+- Invariant Labs, MCP tool poisoning: https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks . On `SERAPH-YARA-007` only. The attack lives in an MCP server's tool description. The published text matches when it is scanned as a tools JSON. The proof of concept's own home, a Python server docstring, is not in scope for either flavor.
+- OpenSourceMalware, Lazarus / Contagious Interview git pre-commit hooks (`curl | sh` and `wget | sh` to precommit.vercel.app): https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware . On `SERAPH-YARA-010` only. It is a git hook, not an MCP curl rule. The published hooks live in `.githooks/`, set through `core.hooksPath`, and the path-scoped rule covers that directory.
+- Broadcom, AMOS / Atomic Stealer ClickFix (LaunchAgent persistence): https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users . On `SERAPH-YARA-008` and `SERAPH-SIGMA-013`. The bulletin says the payload persists through LaunchAgents. It does not publish the Terminal command.
+- Nx s1ngularity, August 2025. The payload started `claude --dangerously-skip-permissions`, `gemini --yolo`, and `q chat --trust-all-tools`. https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/ , https://www.wiz.io/blog/s1ngularity-supply-chain-attack , https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware . On `SERAPH-SIGMA-018`. The published payload did not name `codex`. The rule includes it as the same class of CLI. `gemini` and `codex` are node scripts, so the rule also reads the script path in the command line. That shape comes from the installed CLIs, not from a captured event.
 
-No public incident was opened for these rules, so none was invented: `SERAPH-YARA-001` (launch from a temp path), `SERAPH-YARA-002` (MCP curl piped to a shell), `SERAPH-YARA-003` (encoded exec), `SERAPH-YARA-009` (SSH reverse tunnel in a plist), `SERAPH-SIGMA-011` (authorized_keys), `SERAPH-SIGMA-012` (shell rc), `SERAPH-SIGMA-014` (SSH reverse with host-key checking off), `SERAPH-SIGMA-015` (agent-parent piped shell). They still cite ATT&CK.
+No public incident was opened for these rules, so none was invented: `SERAPH-YARA-001` (launch from a temp path), `SERAPH-YARA-002` (MCP curl piped to a shell), `SERAPH-YARA-003` (encoded exec), `SERAPH-YARA-005` (secret on a network sink), `SERAPH-YARA-009` (SSH reverse tunnel in a plist), `SERAPH-SIGMA-011` (authorized_keys), `SERAPH-SIGMA-012` (shell rc), `SERAPH-SIGMA-014` (SSH reverse with host-key checking off), `SERAPH-SIGMA-015` (agent-parent piped shell). They still cite ATT&CK.
 
 ## What this does not cover
 

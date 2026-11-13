@@ -14,4 +14,4 @@ A LaunchAgent that later runs the same command has launchd as its parent, not th
 
 ## Triage
 
-Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-017, not this rule.
+Read the URL and the parent. The same line typed into Terminal is not covered by this pack. A single exec event does not hold a pipeline that an interactive shell parsed.

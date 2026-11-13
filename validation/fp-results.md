@@ -1,7 +1,7 @@
 # Benign-corpus YARA results
 
-Files scanned: 15615
-Seconds: 6.81
+Files scanned: 15627
+Seconds: 21.334
 
 ## Hit counts
 
@@ -9,7 +9,7 @@ Forge flavor:
 No Forge rule matched the corpus.
 
 Path-scoped flavor:
-No path-scoped rule matched the corpus.
+- SERAPH_Instruction_Unsafe_Directive_Path: 1
 
 ## Fetch notes
 

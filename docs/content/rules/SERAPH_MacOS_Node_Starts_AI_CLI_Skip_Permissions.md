@@ -6,11 +6,11 @@ The August 2025 Nx s1ngularity payload, running from a malicious npm release, st
 
 ## Why this rule
 
-The parent has to be `node`, `npm`, or `npx`. The child has to be `claude`, `gemini`, `q`, or `codex`. The command line has to contain one of those three flags. A person who types the same flag into zsh or Terminal does not match. `codex` was not in the published payload. It is here because it is the same class of CLI and the same flag.
+The parent has to be a JavaScript runtime or package manager: `node`, `npm`, `npx`, `pnpm`, `yarn`, `bun`, or `deno`. `/bin/sh` also counts, because `child_process.exec` puts a shell between node and the CLI. The child is named by its image (`claude`, `gemini`, `q`, `codex`, or Claude's versioned install path) or by the script path in the command line (including `claude-code/cli.js`), because `gemini` and `codex` are node scripts and the executed image is `node`. The command line has to carry one of the three published flags or an equivalent: `--permission-mode bypassPermissions`, `--approval-mode yolo`, `gemini -y`, or `--dangerously-bypass-approvals-and-sandbox`. A person who types the same flag into zsh or bash does not match. `codex` was not in the published payload. It is here because it is the same class of CLI.
 
 ## Limitations
 
-A developer who really wants a node script to launch Claude with prompts disabled will match. The rule cannot see a flag that was passed through an environment variable or a response file. `Image` ending in `/q` is the Amazon Q CLI name from the incident. A different binary with that exact filename would match too.
+A developer who really wants a node script to launch Claude with prompts disabled will match, and so will a `/bin/sh` script that does it. The script-path and versioned-image shapes come from the installed CLIs, not from a captured event. `q chat -a`, `copilot --allow-all-tools`, and `cursor-agent --force` are not in the rule. The rule cannot see a flag that was passed through an environment variable or a response file. `Image` ending in `/q` is the Amazon Q CLI name from the incident. A different binary with that exact filename would match too.
 
 ## Triage
 

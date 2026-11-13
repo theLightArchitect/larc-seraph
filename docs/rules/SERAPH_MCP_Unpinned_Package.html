@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1195/002/">T1195.002</a></div>
   <div><span>Tactic</span>initial-access</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>JSON that starts with {, YAML that starts with mcpServers:, or TOML that starts with [mcp_servers or mcp_servers =. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a version does not match. @latest is SERAPH-YARA-004.</div>
+  <div><span>Scope</span>A JSON object at the start of the file (after an optional BOM or blank space), YAML that starts with mcpServers:, or TOML that starts with [mcp_servers or mcp_servers =. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a version does not match. @latest is SERAPH-YARA-004.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A community MCP server installed the way its README shows, with npx and no version. The allowlist is short on purpose. Review the package name.</li></ul>

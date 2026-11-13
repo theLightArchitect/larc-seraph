@@ -1,12 +1,18 @@
 {
-  "files_scanned": 15615,
-  "seconds": 6.81,
-  "forge_seconds": 3.187,
-  "path_seconds": 3.624,
+  "files_scanned": 15627,
+  "seconds": 21.334,
+  "forge_seconds": 15.991,
+  "path_seconds": 5.343,
   "hit_counts": {},
-  "path_hit_counts": {},
+  "path_hit_counts": {
+    "SERAPH_Instruction_Unsafe_Directive_Path": 1
+  },
   "hits": {},
-  "path_hits": {},
+  "path_hits": {
+    "SERAPH_Instruction_Unsafe_Directive_Path": [
+      "git/gemini-cli/.gemini/skills/agent-tui/SKILL.md"
+    ]
+  },
   "fetch_notes": [
     "reuse servers",
     "reuse husky",

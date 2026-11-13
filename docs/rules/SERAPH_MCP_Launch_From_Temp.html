@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a></div>
   <div><span>Tactic</span>execution</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>MCP client configs that contain an mcpServers object. Pair with a path filter such as mcp.json or claude_desktop_config.json. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule also requires the first byte to be {. YAML or TOML that does not start with {, and Markdown, do not match.</div>
+  <div><span>Scope</span>MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. Pair with a path filter such as mcp.json or claude_desktop_config.json. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule has no path. It needs a JSON object at the start of the file (after an optional BOM or blank space), a top-level mcpServers: key, or an mcp_servers table. A JSONC file that opens with a comment, and Markdown, do not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A short-lived local experiment that intentionally runs a server from /tmp or Library/Caches. A bare /tmp directory grant with no trailing path segment is not matched.</li></ul>

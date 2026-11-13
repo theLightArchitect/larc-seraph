@@ -10,7 +10,7 @@ The rule requires the MCP server map and one of three shapes: a fetch utility fo
 
 ## Limitations
 
-The name list is finite. A custom variable will not match. A command that reads the token in a child process and posts it without those names will not match. A command that sends a named token to that vendor's own host does not match. A different host still does.
+The name list is finite. A custom variable will not match. A command that reads the token in a child process and posts it without those names will not match. A command that sends a named token to that vendor's own host does not match. A different host still does, including a lookalike such as `github.com.attacker.example`. An AWS secret has no vendor host and matches beside any URL.
 
 ## Triage
 
