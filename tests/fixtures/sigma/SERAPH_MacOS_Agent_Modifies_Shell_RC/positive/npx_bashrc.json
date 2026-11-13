@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC"
+  },
+  "Image": "/Users/dev/.npm/_npx/abc/node_modules/.bin/node",
+  "ParentImage": "/bin/zsh",
+  "TargetFilename": "/Users/dev/.bashrc",
+  "User": "dev",
+  "CommandLine": "node"
+}

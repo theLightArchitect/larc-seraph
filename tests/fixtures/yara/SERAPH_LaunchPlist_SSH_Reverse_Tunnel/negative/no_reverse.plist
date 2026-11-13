@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- SERAPH synthetic fixture. classification: synthetic-benign. inert. do not load with launchctl. -->
+<dict>
+  <key>Label</key>
+  <string>com.example.seraph.synthetic</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/ssh</string>
+    <string>-o</string>
+    <string>StrictHostKeyChecking=no</string>
+    <string>git@example.invalid</string>
+  </array>
+</dict>
+</plist>

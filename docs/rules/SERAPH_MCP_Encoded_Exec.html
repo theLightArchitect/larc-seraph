@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP config decodes a payload into a shell or eval · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-YARA-003 · yara · <span class="sev sev-high">high</span></p>
+<h1>MCP config decodes a payload into a shell or eval</h1>
+<p class="deck">An MCP client config pipes a base64 decode into a shell, or pairs a base64 decode call with eval or exec.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1027/">T1027</a>, <a href="https://attack.mitre.org/techniques/T1140/">T1140</a>, <a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a></div>
+  <div><span>Tactic</span>defense-evasion, execution</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>MCP client configs that contain an mcpServers object. A long token alone is not enough.</div>
+</div>
+<h2>False positives</h2>
+<ul><li>A server whose documented command line legitimately shells out through a decode step. Rare in MCP configs. The rule does not flag a bare base64 blob.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1027/">https://attack.mitre.org/techniques/T1027/</a></li><li><a href="https://attack.mitre.org/techniques/T1140/">https://attack.mitre.org/techniques/T1140/</a></li><li><a href="https://attack.mitre.org/techniques/T1059/004/">https://attack.mitre.org/techniques/T1059/004/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>Encoding is a way to keep a command out of a casual read of a JSON file. The interesting event is not the presence of a long token. Tokens are normal. The interesting event is a decode step whose output is handed to a shell, or a decode call placed inside <code>eval</code> or <code>exec</code>.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The rule requires the MCP server map and one of those two shapes. A long opaque string in an environment value, with no decode flag and no eval, is a negative fixture on purpose. The synthetic decode used in the fixtures is the ASCII sentence <code>echo seraph-inert</code>, so a reviewer can reverse it and see that the sample is inert.</p>
+<h2 id="limitations">Limitations</h2>
+<p>A custom decoder, or a decode that writes a file instead of executing, does not match. A legitimate tool whose command line really does decode-and-exec will match and needs a human. The rule will not flag a blob that is never decoded in the file.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Encoded_Exec/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

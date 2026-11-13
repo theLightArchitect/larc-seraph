@@ -1,0 +1,40 @@
+/*
+   SERAPH-YARA-003
+   Copyright 2026 Kevin Francis Tan / Light Architects
+   https://lightarchitects.ai
+   Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+   Defensive signature. Not an exploit and not a payload.
+*/
+
+rule SERAPH_MCP_Encoded_Exec
+{
+    meta:
+        id = "SERAPH-YARA-003"
+        title = "MCP config decodes a payload into a shell or eval"
+        author = "Kevin Francis Tan"
+        organization = "Light Architects"
+        author_url = "https://lightarchitects.ai"
+        date = "2026-11-13"
+        modified = "2026-11-13"
+        version = "1.0.0"
+        severity = "high"
+        description = "An MCP client config pipes a base64 decode into a shell, or pairs a base64 decode call with eval or exec."
+        attack_technique = "T1027, T1140, T1059.004"
+        attack_tactic = "defense-evasion, execution"
+        reference = "https://attack.mitre.org/techniques/T1027/"
+        reference_2 = "https://attack.mitre.org/techniques/T1140/"
+        reference_3 = "https://attack.mitre.org/techniques/T1059/004/"
+        scope = "MCP client configs that contain an mcpServers object. A long token alone is not enough."
+        false_positives = "A server whose documented command line legitimately shells out through a decode step. Rare in MCP configs. The rule does not flag a bare base64 blob."
+        license = "Detection Rule License 1.1"
+
+    strings:
+        $mcp = "\"mcpServers\"" ascii
+        $dec_sh = /base64[ \t]+(-d|--decode)\b[^\n]{0,80}\|\s*(ba)?sh\b/ nocase ascii
+        $dec_zsh = /base64[ \t]+(-d|--decode)\b[^\n]{0,80}\|\s*zsh\b/ nocase ascii
+        $py_fwd = /b64decode.{0,80}(eval|exec)\s*\(/s nocase ascii
+        $py_rev = /(eval|exec)\s*\(.{0,80}b64decode/s nocase ascii
+
+    condition:
+        $mcp and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev)
+}

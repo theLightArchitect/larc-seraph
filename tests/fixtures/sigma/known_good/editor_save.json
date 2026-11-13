@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "none"
+  },
+  "Image": "/usr/bin/vim",
+  "ParentImage": "/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+  "TargetFilename": "/Users/dev/projects/README.md",
+  "CommandLine": "vim README.md",
+  "User": "dev"
+}

@@ -1,0 +1,57 @@
+# SERAPH-SIGMA-012
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS agent process modified a user shell rc file
+name: SERAPH_MacOS_Agent_Modifies_Shell_RC
+id: 93769b4b-6b4b-466d-b19f-89eb0257aa2d
+status: experimental
+description: >
+  A process whose image, or its parent image, matches a known local AI-agent
+  host wrote a user shell startup file. That is a common place to hide a
+  command that runs in later interactive sessions. Field names are the SERAPH
+  normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1546/004/
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS file events normalized to the SERAPH field contract
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1546.004
+logsource:
+  product: macos
+  category: file_event
+  definition: SERAPH normalized ESF file event. Image, ParentImage, and TargetFilename are absolute paths.
+detection:
+  selection_target:
+    TargetFilename|endswith:
+      - '/.zshrc'
+      - '/.zprofile'
+      - '/.zshenv'
+      - '/.zlogin'
+      - '/.bashrc'
+      - '/.bash_profile'
+      - '/.profile'
+  selection_agent_image:
+    Image|contains:
+      - '/Cursor'
+      - '/Claude'
+      - '/codex'
+      - '/.npm/_npx/'
+      - '/Code Helper'
+  selection_agent_parent:
+    ParentImage|contains:
+      - '/Cursor'
+      - '/Claude'
+      - '/codex'
+      - '/.npm/_npx/'
+      - '/Code Helper'
+  condition: selection_target and 1 of selection_agent_*
+falsepositives:
+  - An operator asked an agent to add an alias or a PATH entry to their own shell rc.
+  - Dotfile tooling whose executable path contains Claude, Cursor, or codex.
+level: medium

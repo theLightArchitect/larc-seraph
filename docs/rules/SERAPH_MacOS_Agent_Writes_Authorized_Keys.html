@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>macOS agent process wrote SSH authorized_keys · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-SIGMA-011 · sigma · <span class="sev sev-high">high</span></p>
+<h1>macOS agent process wrote SSH authorized_keys</h1>
+<p class="deck">A process whose image, or its parent image, matches a known local AI-agent host wrote an SSH authorized_keys file. Agent tools do not normally manage SSH trust. Field names are the SERAPH normalized macOS contract, not raw unified-log keys.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1098/004/">T1098.004</a></div>
+  <div><span>Tactic</span>persistence</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>macOS file events normalized to the SERAPH field contract</div>
+</div>
+<h2>False positives</h2>
+<ul><li>An operator explicitly asked an agent to install a public key during a documented bootstrap.</li><li>Unrelated software whose path contains the substring Claude, Cursor, or codex.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1098/004/">https://attack.mitre.org/techniques/T1098/004/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p><code>authorized_keys</code> is the list of keys allowed to log in. An editor, a model, or an MCP server does not manage that file in the normal course of writing code. When a process whose path matches a known agent host writes it, the session has crossed from the workspace into SSH trust.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The file path has to end in <code>authorized_keys</code> or <code>authorized_keys2</code>. The image or the parent image has to contain one of the reviewed agent-host substrings. A person editing the file in vim from Terminal does not match. An agent writing a README does not match. The same marker list is shared with the shell-rc rule and the piped-shell rule, and a test fails if they drift.</p>
+<h2 id="limitations">Limitations</h2>
+<p>The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the SERAPH contract. A collector that does not supply <code>ParentImage</code> can still match on <code>Image</code> alone, and will miss the case where only the parent is the agent.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

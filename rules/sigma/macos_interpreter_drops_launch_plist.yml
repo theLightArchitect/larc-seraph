@@ -1,0 +1,52 @@
+# SERAPH-SIGMA-013
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS interpreter wrote a LaunchAgent or LaunchDaemon plist
+name: SERAPH_MacOS_Interpreter_Drops_Launch_Plist
+id: d02261e0-72ff-4943-b615-535f3c525e8f
+status: experimental
+description: >
+  A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents
+  or LaunchDaemons. This is the file-drop half of a persistence lead. The
+  companion YARA rule inspects whether the plist itself is a rogue job.
+  Field names are the SERAPH normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1543/001/
+  - https://attack.mitre.org/techniques/T1543/004/
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS file events normalized to the SERAPH field contract
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1543.001
+  - attack.t1543.004
+logsource:
+  product: macos
+  category: file_event
+  definition: SERAPH normalized ESF file event. Image and TargetFilename are absolute paths.
+detection:
+  selection_dir:
+    TargetFilename|contains:
+      - '/Library/LaunchAgents/'
+      - '/Library/LaunchDaemons/'
+  selection_ext:
+    TargetFilename|endswith: '.plist'
+  selection_writer:
+    Image|endswith:
+      - '/bash'
+      - '/bin/sh'
+      - '/zsh'
+      - '/python'
+      - '/python3'
+      - '/node'
+      - '/osascript'
+      - '/curl'
+  condition: selection_dir and selection_ext and selection_writer
+falsepositives:
+  - Installers and Homebrew casks that drop a LaunchAgent from a shell script.
+  - An operator scripting their own login job. Correlate with SERAPH-YARA-008 or SERAPH-YARA-009 before escalating.
+level: medium

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Instruction file contains Unicode tags or bidi overrides · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-YARA-006 · yara · <span class="sev sev-high">high</span></p>
+<h1>Instruction file contains Unicode tags or bidi overrides</h1>
+<p class="deck">A file contains Unicode tag characters (U+E0000 through U+E007F) or a bidi embedding or override control. Both are used to hide text from a human reader while leaving it in the bytes an agent will read.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1027/">T1027</a></div>
+  <div><span>Tactic</span>defense-evasion</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>Agent instruction files such as AGENTS.md, CLAUDE.md, .cursorrules, and .github/copilot-instructions.md. The bytes are rare in ordinary prose, so the rule is content-wide.</div>
+</div>
+<h2>False positives</h2>
+<ul><li>A linguistics note or a security write-up that embeds the raw controls on purpose. SERAPH docs name the code points and do not embed them. Zero-width space and emoji joiners are intentionally not matched.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1027/">https://attack.mitre.org/techniques/T1027/</a></li><li><a href="https://www.unicode.org/charts/PDF/UE0000.pdf">https://www.unicode.org/charts/PDF/UE0000.pdf</a></li><li><a href="https://www.usenix.org/conference/usenixsecurity22/presentation/boucher">https://www.usenix.org/conference/usenixsecurity22/presentation/boucher</a></li><li><a href="https://atlas.mitre.org/techniques/AML.T0051">https://atlas.mitre.org/techniques/AML.T0051</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>Agent instruction files are read by a model and, usually, glanced at by a person. Unicode tag characters (U+E0000 through U+E007F) are invisible in ordinary rendering and can carry a second sentence. Bidi overrides (U+202A, U+202B, U+202D, U+202E) reorder the characters a person sees relative to the characters the parser reads. Both are established ways to hide text. The Trojan Source paper documents the bidi case. MITRE ATLAS AML.T0051 is the prompt-injection class this supports. ATT&amp;CK T1027 is the closest enterprise technique, and it is only an approximation.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. It does not match zero-width space, word joiner, or emoji joiners. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The positive fixtures are labelled, one with a tag-encoded inert word and one with a single override at the end of the file so the heading stays readable.</p>
+<h2 id="limitations">Limitations</h2>
+<p>A write-up that embeds the raw controls on purpose will match. SERAPH&#x27;s own pages name the code points and do not embed them. A motivated author can hide instructions with homoglyphs or with wording alone, and this rule will not see that. Path-scope the scan to instruction filenames if you do not want it running across arbitrary binaries, where a random byte sequence is more plausible.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

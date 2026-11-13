@@ -1,0 +1,13 @@
+# macOS agent process wrote SSH authorized_keys
+
+## Threat
+
+`authorized_keys` is the list of keys allowed to log in. An editor, a model, or an MCP server does not manage that file in the normal course of writing code. When a process whose path matches a known agent host writes it, the session has crossed from the workspace into SSH trust.
+
+## Why this rule
+
+The file path has to end in `authorized_keys` or `authorized_keys2`. The image or the parent image has to contain one of the reviewed agent-host substrings. A person editing the file in vim from Terminal does not match. An agent writing a README does not match. The same marker list is shared with the shell-rc rule and the piped-shell rule, and a test fails if they drift.
+
+## Limitations
+
+The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the SERAPH contract. A collector that does not supply `ParentImage` can still match on `Image` alone, and will miss the case where only the parent is the agent.

@@ -1,0 +1,67 @@
+# SERAPH-SIGMA-015
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS agent parent started a shell that pipes a fetch or a decode
+name: SERAPH_MacOS_Agent_Piped_Shell
+id: 578d5554-1f3b-4dcb-b14b-2c943b3097f1
+status: experimental
+description: >
+  A known local AI-agent host spawned a shell or Python whose command line
+  pipes curl, wget, or base64 into a shell, or calls exec or eval on a
+  base64 decode. A plain download does not match. Field names are the SERAPH
+  normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1059/004/
+  - https://attack.mitre.org/techniques/T1105/
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS process creation events normalized to the SERAPH field contract
+tags:
+  - attack.execution
+  - attack.command-and-control
+  - attack.t1059.004
+  - attack.t1105
+logsource:
+  product: macos
+  category: process_creation
+  definition: SERAPH normalized ESF exec event. ParentImage is the agent host, Image is the child shell.
+detection:
+  selection_parent:
+    ParentImage|contains:
+      - '/Cursor'
+      - '/Claude'
+      - '/codex'
+      - '/.npm/_npx/'
+      - '/Code Helper'
+  selection_shell:
+    Image|endswith:
+      - '/bash'
+      - '/bin/sh'
+      - '/zsh'
+      - '/python'
+      - '/python3'
+  selection_loader:
+    CommandLine|contains:
+      - 'curl '
+      - 'wget '
+      - 'base64 '
+  selection_pipe:
+    CommandLine|contains:
+      - '| sh'
+      - '| bash'
+      - '|bash'
+      - '|sh'
+  selection_py_decode:
+    CommandLine|contains: 'b64decode'
+  selection_py_exec:
+    CommandLine|contains:
+      - 'exec('
+      - 'eval('
+  condition: selection_parent and selection_shell and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec))
+falsepositives:
+  - An operator who asked an agent to run a one-off install line that pipes a fetch into a shell. Read the URL.
+  - The same command from Terminal or launchd is out of scope for this rule. Content rules cover the config and the plist.
+level: high

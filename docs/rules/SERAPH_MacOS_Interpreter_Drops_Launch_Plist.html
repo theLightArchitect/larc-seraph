@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-SIGMA-013 · sigma · <span class="sev sev-medium">medium</span></p>
+<h1>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist</h1>
+<p class="deck">A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the SERAPH normalized macOS contract.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1543/001/">T1543.001</a>, <a href="https://attack.mitre.org/techniques/T1543/004/">T1543.004</a></div>
+  <div><span>Tactic</span>persistence, privilege-escalation</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>macOS file events normalized to the SERAPH field contract</div>
+</div>
+<h2>False positives</h2>
+<ul><li>Installers and Homebrew casks that drop a LaunchAgent from a shell script.</li><li>An operator scripting their own login job. Correlate with SERAPH-YARA-008 or SERAPH-YARA-009 before escalating.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>Creating the plist is the moment a login or boot job appears on disk. The content rules say whether the job is a shell in a user-writable path or an SSH tunnel. This rule says an interpreter wrote a plist under LaunchAgents or LaunchDaemons, which is the event you can see even when the file was deleted before a scanner reached it.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The path has to contain one of the two launchd directories and end in <code>.plist</code>. The writer has to be a shell, Python, Node, osascript, or curl. <code>cp</code> dropping a plist does not match. A shell writing a README does not match. <code>/bin/sh</code> is matched as a suffix that does not also match <code>ssh</code>, which is a classic endswith footgun.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Severity is medium because installers and Homebrew casks drop LaunchAgents from shell scripts all day. Correlate with the plist content rules before you escalate. A writer that is a compiled helper, not an interpreter, does not match. The rule cannot see the plist body. That is the YARA rule&#x27;s job.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

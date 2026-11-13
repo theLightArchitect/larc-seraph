@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC"
+  },
+  "Image": "/usr/bin/vim",
+  "ParentImage": "/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+  "TargetFilename": "/Users/dev/.zshrc",
+  "User": "dev",
+  "CommandLine": "vim /Users/dev/.zshrc"
+}

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seraph"
+version = "1.0.0"
+description = "Defensive YARA and Sigma detection content for AI-agent tooling on developer workstations."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Kevin Francis Tan" }]
+keywords = ["detection", "yara", "sigma", "macos", "mcp", "security"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+]
+dependencies = [
+  "pySigma>=0.11",
+  "PyYAML>=6",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8",
+  "yara-python>=4.5",
+  "sigma-cli>=1.0",
+]
+
+[project.scripts]
+seraph-scan = "seraph.scan:main"
+
+[project.urls]
+Homepage = "https://lightarchitects.ai"
+
+[tool.setuptools.packages.find]
+include = ["seraph*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

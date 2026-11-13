@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>macOS agent process modified a user shell rc file · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-SIGMA-012 · sigma · <span class="sev sev-medium">medium</span></p>
+<h1>macOS agent process modified a user shell rc file</h1>
+<p class="deck">A process whose image, or its parent image, matches a known local AI-agent host wrote a user shell startup file. That is a common place to hide a command that runs in later interactive sessions. Field names are the SERAPH normalized macOS contract.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1546/004/">T1546.004</a></div>
+  <div><span>Tactic</span>persistence, privilege-escalation</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>macOS file events normalized to the SERAPH field contract</div>
+</div>
+<h2>False positives</h2>
+<ul><li>An operator asked an agent to add an alias or a PATH entry to their own shell rc.</li><li>Dotfile tooling whose executable path contains Claude, Cursor, or codex.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1546/004/">https://attack.mitre.org/techniques/T1546/004/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>Shell startup files run in later interactive sessions. An alias or a PATH edit is a common, legitimate request to an agent. It is also a place to hide a command the operator will not see until the next terminal. The severity is medium because the legitimate case is common.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The target has to be one of the usual user startup files, and the image or parent has to be an agent host from the shared list. Vim editing <code>.zshrc</code> from Terminal is a negative. An agent writing a project README is a negative. An npx-cached node binary writing <code>.bashrc</code> is a positive, because that path is how an unpinned MCP server shows up on disk.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Project-level rc files and unusual startup names are not in the list. The legitimate &quot;add this alias&quot; request will match, and the note on the rule says so. Do not page on this rule alone. Read the diff.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

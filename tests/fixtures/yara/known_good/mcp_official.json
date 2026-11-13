@@ -1,0 +1,33 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "none"
+  },
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/dev/projects"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "placeholder-not-a-real-token"
+      }
+    },
+    "git": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git@0.6.0"
+      ]
+    },
+    "local": {
+      "command": "/usr/local/bin/node",
+      "args": [
+        "/Users/dev/projects/server.js"
+      ]
+    }
+  }
+}

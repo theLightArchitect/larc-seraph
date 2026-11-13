@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Threat model · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="index.html">
+        <img src="assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="index.html">Overview</a>
+        <a href="threat-model.html" aria-current="page">Threat model</a>
+        <a href="rules/index.html">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+<article class="prose"><h1>The agent on the workstation</h1>
+<p>SERAPH is a detection pack for a change in who acts on a developer machine. The files below are the threat model and the method. They are short on purpose.</p>
+<h2 id="what-changed">What changed</h2>
+<p>A developer workstation already holds source, signing keys, cloud tokens, and SSH trust. An agent product adds a local principal that reads instruction files and tool configs, then acts with the operator&#x27;s privileges. The operator still sits in the chair. The judgment about what to run has moved into a model plus whatever text that model was given.</p>
+<p>That text is often a file in the repo or a JSON config in an application support directory. Those used to be boring. They are now part of the control plane.</p>
+<p>SERAPH watches that control plane. It does not block, quarantine, or claim to see every agent product. A match is a lead for a person.</p>
+<div class="surface" role="img" aria-label="Workstation attack surface: trusted files feed an agent process, which can reach SSH trust, shell startup, launchd, and the network.">
+  <div>
+    <p class="label">Trusted files</p>
+    <div class="mini">MCP config</div>
+    <div class="mini">Instruction file</div>
+    <div class="mini">Git hook</div>
+    <div class="mini">LaunchAgent plist</div>
+  </div>
+  <div class="flow" aria-hidden="true">→</div>
+  <div>
+    <p class="label">Local principal</p>
+    <div class="mini lit">Agent process</div>
+    <p class="note">Same user. New judgment.</p>
+  </div>
+  <div class="flow" aria-hidden="true">→</div>
+  <div>
+    <p class="label">What it can touch</p>
+    <div class="mini">SSH trust</div>
+    <div class="mini">Shell startup</div>
+    <div class="mini">Launchd jobs</div>
+    <div class="mini">Network</div>
+  </div>
+</div>
+<h2 id="assets">Assets</h2>
+<p>The interesting assets are the ones an agent can touch without a new privilege:</p>
+<ul><li>Source trees, including private code that is sitting in a chat or a prompt file.</li><li>SSH private keys, <code>authorized_keys</code>, and agent sockets.</li><li>Cloud and API tokens in the environment or in dotfiles.</li><li>Shell startup files, which run again in the next interactive session.</li><li>Launch agents, which run after the editor has quit.</li><li>Git hooks, which run when the operator types an ordinary git command.</li></ul>
+<h2 id="trust-boundaries">Trust boundaries</h2>
+<p>Four files, or file classes, used to sit outside the security model because a person wrote them and a person could read them.</p>
+<ol><li>The MCP client config decides which process starts, from which path, with which environment.</li><li>Instruction files (<code>.cursorrules</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>) decide what the model is told to treat as policy.</li><li>Git hooks are code the operator runs by using git.</li><li>Launch agents and launch daemons are code that survives the session.</li></ol>
+<p>The agent process is inside the user boundary. A detection that treats &quot;the user did it&quot; as benign will miss the case where the user is a model following a file. Parentage and file content are the useful questions. The username is not.</p>
+<h2 id="goals-not-procedures">Goals, not procedures</h2>
+<p>The goals this pack is built around are ordinary:</p>
+<ul><li>Keep running after the agent session ends.</li><li>Read a credential and move it to another host.</li><li>Open a path back in, including a tunnel that does not check host keys.</li><li>Persuade the agent to stop asking the operator before it acts.</li><li>Replace a pinned tool with a package that is fetched by URL or a floating tag.</li></ul>
+<p>SERAPH does not publish the steps for those goals. The rules name the shapes that show up in files and in process events when someone pursues them.</p>
+<h2 id="what-the-rules-watch">What the rules watch</h2>
+<div class="table-wrap"><table><thead><tr><th>Surface</th><th>Engine</th><th>Question</th></tr></thead><tbody><tr><td>MCP client config</td><td>YARA</td><td>Is the configured command a temp path, a fetch piped into a shell, an encoded exec, a remote package specifier, or a token variable on a URL?</td></tr><tr><td>Instruction file</td><td>YARA</td><td>Are there hidden Unicode controls, or prose that skips confirmation, or a credential path next to a network sink?</td></tr><tr><td>Launchd plist</td><td>YARA</td><td>Does a login job combine a shell, a user-writable path, and restart flags, or an SSH reverse forward with host-key checking off?</td></tr><tr><td>Git hook</td><td>YARA</td><td>Does a hook script decode into a shell, pipe a fetch into a shell, or send a credential path over the network?</td></tr><tr><td>File and process events</td><td>Sigma</td><td>Did an agent host write SSH trust or a shell rc file, did an interpreter drop a plist, or did an agent parent start a piped shell?</td></tr></tbody></table></div>
+<p>The content rules can fire before anything executes. The event rules can fire when nobody scanned the file. They are complementary. Neither is sufficient.</p>
+<h2 id="field-contract">Field contract</h2>
+<p>Sigma has no native Apple schema. SERAPH rules assume a translator has already mapped Endpoint Security exec and file events onto these names:</p>
+<ul><li><code>Image</code> — absolute path of the process executable.</li><li><code>CommandLine</code> — the argument string.</li><li><code>ParentImage</code> — absolute path of the parent executable.</li><li><code>TargetFilename</code> — absolute path of a file that was created or written.</li><li><code>User</code> — the effective user. Present for the analyst. Not required by the conditions.</li></ul>
+<p>Unified logs, osquery, and commercial endpoint agents can all feed this shape, but only after a mapping. SERAPH does not ship that mapping. A pipeline that omits <code>ParentImage</code> will not fire the rules that use ancestry. That is a gap to close in the collector, not a silent success.</p>
+<p>The agent-host substrings are a reviewed list, shared by the rules that need it: Cursor, Claude, codex, the npx cache, and VS Code&#x27;s Code Helper. A new agent host does not match until someone adds it. A path that merely contains those substrings can false-positive. Both facts are in the rule notes.</p>
+<h2 id="what-a-match-means">What a match means</h2>
+<p>Status is <code>experimental</code> on every rule. The pytest suite proves three things: the rule compiles, the synthetic positive matches that rule and no other rule in the pack, and the synthetic negatives match nothing. It does not prove a false-positive rate on a fleet. Do not auto-quarantine on this version.</p>
+<p>Read the false-positive note before you page someone. Several rules describe habits that a careful operator sometimes chooses on purpose, including a login script under the home directory and an SSH option that disables host-key checking.</p>
+<h2 id="what-this-pack-does-not-claim">What this pack does not claim</h2>
+<ul><li>Coverage of every agent, IDE, or MCP client. The list is the one in the rules.</li><li>Detection of instructions that have been rephrased. Natural language is soft. The instruction rules are high-signal phrases plus a structural scope, and they will miss a rewrite.</li><li>A hit on the common <code>npx -y @scope/package</code> quickstart with no tag. That pattern is the published way to start several official servers, so it is a known-good in this pack. Remote specifiers and an explicit floating tag are in scope. Unpinned registry packages are a supply-chain hygiene problem and a different rule, which this version refuses to pretend it can block cleanly.</li><li>A fetch piped into a shell from Terminal, when the parent is not an agent host. That behavior is bad and it is out of scope here, because it is not specific to agent tooling. Other packs already cover it.</li><li>Dictionary-form <code>KeepAlive</code> in a plist. The launchd content rule looks for a boolean.</li><li>Memory-only tradecraft, encrypted blobs with no decode step, or a model that never writes the instruction down.</li><li>Windows or Linux endpoint content. The workstation in the model is a Mac because that is where the launchd and ESF questions are specific. The YARA file rules are still useful on any OS if you point them at the same filenames.</li><li>A production EDR. There is a small local scanner so a reviewer can try a file. It does not ship telemetry.</li></ul>
+<h2 id="how-a-test-earns-its-sentence">How a test earns its sentence</h2>
+<p><code>pytest</code> compiles the YARA set, evaluates every Sigma rule with the same condition semantics pySigma parsed, and requires the fixture truth table above. It also runs <code>sigma check --fail-on-issues</code>, checks author, date, license, and ATT&amp;CK metadata, and checks that the HTML site matches these sources. A green run means the pack is internally consistent. It does not mean the detections are finished.</p>
+<h2 id="adding-a-rule">Adding a rule</h2>
+<p>One rule, one severity, both a positive and a negative fixture, and a write-up with the threat, why the logic holds, and where it fails. Then <code>pytest</code> and <code>python -m seraph.docsgen</code>. If the negative also matches some other rule, the fixture is wrong or the rules overlap more than the catalog admits. Overlap should be explicit.</p>
+<h2 id="license">License</h2>
+<p>Code, the test harness, the scanner, and these pages are Apache-2.0. The rules under <code>rules/</code> are Detection Rule License 1.1. DRL is the license detection engineers already pass around: you may use and ship the rules, including inside a product, and you keep the author attribution. CC-BY-4.0 was the other reasonable choice. It is easier to explain and worse as a signal to someone merging a Sigma rule into an existing ruleset. Kevin Francis Tan can relicense either half. Nothing here is assigned to a foundation.</p>
+<p>Author: Kevin Francis Tan, Light Architects, lightarchitects.ai. Date of this version: 2026-11-13.</p></article>
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

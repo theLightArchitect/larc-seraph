@@ -1,0 +1,16 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MCP_Remote_Npx"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git@0.6.0"
+      ]
+    }
+  }
+}

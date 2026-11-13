@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist"
+  },
+  "Image": "/usr/bin/python3",
+  "ParentImage": "/usr/bin/python3",
+  "TargetFilename": "/Library/LaunchDaemons/com.example.seraph.synthetic.plist",
+  "User": "root",
+  "CommandLine": "python3"
+}

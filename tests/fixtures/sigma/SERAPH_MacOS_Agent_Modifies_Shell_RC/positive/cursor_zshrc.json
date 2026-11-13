@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC"
+  },
+  "Image": "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper.app/Contents/MacOS/Cursor Helper",
+  "ParentImage": "/Applications/Cursor.app/Contents/MacOS/Cursor",
+  "TargetFilename": "/Users/dev/.zshrc",
+  "User": "dev",
+  "CommandLine": ""
+}

@@ -1,0 +1,12 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell"
+  },
+  "Image": "/usr/bin/python3",
+  "ParentImage": "/Applications/Cursor.app/Contents/MacOS/Cursor",
+  "CommandLine": "python3 -c import base64; print(base64.b64decode('aGVsbG8='))",
+  "User": "dev"
+}

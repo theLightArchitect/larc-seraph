@@ -1,0 +1,51 @@
+# SERAPH-SIGMA-011
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS agent process wrote SSH authorized_keys
+name: SERAPH_MacOS_Agent_Writes_Authorized_Keys
+id: 8814d5ec-157d-422e-bd76-86693c8f2456
+status: experimental
+description: >
+  A process whose image, or its parent image, matches a known local AI-agent
+  host wrote an SSH authorized_keys file. Agent tools do not normally manage
+  SSH trust. Field names are the SERAPH normalized macOS contract, not raw
+  unified-log keys.
+references:
+  - https://attack.mitre.org/techniques/T1098/004/
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS file events normalized to the SERAPH field contract
+tags:
+  - attack.persistence
+  - attack.t1098.004
+logsource:
+  product: macos
+  category: file_event
+  definition: SERAPH normalized ESF file event. Image, ParentImage, and TargetFilename are absolute paths.
+detection:
+  selection_target:
+    TargetFilename|endswith:
+      - '/.ssh/authorized_keys'
+      - '/.ssh/authorized_keys2'
+  selection_agent_image:
+    Image|contains:
+      - '/Cursor'
+      - '/Claude'
+      - '/codex'
+      - '/.npm/_npx/'
+      - '/Code Helper'
+  selection_agent_parent:
+    ParentImage|contains:
+      - '/Cursor'
+      - '/Claude'
+      - '/codex'
+      - '/.npm/_npx/'
+      - '/Code Helper'
+  condition: selection_target and 1 of selection_agent_*
+falsepositives:
+  - An operator explicitly asked an agent to install a public key during a documented bootstrap.
+  - Unrelated software whose path contains the substring Claude, Cursor, or codex.
+level: high

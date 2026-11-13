@@ -1,0 +1,24 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pack and test tools
+        run: pip install -e ".[test]"
+      - name: Fixture, metadata, and Sigma checks
+        run: pytest
+      - name: Sigma rule validation
+        # d3_fendtag downloads an ontology before checking the tag namespace.
+        # This pack has no D3FEND tags. ATT&CK tag checks still run.
+        run: sigma check --fail-on-issues --exclude d3_fendtag rules/sigma
+      - name: Docs match the rule sources
+        run: python -m seraph.docsgen --check

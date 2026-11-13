@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist"
+  },
+  "Image": "/bin/bash",
+  "ParentImage": "/sbin/launchd",
+  "TargetFilename": "/Users/dev/Library/LaunchAgents/com.example.seraph.synthetic.plist",
+  "User": "dev",
+  "CommandLine": "bash"
+}

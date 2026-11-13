@@ -1,0 +1,59 @@
+/*
+   SERAPH-YARA-001
+   Copyright 2026 Kevin Francis Tan / Light Architects
+   https://lightarchitects.ai
+   Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+   Defensive signature. Not an exploit and not a payload.
+*/
+
+rule SERAPH_MCP_Launch_From_Temp
+{
+    meta:
+        id = "SERAPH-YARA-001"
+        title = "MCP config launches a server from a temp or cache path"
+        author = "Kevin Francis Tan"
+        organization = "Light Architects"
+        author_url = "https://lightarchitects.ai"
+        date = "2026-11-13"
+        modified = "2026-11-13"
+        version = "1.0.0"
+        severity = "high"
+        description = "An MCP client config sets a server command to a temp, cache, or shared-memory path, or points a shell at a script in one of those paths."
+        attack_technique = "T1059.004"
+        attack_tactic = "execution"
+        reference = "https://attack.mitre.org/techniques/T1059/004/"
+        reference_2 = "https://modelcontextprotocol.io/specification/2025-06-18"
+        scope = "MCP client configs that contain an mcpServers object. Pair with a path filter such as mcp.json or claude_desktop_config.json."
+        false_positives = "A short-lived local experiment that intentionally runs a server from /tmp or Library/Caches. A bare /tmp directory grant with no trailing path segment is not matched."
+        license = "Detection Rule License 1.1"
+
+    strings:
+        $mcp = "\"mcpServers\"" ascii
+
+        $cmd_tmp = /"command"\s*:\s*"(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/var\/tmp\/|\/dev\/shm\/)[^"]{0,180}"/ ascii
+        $cmd_cache = /"command"\s*:\s*"[^"]{0,180}\/Library\/Caches\/[^"]{0,120}"/ ascii
+
+        $shell = /"command"\s*:\s*"(\/bin\/bash|\/bin\/sh|\/bin\/zsh|\/usr\/bin\/python3?|\/usr\/bin\/osascript)"/ ascii
+        $arg_tmp = /"(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/var\/tmp\/|\/dev\/shm\/)[^"]{0,180}"/ ascii
+        $arg_cache = /"[^"]{0,80}\/Library\/Caches\/[^"]{0,160}"/ ascii
+
+    condition:
+        $mcp and (
+            $cmd_tmp or
+            $cmd_cache or
+            (
+                $shell and $arg_tmp and
+                (
+                    (@arg_tmp > @shell and @arg_tmp - @shell < 1500) or
+                    (@shell > @arg_tmp and @shell - @arg_tmp < 200)
+                )
+            ) or
+            (
+                $shell and $arg_cache and
+                (
+                    (@arg_cache > @shell and @arg_cache - @shell < 1500) or
+                    (@shell > @arg_cache and @shell - @arg_cache < 200)
+                )
+            )
+        )
+}

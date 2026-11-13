@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>macOS SSH process opened a reverse tunnel with host-key checking disabled · SERAPH</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-SIGMA-014 · sigma · <span class="sev sev-high">high</span></p>
+<h1>macOS SSH process opened a reverse tunnel with host-key checking disabled</h1>
+<p class="deck">ssh was started with a reverse forward and StrictHostKeyChecking set to no. The parent is not required to be an agent host: a LaunchAgent&#x27;s parent is launchd, and that is the persistence case this rule is for. Field names are the SERAPH normalized macOS contract.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1572/">T1572</a>, <a href="https://attack.mitre.org/techniques/T1021/004/">T1021.004</a></div>
+  <div><span>Tactic</span>command-and-control, lateral-movement</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>macOS process creation events normalized to the SERAPH field contract</div>
+</div>
+<h2>False positives</h2>
+<ul><li>An administrator who deliberately disables host-key checking on a reverse tunnel.</li><li>accept-new and the default checking mode do not match.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1572/">https://attack.mitre.org/techniques/T1572/</a></li><li><a href="https://attack.mitre.org/techniques/T1021/004/">https://attack.mitre.org/techniques/T1021/004/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>This is the running form of the plist rule. A reverse forward plus host-key checking disabled is the same pair of choices. The parent is intentionally not restricted to an agent host. A LaunchAgent&#x27;s parent is launchd. Requiring Cursor or Claude on the parent would miss the persistence case the rule exists for.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p><code>Image</code> has to be ssh. The command line has to contain a reverse-forward flag surrounded by spaces, and one of the two spellings of the disabled host-key option. <code>accept-new</code> does not match. A disabled check on an ordinary git connection, with no reverse forward, does not match.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Operators do disable host-key checking on purpose. The false-positive note says that, and the severity stays high because the combination is still rare. Options stored in the user&#x27;s ssh config, rather than on the command line, are invisible here. A reverse forward that uses <code>-R</code> glued to the next token, with no spaces, can miss the spaced-flag check.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

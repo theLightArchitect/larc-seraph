@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SERAPH · Light Architects</title>
+  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="index.html">
+        <img src="assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">SERAPH</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="index.html" aria-current="page">Overview</a>
+        <a href="threat-model.html">Threat model</a>
+        <a href="rules/index.html">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<section class="hero">
+  <div>
+    <p class="eyebrow">Light Architects · detection pack</p>
+    <h1>SERAPH</h1>
+    <p class="deck">Detection content for AI-agent tooling on a developer workstation. YARA for the files an agent trusts. Sigma for the macOS events those files become.</p>
+    <div class="chips">
+      <span class="chip">REAL</span>
+      <span class="chip">experimental</span>
+      <span class="chip">10 YARA · 5 Sigma</span>
+      <span class="chip">defensive only</span>
+    </div>
+    <div class="actions">
+      <a class="cta" href="threat-model.html">Read the threat model</a>
+      <a class="ghost" href="rules/index.html">Browse the rules</a>
+    </div>
+  </div>
+  <figure class="gem-plate">
+    <img src="assets/galaxy-opal-canonical.png" alt="Galaxy Opal canonical reference: a faceted teal solid on a navy field, captioned REAL, solid, carrying substance.">
+  </figure>
+</section>
+<section>
+  <p class="label">Coverage</p>
+  <div class="grid-5">
+    <article class="facet"><h3>MCP configs</h3><p>Temp-path launches, fetch-to-shell, encoded exec, remote package tags, token variables on a URL.</p></article>
+    <article class="facet"><h3>Instruction files</h3><p>Unicode tags, bidi overrides, confirmation bypass, and credential paths next to a network sink.</p></article>
+    <article class="facet"><h3>LaunchAgents</h3><p>RunAtLoad plus KeepAlive, a shell, and a user-writable path. Reverse SSH with host-key checking off.</p></article>
+    <article class="facet"><h3>Git hooks</h3><p>A shebang plus a decode-to-shell, a fetch-to-shell, or a network call carrying a credential path.</p></article>
+    <article class="facet"><h3>Process events</h3><p>Agent hosts writing SSH trust or shell rc files, dropping plists, or spawning a piped shell.</p></article>
+  </div>
+</section>
+<section>
+  <h2>Rules</h2>
+  <p>Fifteen rules. Each one has a true-positive fixture, a known-good fixture, a false-positive note, and a write-up. Status is experimental: the tests prove the fixtures.</p>
+  <div class="table-wrap"><table><thead><tr><th>Rule</th><th>Engine</th><th>Severity</th><th>What it watches</th></tr></thead><tbody><tr><td><a href="rules/SERAPH_MCP_Launch_From_Temp.html">SERAPH_MCP_Launch_From_Temp</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>MCP config launches a server from a temp or cache path</td></tr><tr><td><a href="rules/SERAPH_MCP_Curl_Pipe_Shell.html">SERAPH_MCP_Curl_Pipe_Shell</a></td><td>yara</td><td><span class="sev sev-critical">critical</span></td><td>MCP config pipes a remote fetch into a shell</td></tr><tr><td><a href="rules/SERAPH_MCP_Encoded_Exec.html">SERAPH_MCP_Encoded_Exec</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>MCP config decodes a payload into a shell or eval</td></tr><tr><td><a href="rules/SERAPH_MCP_Remote_Npx.html">SERAPH_MCP_Remote_Npx</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>MCP config runs npx or uvx from a remote or floating tag</td></tr><tr><td><a href="rules/SERAPH_MCP_Secret_Exfil.html">SERAPH_MCP_Secret_Exfil</a></td><td>yara</td><td><span class="sev sev-critical">critical</span></td><td>MCP config places a secret environment variable on a network sink</td></tr><tr><td><a href="rules/SERAPH_Instruction_Hidden_Unicode.html">SERAPH_Instruction_Hidden_Unicode</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>Instruction file contains Unicode tags or bidi overrides</td></tr><tr><td><a href="rules/SERAPH_Instruction_Unsafe_Directive.html">SERAPH_Instruction_Unsafe_Directive</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>Agent instructions request secret theft or skipped confirmation</td></tr><tr><td><a href="rules/SERAPH_LaunchPlist_Writable_Interpreter.html">SERAPH_LaunchPlist_Writable_Interpreter</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>LaunchAgent plist runs a shell from a user-writable path</td></tr><tr><td><a href="rules/SERAPH_LaunchPlist_SSH_Reverse_Tunnel.html">SERAPH_LaunchPlist_SSH_Reverse_Tunnel</a></td><td>yara</td><td><span class="sev sev-critical">critical</span></td><td>LaunchAgent plist opens an SSH reverse tunnel with host-key checking off</td></tr><tr><td><a href="rules/SERAPH_Git_Hook_Suspicious_Exec.html">SERAPH_Git_Hook_Suspicious_Exec</a></td><td>yara</td><td><span class="sev sev-high">high</span></td><td>Git hook decodes a payload, pipes a fetch into a shell, or posts a credential path</td></tr><tr><td><a href="rules/SERAPH_MacOS_Agent_Writes_Authorized_Keys.html">SERAPH_MacOS_Agent_Writes_Authorized_Keys</a></td><td>sigma</td><td><span class="sev sev-high">high</span></td><td>macOS agent process wrote SSH authorized_keys</td></tr><tr><td><a href="rules/SERAPH_MacOS_Agent_Modifies_Shell_RC.html">SERAPH_MacOS_Agent_Modifies_Shell_RC</a></td><td>sigma</td><td><span class="sev sev-medium">medium</span></td><td>macOS agent process modified a user shell rc file</td></tr><tr><td><a href="rules/SERAPH_MacOS_Interpreter_Drops_Launch_Plist.html">SERAPH_MacOS_Interpreter_Drops_Launch_Plist</a></td><td>sigma</td><td><span class="sev sev-medium">medium</span></td><td>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist</td></tr><tr><td><a href="rules/SERAPH_MacOS_SSH_Reverse_Lax_HostKey.html">SERAPH_MacOS_SSH_Reverse_Lax_HostKey</a></td><td>sigma</td><td><span class="sev sev-high">high</span></td><td>macOS SSH process opened a reverse tunnel with host-key checking disabled</td></tr><tr><td><a href="rules/SERAPH_MacOS_Agent_Piped_Shell.html">SERAPH_MacOS_Agent_Piped_Shell</a></td><td>sigma</td><td><span class="sev sev-high">high</span></td><td>macOS agent parent started a shell that pipes a fetch or a decode</td></tr></tbody></table></div>
+</section>
+<section class="grid-3">
+  <article class="facet">
+    <p class="label">Run</p>
+    <h3>Tests</h3>
+    <pre><code>pip install -e ".[test]"
+pytest</code></pre>
+  </article>
+  <article class="facet">
+    <p class="label">Scan</p>
+    <h3>One file</h3>
+    <pre><code>seraph-scan path/to/mcp.json
+seraph-scan --sigma event.json</code></pre>
+  </article>
+  <article class="facet">
+    <p class="label">License</p>
+    <h3>Split on purpose</h3>
+    <p>Rules: Detection Rule License 1.1. Code, harness, and this site: Apache-2.0. CC-BY-4.0 was the other serious option for the rules. DRL keeps the author attached when a detection product uses the rule.</p>
+  </article>
+</section>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

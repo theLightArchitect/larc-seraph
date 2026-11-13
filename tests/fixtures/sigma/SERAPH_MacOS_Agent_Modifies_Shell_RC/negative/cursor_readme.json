@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC"
+  },
+  "Image": "/Applications/Cursor.app/Contents/MacOS/Cursor",
+  "ParentImage": "/Applications/Cursor.app/Contents/MacOS/Cursor",
+  "TargetFilename": "/Users/dev/projects/README.md",
+  "User": "dev",
+  "CommandLine": ""
+}

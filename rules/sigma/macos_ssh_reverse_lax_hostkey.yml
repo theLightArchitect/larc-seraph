@@ -1,0 +1,44 @@
+# SERAPH-SIGMA-014
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS SSH process opened a reverse tunnel with host-key checking disabled
+name: SERAPH_MacOS_SSH_Reverse_Lax_HostKey
+id: 42dff370-e0bd-4295-be35-667352acc8ac
+status: experimental
+description: >
+  ssh was started with a reverse forward and StrictHostKeyChecking set to no.
+  The parent is not required to be an agent host: a LaunchAgent's parent is
+  launchd, and that is the persistence case this rule is for. Field names are
+  the SERAPH normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1572/
+  - https://attack.mitre.org/techniques/T1021/004/
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS process creation events normalized to the SERAPH field contract
+tags:
+  - attack.command-and-control
+  - attack.lateral-movement
+  - attack.t1572
+  - attack.t1021.004
+logsource:
+  product: macos
+  category: process_creation
+  definition: SERAPH normalized ESF exec event. Image and CommandLine are populated.
+detection:
+  selection_image:
+    Image|endswith: '/ssh'
+  selection_reverse:
+    CommandLine|contains: ' -R '
+  selection_lax:
+    CommandLine|contains:
+      - 'StrictHostKeyChecking=no'
+      - 'StrictHostKeyChecking no'
+  condition: selection_image and selection_reverse and selection_lax
+falsepositives:
+  - An administrator who deliberately disables host-key checking on a reverse tunnel.
+  - accept-new and the default checking mode do not match.
+level: high
