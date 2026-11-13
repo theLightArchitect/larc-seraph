@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>macOS agent process modified a user shell rc file · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>macOS agent process modified a user shell rc file · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-SIGMA-012 · sigma · <span class="sev sev-medium">medium</span></p>
 <h1>macOS agent process modified a user shell rc file</h1>
-<p class="deck">A process whose image, or its parent image, matches a known local AI-agent host wrote a user shell startup file. That is a common place to hide a command that runs in later interactive sessions. Field names are the SERAPH normalized macOS contract.</p>
+<p class="deck">A process whose image, or its parent image, matches a known local AI-agent host wrote a user shell startup file. That is a common place to hide a command that runs in later interactive sessions. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1546/004/">T1546.004</a></div>
   <div><span>Tactic</span>persistence, privilege-escalation</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>macOS file events normalized to the SERAPH field contract</div>
+  <div><span>Scope</span>macOS file events normalized to the larc-seraph field contract</div>
 </div>
 <h2>False positives</h2>
 <ul><li>An operator asked an agent to add an alias or a PATH entry to their own shell rc.</li><li>Dotfile tooling whose executable path contains Claude, Cursor, or codex.</li></ul>
@@ -56,8 +56,10 @@
 <p>The target has to be one of the usual user startup files, and the image or parent has to be an agent host from the shared list. Vim editing <code>.zshrc</code> from Terminal is a negative. An agent writing a project README is a negative. An npx-cached node binary writing <code>.bashrc</code> is a positive, because that path is how an unpinned MCP server shows up on disk.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Project-level rc files and unusual startup names are not in the list. The legitimate &quot;add this alias&quot; request will match, and the note on the rule says so. Do not page on this rule alone. Read the diff.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the diff. An alias the operator requested is the medium-severity false positive. A command they did not ask for is the lead.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

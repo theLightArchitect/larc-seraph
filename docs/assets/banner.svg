@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" role="img" aria-label="SERAPH, Light Architects detection pack">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" role="img" aria-label="larc-seraph, Light Architects detection pack">
   <rect width="1280" height="360" fill="#070F1A"/>
   <g opacity="0.45" stroke="#0D2137" stroke-width="1">
     <path d="M0 48H1280M0 104H1280M0 160H1280M0 216H1280M0 272H1280M0 328H1280"/>
@@ -12,7 +12,7 @@
     <polygon points="90,8 168,58 146,168 34,168 12,58" fill="none" stroke="#5EFFF0" stroke-width="2"/>
   </g>
   <text x="300" y="128" fill="#6B8A9A" font-family="ui-sans-serif, Segoe UI, Helvetica, Arial, sans-serif" font-size="16" letter-spacing="4">LIGHT ARCHITECTS</text>
-  <text x="300" y="198" fill="#E8F4F2" font-family="ui-sans-serif, Segoe UI, Helvetica, Arial, sans-serif" font-size="72" letter-spacing="8">SERAPH</text>
+  <text x="300" y="198" fill="#E8F4F2" font-family="ui-sans-serif, Segoe UI, Helvetica, Arial, sans-serif" font-size="56" letter-spacing="1">larc-seraph</text>
   <text x="300" y="246" fill="#C5D4E0" font-family="ui-sans-serif, Segoe UI, Helvetica, Arial, sans-serif" font-size="22">Detection content for agent tooling on the workstation</text>
   <text x="300" y="292" fill="#7EF0D8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" letter-spacing="2">REAL · EXPERIMENTAL · DEFENSIVE</text>
 </svg>

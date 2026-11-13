@@ -9,7 +9,7 @@ description: >
   A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents
   or LaunchDaemons. This is the file-drop half of a persistence lead. The
   companion YARA rule inspects whether the plist itself is a rogue job.
-  Field names are the SERAPH normalized macOS contract.
+  Field names are the larc-seraph normalized macOS contract.
 references:
   - https://attack.mitre.org/techniques/T1543/001/
   - https://attack.mitre.org/techniques/T1543/004/
@@ -18,7 +18,7 @@ date: 2026-11-13
 modified: 2026-11-13
 license: Detection Rule License 1.1
 scope:
-  - macOS file events normalized to the SERAPH field contract
+  - macOS file events normalized to the larc-seraph field contract
 tags:
   - attack.persistence
   - attack.privilege-escalation
@@ -27,7 +27,7 @@ tags:
 logsource:
   product: macos
   category: file_event
-  definition: SERAPH normalized ESF file event. Image and TargetFilename are absolute paths.
+  definition: larc-seraph normalized ESF file event. Image and TargetFilename are absolute paths.
 detection:
   selection_dir:
     TargetFilename|contains:

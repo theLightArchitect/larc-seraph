@@ -1,0 +1,17 @@
+name: larc-seraph Splunk macOS field map
+priority: 20
+allowed_backends:
+  - splunk
+  - splunk_spl2
+transformations:
+  - id: larc_seraph_splunk_fields
+    type: field_name_mapping
+    mapping:
+      Image: process_path
+      CommandLine: process
+      ParentImage: parent_process_path
+      TargetFilename: file_path
+      User: user
+    rule_conditions:
+      - type: logsource
+        product: macos

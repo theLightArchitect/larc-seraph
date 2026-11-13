@@ -1,6 +1,6 @@
 # The agent on the workstation
 
-SERAPH is a detection pack for a change in who acts on a developer machine. The files below are the threat model and the method. They are short on purpose.
+larc-seraph is a detection pack for a change in who acts on a developer machine. The files below are the threat model and the method. They are short on purpose.
 
 ## What changed
 
@@ -8,7 +8,7 @@ A developer workstation already holds source, signing keys, cloud tokens, and SS
 
 That text is often a file in the repo or a JSON config in an application support directory. Those used to be boring. They are now part of the control plane.
 
-SERAPH watches that control plane. It does not block, quarantine, or claim to see every agent product. A match is a lead for a person.
+larc-seraph watches that control plane. It does not block, quarantine, or claim to see every agent product. A match is a lead for a person.
 
 [[surface]]
 
@@ -44,7 +44,7 @@ The goals this pack is built around are ordinary:
 - Persuade the agent to stop asking the operator before it acts.
 - Replace a pinned tool with a package that is fetched by URL or a floating tag.
 
-SERAPH does not publish the steps for those goals. The rules name the shapes that show up in files and in process events when someone pursues them.
+larc-seraph does not publish the steps for those goals. The rules name the shapes that show up in files and in process events when someone pursues them.
 
 ## What the rules watch
 
@@ -60,7 +60,7 @@ The content rules can fire before anything executes. The event rules can fire wh
 
 ## Field contract
 
-Sigma has no native Apple schema. SERAPH rules assume a translator has already mapped Endpoint Security exec and file events onto these names:
+Sigma has no native Apple schema. larc-seraph rules assume a translator has already mapped Endpoint Security exec and file events onto these names:
 
 - `Image` — absolute path of the process executable.
 - `CommandLine` — the argument string.
@@ -68,7 +68,7 @@ Sigma has no native Apple schema. SERAPH rules assume a translator has already m
 - `TargetFilename` — absolute path of a file that was created or written.
 - `User` — the effective user. Present for the analyst. Not required by the conditions.
 
-Unified logs, osquery, and commercial endpoint agents can all feed this shape, but only after a mapping. SERAPH does not ship that mapping. A pipeline that omits `ParentImage` will not fire the rules that use ancestry. That is a gap to close in the collector, not a silent success.
+Unified logs, osquery, and commercial endpoint agents can all feed this shape, but only after a mapping. larc-seraph ships normalizers for eslogger JSON, Elastic ECS, and osquery rows, plus pySigma pipelines that emit Lucene and Splunk queries in those field names. A pipeline that omits `ParentImage` will not fire the rules that use ancestry. That is a collector gap, not a silent success.
 
 The agent-host substrings are a reviewed list, shared by the rules that need it: Cursor, Claude, codex, the npx cache, and VS Code's Code Helper. A new agent host does not match until someone adds it. A path that merely contains those substrings can false-positive. Both facts are in the rule notes.
 
@@ -95,7 +95,7 @@ Read the false-positive note before you page someone. Several rules describe hab
 
 ## Adding a rule
 
-One rule, one severity, both a positive and a negative fixture, and a write-up with the threat, why the logic holds, and where it fails. Then `pytest` and `python -m seraph.docsgen`. If the negative also matches some other rule, the fixture is wrong or the rules overlap more than the catalog admits. Overlap should be explicit.
+One rule, one severity, both a positive and a negative fixture, and a write-up with the threat, why the logic holds, and where it fails. Then `pytest` and `python -m larc_seraph.docsgen`. If the negative also matches some other rule, the fixture is wrong or the rules overlap more than the catalog admits. Overlap should be explicit.
 
 ## License
 

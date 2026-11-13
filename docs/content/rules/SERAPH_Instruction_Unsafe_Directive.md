@@ -11,3 +11,7 @@ The file has to look like instructions first: a Markdown heading at the start, o
 ## Limitations
 
 Natural language is easy to rephrase, and this rule will miss a rewrite. A team that truly wants agents to skip confirmation, and writes that policy with the same phrases, will match. T1562.001 is an approximate mapping for "stop asking"; the enterprise technique is about impairing security tools. Read the sentence before you call it malice. Heading-less instruction files that also avoid the "You are" opening are a gap. Point the scanner at the known filenames anyway.
+
+## Triage
+
+Read the sentence in context. A team policy that really wants fewer prompts will say so in the open. A line that also names a credential path or a sink is the case to escalate.

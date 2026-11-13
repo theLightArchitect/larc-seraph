@@ -1,0 +1,24 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/positive/npx_bashrc.json"
+  },
+  "record": {
+    "process": {
+      "executable": "/Users/dev/.npm/_npx/abc/node_modules/.bin/node",
+      "command_line": "node",
+      "parent": {
+        "executable": "/bin/zsh"
+      }
+    },
+    "user": {
+      "name": "dev"
+    },
+    "file": {
+      "path": "/Users/dev/.bashrc"
+    }
+  }
+}

@@ -8,7 +8,7 @@ status: experimental
 description: >
   A process whose image, or its parent image, matches a known local AI-agent
   host wrote an SSH authorized_keys file. Agent tools do not normally manage
-  SSH trust. Field names are the SERAPH normalized macOS contract, not raw
+  SSH trust. Field names are the larc-seraph normalized macOS contract, not raw
   unified-log keys.
 references:
   - https://attack.mitre.org/techniques/T1098/004/
@@ -17,14 +17,14 @@ date: 2026-11-13
 modified: 2026-11-13
 license: Detection Rule License 1.1
 scope:
-  - macOS file events normalized to the SERAPH field contract
+  - macOS file events normalized to the larc-seraph field contract
 tags:
   - attack.persistence
   - attack.t1098.004
 logsource:
   product: macos
   category: file_event
-  definition: SERAPH normalized ESF file event. Image, ParentImage, and TargetFilename are absolute paths.
+  definition: larc-seraph normalized ESF file event. Image, ParentImage, and TargetFilename are absolute paths.
 detection:
   selection_target:
     TargetFilename|endswith:

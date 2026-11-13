@@ -11,3 +11,7 @@ The rule requires the MCP server map and one of those specifiers within a short 
 ## Limitations
 
 `@latest` is sometimes what an operator typed on purpose during a review. That branch is noisier than the URL branch, and the severity is still high because the two shapes share one rule. Unpinned registry names with no tag are not matched. That omission is deliberate: it is the published quickstart, and a rule that flags it would train people to ignore the pack. Track those with a lockfile policy, not with this signature.
+
+## Triage
+
+The package specifier is the decision. A quoted URL, a github: specifier, or @latest means the code can change. Pin it or remove it.

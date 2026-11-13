@@ -1,0 +1,1 @@
+file_path IN ("*/Library/LaunchAgents/*", "*/Library/LaunchDaemons/*") file_path="*.plist" process_path IN ("*/bash", "*/bin/sh", "*/zsh", "*/python", "*/python3", "*/node", "*/osascript", "*/curl")

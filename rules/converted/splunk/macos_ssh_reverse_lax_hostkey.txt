@@ -1,0 +1,1 @@
+process_path="*/ssh" process="* -R *" process IN ("*StrictHostKeyChecking=no*", "*StrictHostKeyChecking no*")

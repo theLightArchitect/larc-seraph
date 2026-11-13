@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MCP config launches a server from a temp or cache path · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>MCP config launches a server from a temp or cache path · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -56,8 +56,10 @@
 <p>The rule requires the MCP server map, then either a command value whose path sits in that set, or a shell command whose argument string does. A filesystem server that is allowed to read a project directory does not match. A bare temp directory with no further path segment does not match either, because that shape is sometimes a legitimate directory grant.</p>
 <h2 id="limitations">Limitations</h2>
 <p>A cache-installed CLI can be a real developer choice. Treat the match as a review of who put the file there. Homebrew prefixes are intentionally absent, so a shell in <code>/usr/local</code> or <code>/opt/homebrew</code> is a gap. The rule does not know whether the file at the path is still present.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the command path. If the file is a scratch script the operator just wrote, note it and move on. If the path is unexpected, stop that MCP server and inspect who wrote the config.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Launch_From_Temp/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Launch_From_Temp/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

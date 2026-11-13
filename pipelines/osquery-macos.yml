@@ -1,0 +1,17 @@
+name: larc-seraph osquery field map
+priority: 20
+allowed_backends:
+  - splunk
+  - lucene
+transformations:
+  - id: larc_seraph_osquery_fields
+    type: field_name_mapping
+    mapping:
+      Image: path
+      CommandLine: cmdline
+      ParentImage: parent_path
+      TargetFilename: target_path
+      User: username
+    rule_conditions:
+      - type: logsource
+        product: macos

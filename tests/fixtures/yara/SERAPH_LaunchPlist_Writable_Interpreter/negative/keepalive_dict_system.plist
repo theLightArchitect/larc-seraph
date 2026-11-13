@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- larc-seraph synthetic fixture. classification: synthetic-benign. inert. do not load with launchctl. -->
+<dict>
+  <key>Label</key>
+  <string>com.example.larc.synthetic</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/libexec/example-helper</string>
+  </array>
+</dict>
+</plist>

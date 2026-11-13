@@ -1,0 +1,34 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/negative/decode_print.json"
+  },
+  "record": {
+    "event_type": "exec",
+    "process": {
+      "executable": {
+        "path": "/Applications/Cursor.app/Contents/MacOS/Cursor"
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "exec": {
+        "args": [
+          "python3",
+          "-c",
+          "import",
+          "base64;",
+          "print(base64.b64decode('aGVsbG8='))"
+        ],
+        "target": {
+          "executable": {
+            "path": "/usr/bin/python3"
+          }
+        }
+      }
+    }
+  }
+}

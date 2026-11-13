@@ -1,0 +1,1 @@
+parent_process_path IN ("*/Terminal*", "*/iTerm*", "*/login*") process_path IN ("*/bash", "*/bin/sh", "*/zsh", "*/python", "*/python3") (process IN ("*curl *", "*wget *", "*fetch *", "*base64 *") process IN ("*| sh*", "*| bash*", "*|bash*", "*|sh*", "*| zsh*")) OR (process="*b64decode*" process IN ("*exec(*", "*eval(*")) OR (process="*urlopen(*" process IN ("*exec(*", "*eval(*"))

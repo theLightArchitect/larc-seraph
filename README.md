@@ -1,8 +1,10 @@
-![SERAPH — detection content for agent tooling on the workstation](docs/assets/banner.svg)
+![larc-seraph — detection content for agent tooling on the workstation](docs/assets/banner.svg)
 
-# SERAPH
+# larc-seraph
 
 Defensive detection content for AI-agent tooling on developer workstations, written by Kevin Francis Tan / Light Architects ([lightarchitects.ai](https://lightarchitects.ai)).
+
+Rule IDs stay in the `SERAPH-YARA` and `SERAPH-SIGMA` series. The pack name is larc-seraph.
 
 YARA rules for the files an agent trusts. Sigma rules for the macOS events those files become. Synthetic fixtures and a pytest harness so a match means what the catalog says it means.
 
@@ -10,7 +12,7 @@ The docs site is [docs/index.html](docs/index.html). The threat model and field 
 
 ## What this is
 
-Fifteen experimental rules:
+Seventeen experimental rules:
 
 | ID | Engine | What it watches |
 | --- | --- | --- |
@@ -18,6 +20,7 @@ Fifteen experimental rules:
 | `SERAPH_MCP_Curl_Pipe_Shell` | YARA | MCP config pipes a fetch into a shell |
 | `SERAPH_MCP_Encoded_Exec` | YARA | MCP config decodes into a shell or eval |
 | `SERAPH_MCP_Remote_Npx` | YARA | npx or uvx from a URL, `github:` specifier, or `@latest` |
+| `SERAPH_MCP_Unpinned_Package` | YARA | npx or uvx package with no numeric version |
 | `SERAPH_MCP_Secret_Exfil` | YARA | A token variable interpolated into a URL or a fetch |
 | `SERAPH_Instruction_Hidden_Unicode` | YARA | Unicode tags or bidi overrides in instruction files |
 | `SERAPH_Instruction_Unsafe_Directive` | YARA | Confirmation bypass, or a credential path next to a sink |
@@ -29,6 +32,7 @@ Fifteen experimental rules:
 | `SERAPH_MacOS_Interpreter_Drops_Launch_Plist` | Sigma | Interpreter writes a LaunchAgent or LaunchDaemon plist |
 | `SERAPH_MacOS_SSH_Reverse_Lax_HostKey` | Sigma | ssh reverse forward with host-key checking disabled |
 | `SERAPH_MacOS_Agent_Piped_Shell` | Sigma | Agent parent spawns a fetch or decode handed to a shell |
+| `SERAPH_MacOS_Terminal_Piped_Shell` | Sigma | Terminal or iTerm parent spawns a fetch or decode handed to a shell |
 
 Each rule carries author, date (2026-11-13), ATT&CK mapping, severity, scope, and a false-positive note. Status is experimental.
 
@@ -38,7 +42,7 @@ This is not an EDR, a blocker, or a claim of coverage. It is not offensive tooli
 
 Sigma rules assume a normalized macOS field contract (`Image`, `CommandLine`, `ParentImage`, `TargetFilename`, `User`). They do not match raw Apple unified logs until a translator maps Endpoint Security events onto those names. The threat model states that limit in full.
 
-The stock `npx -y @scope/package` quickstart, with no URL and no `@latest`, is a known-good. Flagging it would flag the published way to start several official MCP servers.
+`SERAPH-YARA-016` flags an unpinned registry package. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted. A numeric version pin is not a match. Upstream READMEs that show `uvx mcp-server-time` do match; that is recorded in the corpus report.
 
 ## Run the tests
 
@@ -54,8 +58,8 @@ pytest
 Regenerate the HTML site after a rule or write-up change:
 
 ```bash
-python -m seraph.docsgen
-python -m seraph.docsgen --check
+python -m larc_seraph.docsgen
+python -m larc_seraph.docsgen --check
 ```
 
 Open `docs/index.html` in a browser. It is a static site. No server is required. The visual language is Galaxy Opal: a cool-teal solid on a navy void. The canonical reference image is `docs/assets/galaxy-opal-canonical.png`. The system card is `docs/design/galaxy-opal-system-card.md`.
@@ -63,11 +67,35 @@ Open `docs/index.html` in a browser. It is a static site. No server is required.
 Try one file locally:
 
 ```bash
-seraph-scan path/to/mcp.json
-seraph-scan --sigma tests/fixtures/sigma/known_good/agent_pytest.json
+larc-seraph path/to/mcp.json
+larc-seraph --sigma tests/fixtures/sigma/known_good/agent_pytest.json
 ```
 
 The scanner prints matches and does not block, quarantine, or send telemetry.
+
+Telemetry normalizers for eslogger JSON, Elastic Common Schema, and osquery rows live in `larc_seraph/translate.py`. pySigma pipelines in `pipelines/` emit Lucene and Splunk queries with those field names. Converted queries are in `rules/converted/`.
+
+## Known limitations
+
+These are the gaps that are still open after the v0.1.0 vetting pass. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
+
+- A zero-width mark between every letter of a confirmation-bypass sentence. One mark inside the phrase is caught.
+- Homoglyphs other than Cyrillic `o` in that same sentence.
+- A fetch or `base64` whose name is split or stored in a variable, so the file never contains the word.
+- `KeepAlive` set to the integer 1, and an SSH `-R` glued to its value with no space.
+- Shell startup files the path list does not name, such as Fish. A project file that still ends in `.zshrc` does match.
+- An MCP file that contains both a pinned package and an unpinned one can suppress `SERAPH-YARA-016`, because a numeric version anywhere in the file clears it.
+- osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire.
+- The benign corpus is a pinned sample of public trees, not every workstation. Three allowlisted hits are upstream files that really do contain the pattern.
+
+## Validation
+
+```bash
+python tools/fp_scan.py
+yr compile rules/yara -o /tmp/larc.yarc
+```
+
+`pytest` also runs the evasion matrix, the telemetry round-trip, the conversion check, and the yara-x compile. `sigma check` is described in [VALIDATION.md](VALIDATION.md).
 
 ## License
 

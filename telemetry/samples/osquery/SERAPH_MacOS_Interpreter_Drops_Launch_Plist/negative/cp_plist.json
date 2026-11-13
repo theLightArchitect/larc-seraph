@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/negative/cp_plist.json"
+  },
+  "record": {
+    "path": "/bin/cp",
+    "cmdline": "cp helper.plist /Users/dev/Library/LaunchAgents/com.example.helper.plist",
+    "username": "dev",
+    "parent_path": "/bin/zsh",
+    "target_path": "/Users/dev/Library/LaunchAgents/com.example.helper.plist"
+  }
+}

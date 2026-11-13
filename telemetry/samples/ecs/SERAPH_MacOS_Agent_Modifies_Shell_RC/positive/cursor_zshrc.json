@@ -1,0 +1,24 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/positive/cursor_zshrc.json"
+  },
+  "record": {
+    "process": {
+      "executable": "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper.app/Contents/MacOS/Cursor Helper",
+      "command_line": null,
+      "parent": {
+        "executable": "/Applications/Cursor.app/Contents/MacOS/Cursor"
+      }
+    },
+    "user": {
+      "name": "dev"
+    },
+    "file": {
+      "path": "/Users/dev/.zshrc"
+    }
+  }
+}

@@ -11,3 +11,7 @@ This is the running form of the plist rule. A reverse forward plus host-key chec
 ## Limitations
 
 Operators do disable host-key checking on purpose. The false-positive note says that, and the severity stays high because the combination is still rare. Options stored in the user's ssh config, rather than on the command line, are invisible here. A reverse forward that uses `-R` glued to the next token, with no spaces, can miss the spaced-flag check.
+
+## Triage
+
+Confirm the parent. launchd means a persistent job. An interactive shell may be an operator running a tunnel on purpose.

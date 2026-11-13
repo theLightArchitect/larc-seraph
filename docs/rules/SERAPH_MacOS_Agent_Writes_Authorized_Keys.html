@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>macOS agent process wrote SSH authorized_keys · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>macOS agent process wrote SSH authorized_keys · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-SIGMA-011 · sigma · <span class="sev sev-high">high</span></p>
 <h1>macOS agent process wrote SSH authorized_keys</h1>
-<p class="deck">A process whose image, or its parent image, matches a known local AI-agent host wrote an SSH authorized_keys file. Agent tools do not normally manage SSH trust. Field names are the SERAPH normalized macOS contract, not raw unified-log keys.</p>
+<p class="deck">A process whose image, or its parent image, matches a known local AI-agent host wrote an SSH authorized_keys file. Agent tools do not normally manage SSH trust. Field names are the larc-seraph normalized macOS contract, not raw unified-log keys.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1098/004/">T1098.004</a></div>
   <div><span>Tactic</span>persistence</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>macOS file events normalized to the SERAPH field contract</div>
+  <div><span>Scope</span>macOS file events normalized to the larc-seraph field contract</div>
 </div>
 <h2>False positives</h2>
 <ul><li>An operator explicitly asked an agent to install a public key during a documented bootstrap.</li><li>Unrelated software whose path contains the substring Claude, Cursor, or codex.</li></ul>
@@ -55,9 +55,11 @@
 <h2 id="why-this-rule">Why this rule</h2>
 <p>The file path has to end in <code>authorized_keys</code> or <code>authorized_keys2</code>. The image or the parent image has to contain one of the reviewed agent-host substrings. A person editing the file in vim from Terminal does not match. An agent writing a README does not match. The same marker list is shared with the shell-rc rule and the piped-shell rule, and a test fails if they drift.</p>
 <h2 id="limitations">Limitations</h2>
-<p>The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the SERAPH contract. A collector that does not supply <code>ParentImage</code> can still match on <code>Image</code> alone, and will miss the case where only the parent is the agent.</p>
+<p>The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the larc-seraph contract. A collector that does not supply <code>ParentImage</code> can still match on <code>Image</code> alone, and will miss the case where only the parent is the agent.</p>
+<h2 id="triage">Triage</h2>
+<p>Diff the keys file. If the operator asked for a bootstrap key, record that. If not, remove the new line and rotate access.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

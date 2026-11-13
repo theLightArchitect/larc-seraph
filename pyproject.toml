@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "seraph"
-version = "1.0.0"
-description = "Defensive YARA and Sigma detection content for AI-agent tooling on developer workstations."
+name = "larc-seraph"
+version = "0.1.0"
+description = "larc-seraph: defensive YARA and Sigma detection content for AI-agent tooling on developer workstations."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -28,16 +28,18 @@ test = [
   "pytest>=8",
   "yara-python>=4.5",
   "sigma-cli>=1.0",
+  "pysigma-backend-splunk==2.1.0",
+  "pysigma-backend-elasticsearch==2.1.1",
 ]
 
 [project.scripts]
-seraph-scan = "seraph.scan:main"
+larc-seraph = "larc_seraph.scan:main"
 
 [project.urls]
 Homepage = "https://lightarchitects.ai"
 
 [tool.setuptools.packages.find]
-include = ["seraph*"]
+include = ["larc_seraph*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

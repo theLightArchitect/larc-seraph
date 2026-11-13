@@ -1,0 +1,5 @@
+# Upstream files that intentionally contain the pattern the rule describes.
+# These are not scanner defects. They are recorded so a fresh corpus scan stays stable.
+SERAPH_MCP_Remote_Npx git/gemini-cli/packages/cli/src/utils/commentJson.test.ts
+SERAPH_MCP_Unpinned_Package git/servers/src/time/README.md
+SERAPH_MCP_Unpinned_Package git/servers/src/fetch/README.md

@@ -1,0 +1,1 @@
+process.executable:*\/ssh AND process.command_line:*\ \-R\ * AND (process.command_line:(*StrictHostKeyChecking\=no* OR *StrictHostKeyChecking\ no*))

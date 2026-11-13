@@ -1,0 +1,69 @@
+# SERAPH-SIGMA-016
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS terminal parent started a shell that pipes a fetch or a decode
+name: SERAPH_MacOS_Terminal_Piped_Shell
+id: 15e99e37-a8c7-433e-a0e6-884e08ce536a
+status: experimental
+description: >
+  A Terminal, iTerm, or login shell spawned a shell whose command line pipes
+  curl, wget, or fetch into a shell, or calls exec or eval on a download or
+  a base64 decode. This is the interactive-shell case. The agent-parent case
+  is SERAPH-SIGMA-015. Field names are the larc-seraph normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1059/004/
+  - https://attack.mitre.org/techniques/T1105/
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS process creation events normalized to the larc-seraph field contract
+tags:
+  - attack.execution
+  - attack.command-and-control
+  - attack.t1059.004
+  - attack.t1105
+logsource:
+  product: macos
+  category: process_creation
+  definition: larc-seraph normalized ESF exec event. ParentImage is the interactive shell host.
+detection:
+  selection_parent:
+    ParentImage|contains:
+      - '/Terminal'
+      - '/iTerm'
+      - '/login'
+  selection_shell:
+    Image|endswith:
+      - '/bash'
+      - '/bin/sh'
+      - '/zsh'
+      - '/python'
+      - '/python3'
+  selection_loader:
+    CommandLine|contains:
+      - 'curl '
+      - 'wget '
+      - 'fetch '
+      - 'base64 '
+  selection_pipe:
+    CommandLine|contains:
+      - '| sh'
+      - '| bash'
+      - '|bash'
+      - '|sh'
+      - '| zsh'
+  selection_py_decode:
+    CommandLine|contains: 'b64decode'
+  selection_url:
+    CommandLine|contains: 'urlopen('
+  selection_py_exec:
+    CommandLine|contains:
+      - 'exec('
+      - 'eval('
+  condition: selection_parent and selection_shell and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec) or (selection_url and selection_py_exec))
+falsepositives:
+  - An operator who intentionally runs an upstream install line from Terminal. Read the URL before paging.
+  - A shell whose parent path merely contains the substring Terminal.
+level: high

@@ -1,0 +1,1 @@
+file_path IN ("*/.zshrc", "*/.zprofile", "*/.zshenv", "*/.zlogin", "*/.bashrc", "*/.bash_profile", "*/.profile") process_path IN ("*/Cursor*", "*/Claude*", "*/codex*", "*/.npm/_npx/*", "*/Code Helper*") OR parent_process_path IN ("*/Cursor*", "*/Claude*", "*/codex*", "*/.npm/_npx/*", "*/Code Helper*")

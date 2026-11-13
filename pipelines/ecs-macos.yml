@@ -1,0 +1,19 @@
+name: larc-seraph ECS macOS field map
+priority: 20
+allowed_backends:
+  - lucene
+  - eql
+  - esql
+  - elasticsearch
+transformations:
+  - id: larc_seraph_ecs_fields
+    type: field_name_mapping
+    mapping:
+      Image: process.executable
+      CommandLine: process.command_line
+      ParentImage: process.parent.executable
+      TargetFilename: file.path
+      User: process.user.name
+    rule_conditions:
+      - type: logsource
+        product: macos

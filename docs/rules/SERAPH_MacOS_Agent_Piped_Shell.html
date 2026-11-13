@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>macOS agent parent started a shell that pipes a fetch or a decode · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>macOS agent parent started a shell that pipes a fetch or a decode · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-SIGMA-015 · sigma · <span class="sev sev-high">high</span></p>
 <h1>macOS agent parent started a shell that pipes a fetch or a decode</h1>
-<p class="deck">A known local AI-agent host spawned a shell or Python whose command line pipes curl, wget, or base64 into a shell, or calls exec or eval on a base64 decode. A plain download does not match. Field names are the SERAPH normalized macOS contract.</p>
+<p class="deck">A known local AI-agent host spawned a shell or Python whose command line pipes curl, wget, or base64 into a shell, or calls exec or eval on a base64 decode. A plain download does not match. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a>, <a href="https://attack.mitre.org/techniques/T1105/">T1105</a></div>
   <div><span>Tactic</span>execution, command-and-control</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>macOS process creation events normalized to the SERAPH field contract</div>
+  <div><span>Scope</span>macOS process creation events normalized to the larc-seraph field contract</div>
 </div>
 <h2>False positives</h2>
 <ul><li>An operator who asked an agent to run a one-off install line that pipes a fetch into a shell. Read the URL.</li><li>The same command from Terminal or launchd is out of scope for this rule. Content rules cover the config and the plist.</li></ul>
@@ -56,8 +56,10 @@
 <p>The parent image has to be an agent host. The child has to be a shell or Python. The command line has to pipe a fetch or a base64 invocation into a shell, or it has to call <code>exec</code> or <code>eval</code> on a base64 decode. A plain download from an agent does not match. A decode that only prints does not match. The same command from Terminal does not match.</p>
 <h2 id="limitations">Limitations</h2>
 <p>A LaunchAgent that later runs the same command has launchd as its parent, not the agent, so this rule will not see it. Use the plist rules for that stage. The python branch looks for <code>exec(</code> or <code>eval(</code> next to a decode call. Other interpreters are a gap. As with the rest of the Sigma set, the fields have to be the normalized contract or the rule is inert.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-016, not this rule.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

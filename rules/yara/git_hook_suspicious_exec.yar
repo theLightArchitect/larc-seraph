@@ -32,7 +32,7 @@ rule SERAPH_Git_Hook_Suspicious_Exec
         $shebang = /^#!\/[^\n]{0,120}((\/sh)|(bash)|(zsh)|(python3?)|(perl)|(ruby))\b/ ascii
         $pipe = /(curl |wget )[^\n]{0,180}\|\s*(ba)?sh\b/ nocase ascii
         $pipe_zsh = /(curl |wget )[^\n]{0,180}\|\s*zsh\b/ nocase ascii
-        $b64 = /base64[ \t]+(-d|--decode)[^\n]{0,60}\|\s*(ba)?sh\b/ nocase ascii
+        $b64 = /base64[ \t]+(-[dD]|--decode)[^\n]{0,60}\|\s*(ba)?sh\b/ nocase ascii
         $net = /(curl |wget |nc )/ nocase ascii
         $persist = /(\.ssh\/|authorized_keys|LaunchAgents\/|LaunchDaemons\/)/ ascii
 

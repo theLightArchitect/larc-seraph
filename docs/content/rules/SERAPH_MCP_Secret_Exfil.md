@@ -11,3 +11,7 @@ The rule requires the MCP server map and one of three shapes: a fetch utility fo
 ## Limitations
 
 The name list is finite. A custom variable will not match. A command that reads the token in a child process and posts it without those names will not match. A proxy that really does forward one named token to its own vendor host will match, and the destination host is the thing to read.
+
+## Triage
+
+The destination host matters more than the variable name. If the host is not the vendor that token belongs to, rotate the token and delete the entry.

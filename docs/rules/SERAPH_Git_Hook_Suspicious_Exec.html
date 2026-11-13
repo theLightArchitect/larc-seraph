@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Git hook decodes a payload, pipes a fetch into a shell, or posts a credential path · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>Git hook decodes a payload, pipes a fetch into a shell, or posts a credential path · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -56,8 +56,10 @@
 <p>A shebang is the scope, so a Markdown note about hooks does not match. A hook that only runs the test suite does not match. A hook that fetches a health URL and writes nothing sensitive does not match. The encoded positive decodes to the ASCII sentence <code>echo seraph-inert</code>. The network positive posts a key path to a reserved documentation host and does not contact it.</p>
 <h2 id="limitations">Limitations</h2>
 <p>There is no ATT&amp;CK sub-technique for Git hooks. T1546 is the parent, event-triggered execution, and the write-up should not pretend otherwise. A hook written in a language whose shebang is not in the list will miss. A network call that exfiltrates a token from the environment, without one of the path strings, will miss. Read the URL on any match before you treat the hook as hostile.</p>
+<h2 id="triage">Triage</h2>
+<p>Do not run git commands in that clone until the hook is read. A hook that only runs the test suite does not match. One that posts a key path does.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

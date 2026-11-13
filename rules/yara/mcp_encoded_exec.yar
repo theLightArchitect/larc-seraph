@@ -16,7 +16,7 @@ rule SERAPH_MCP_Encoded_Exec
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.0.0"
+        version = "1.1.0"
         severity = "high"
         description = "An MCP client config pipes a base64 decode into a shell, or pairs a base64 decode call with eval or exec."
         attack_technique = "T1027, T1140, T1059.004"
@@ -30,11 +30,13 @@ rule SERAPH_MCP_Encoded_Exec
 
     strings:
         $mcp = "\"mcpServers\"" ascii
-        $dec_sh = /base64[ \t]+(-d|--decode)\b[^\n]{0,80}\|\s*(ba)?sh\b/ nocase ascii
-        $dec_zsh = /base64[ \t]+(-d|--decode)\b[^\n]{0,80}\|\s*zsh\b/ nocase ascii
+        $dec_sh = /base64[ \t]+(-[dD]|--decode)\b[^\n]{0,80}\|\s*(ba)?sh\b/ nocase ascii
+        $dec_zsh = /base64[ \t]+(-[dD]|--decode)\b[^\n]{0,80}\|\s*zsh\b/ nocase ascii
         $py_fwd = /b64decode.{0,80}(eval|exec)\s*\(/s nocase ascii
         $py_rev = /(eval|exec)\s*\(.{0,80}b64decode/s nocase ascii
+        $urllib = /urllib\.request\.urlopen.{0,180}(eval|exec)\s*\(/s nocase ascii
+        $urllib_rev = /(eval|exec)\s*\(.{0,120}urlopen/s nocase ascii
 
     condition:
-        $mcp and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev)
+        $mcp and any of ($dec_sh, $dec_zsh, $py_fwd, $py_rev, $urllib, $urllib_rev)
 }

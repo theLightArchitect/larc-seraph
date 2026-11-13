@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/negative/vim_zshrc.json"
+  },
+  "record": {
+    "path": "/usr/bin/vim",
+    "cmdline": "vim /Users/dev/.zshrc",
+    "username": "dev",
+    "parent_path": "/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+    "target_path": "/Users/dev/.zshrc"
+  }
+}

@@ -14,11 +14,18 @@ jobs:
           python-version: "3.12"
       - name: Install pack and test tools
         run: pip install -e ".[test]"
-      - name: Fixture, metadata, and Sigma checks
+      - name: Install yara-x
+        run: |
+          curl -fL -o /tmp/yara-x.tgz https://github.com/VirusTotal/yara-x/releases/download/v1.23.0/yara-x-v1.23.0-x86_64-unknown-linux-gnu.tar.gz
+          sudo tar -xzf /tmp/yara-x.tgz -C /usr/local/bin
+          yr --version
+      - name: Fixture, metadata, conversion, evasion, and yara-x
         run: pytest
       - name: Sigma rule validation
         # d3_fendtag downloads an ontology before checking the tag namespace.
         # This pack has no D3FEND tags. ATT&CK tag checks still run.
         run: sigma check --fail-on-issues --exclude d3_fendtag rules/sigma
+      - name: Benign corpus scan
+        run: python tools/fp_scan.py
       - name: Docs match the rule sources
-        run: python -m seraph.docsgen --check
+        run: python -m larc_seraph.docsgen --check

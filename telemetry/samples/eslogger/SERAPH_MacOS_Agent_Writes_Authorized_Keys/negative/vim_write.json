@@ -1,0 +1,30 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/negative/vim_write.json"
+  },
+  "record": {
+    "event_type": "create",
+    "process": {
+      "executable": {
+        "path": "/usr/bin/vim"
+      },
+      "parent": {
+        "executable": {
+          "path": "/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal"
+        }
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "create": {
+        "target": {
+          "path": "/Users/dev/.ssh/authorized_keys"
+        }
+      }
+    }
+  }
+}

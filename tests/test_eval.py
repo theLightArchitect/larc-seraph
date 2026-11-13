@@ -2,7 +2,7 @@
 
 from sigma.rule import SigmaRule
 
-from seraph.eval import rule_matches
+from larc_seraph.eval import rule_matches
 
 _RULE = """
 title: Oracle sample

@@ -11,3 +11,7 @@ The rule looks for a fetch utility on the same line as a pipe into a shell, or a
 ## Limitations
 
 Splitting the fetch and the shell across two processes, or across a line break, misses. Quoting the anti-pattern inside a long description on the same line as a real fetch can false-positive. This is a content rule: it says the config contains the shape, not that the process ran.
+
+## Triage
+
+Read the URL before you treat the entry as hostile. If the operator pasted an upstream install line, that is the documented false positive. Otherwise remove the server entry and review the rest of the config.

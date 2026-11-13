@@ -1,0 +1,30 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/positive/bash_launchagent.json"
+  },
+  "record": {
+    "event_type": "create",
+    "process": {
+      "executable": {
+        "path": "/bin/bash"
+      },
+      "parent": {
+        "executable": {
+          "path": "/sbin/launchd"
+        }
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "create": {
+        "target": {
+          "path": "/Users/dev/Library/LaunchAgents/com.example.seraph.synthetic.plist"
+        }
+      }
+    }
+  }
+}

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-SIGMA-013 · sigma · <span class="sev sev-medium">medium</span></p>
 <h1>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist</h1>
-<p class="deck">A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the SERAPH normalized macOS contract.</p>
+<p class="deck">A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1543/001/">T1543.001</a>, <a href="https://attack.mitre.org/techniques/T1543/004/">T1543.004</a></div>
   <div><span>Tactic</span>persistence, privilege-escalation</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>macOS file events normalized to the SERAPH field contract</div>
+  <div><span>Scope</span>macOS file events normalized to the larc-seraph field contract</div>
 </div>
 <h2>False positives</h2>
 <ul><li>Installers and Homebrew casks that drop a LaunchAgent from a shell script.</li><li>An operator scripting their own login job. Correlate with SERAPH-YARA-008 or SERAPH-YARA-009 before escalating.</li></ul>
@@ -56,8 +56,10 @@
 <p>The path has to contain one of the two launchd directories and end in <code>.plist</code>. The writer has to be a shell, Python, Node, osascript, or curl. <code>cp</code> dropping a plist does not match. A shell writing a README does not match. <code>/bin/sh</code> is matched as a suffix that does not also match <code>ssh</code>, which is a classic endswith footgun.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Severity is medium because installers and Homebrew casks drop LaunchAgents from shell scripts all day. Correlate with the plist content rules before you escalate. A writer that is a compiled helper, not an interpreter, does not match. The rule cannot see the plist body. That is the YARA rule&#x27;s job.</p>
+<h2 id="triage">Triage</h2>
+<p>This event has no plist body. Pair it with the YARA launchd rules before escalating. Installers do this often.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

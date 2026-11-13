@@ -1,0 +1,18 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "expected": "no-match",
+    "rule": "SERAPH_MCP_Unpinned_Package",
+    "note": "Inert larc-seraph fixture. Do not execute."
+  },
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/dev/projects"
+      ]
+    }
+  }
+}

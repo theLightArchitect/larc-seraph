@@ -26,7 +26,7 @@ rule SERAPH_Instruction_Hidden_Unicode
         reference_3 = "https://www.usenix.org/conference/usenixsecurity22/presentation/boucher"
         reference_4 = "https://atlas.mitre.org/techniques/AML.T0051"
         scope = "Agent instruction files such as AGENTS.md, CLAUDE.md, .cursorrules, and .github/copilot-instructions.md. The bytes are rare in ordinary prose, so the rule is content-wide."
-        false_positives = "A linguistics note or a security write-up that embeds the raw controls on purpose. SERAPH docs name the code points and do not embed them. Zero-width space and emoji joiners are intentionally not matched."
+        false_positives = "A linguistics note or a security write-up that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them. Zero-width space and emoji joiners are intentionally not matched."
         license = "Detection Rule License 1.1"
 
     strings:

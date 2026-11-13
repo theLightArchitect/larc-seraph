@@ -11,3 +11,7 @@ The rule requires the MCP server map and one of those two shapes. A long opaque 
 ## Limitations
 
 A custom decoder, or a decode that writes a file instead of executing, does not match. A legitimate tool whose command line really does decode-and-exec will match and needs a human. The rule will not flag a blob that is never decoded in the file.
+
+## Triage
+
+Decode the blob in a scratch buffer. The pack's own fixtures decode to an echo sentence. If the decoded text is a command the operator did not ask for, remove the entry.

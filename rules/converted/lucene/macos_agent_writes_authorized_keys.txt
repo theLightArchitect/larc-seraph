@@ -1,0 +1,1 @@
+(file.path:(*\/.ssh\/authorized_keys OR *\/.ssh\/authorized_keys2)) AND ((process.executable:(*\/Cursor* OR *\/Claude* OR *\/codex* OR *\/.npm\/_npx\/* OR *\/Code\ Helper*)) OR (process.parent.executable:(*\/Cursor* OR *\/Claude* OR *\/codex* OR *\/.npm\/_npx\/* OR *\/Code\ Helper*)))

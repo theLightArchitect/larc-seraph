@@ -6,10 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from seraph.inventory import ROOT, load_records, writeup_path
-from seraph.scan import compile_yara
+from larc_seraph.inventory import ROOT, load_records, writeup_path
+from larc_seraph.scan import compile_yara
 
-REQUIRED_SECTIONS = ("## Threat", "## Why this rule", "## Limitations")
+REQUIRED_SECTIONS = ("## Threat", "## Why this rule", "## Limitations", "## Triage")
 TEXT_SUFFIXES = {".md", ".html", ".css", ".svg", ".txt"}
 
 
@@ -30,7 +30,7 @@ def test_readme_names_every_rule():
 
 def test_docs_html_matches_sources():
     result = subprocess.run(
-        [sys.executable, "-m", "seraph.docsgen", "--check"],
+        [sys.executable, "-m", "larc_seraph.docsgen", "--check"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -41,7 +41,13 @@ def test_docs_html_matches_sources():
 
 def test_public_pages_do_not_match_the_yara_pack():
     rules = compile_yara()
-    roots = [ROOT / "README.md", ROOT / "NOTICE", ROOT / "docs"]
+    roots = [
+        ROOT / "README.md",
+        ROOT / "NOTICE",
+        ROOT / "CHANGELOG.md",
+        ROOT / "VALIDATION.md",
+        ROOT / "docs",
+    ]
     scanned = 0
     for root in roots:
         paths = [root] if root.is_file() else root.rglob("*")

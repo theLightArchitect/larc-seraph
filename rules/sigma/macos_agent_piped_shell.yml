@@ -8,7 +8,7 @@ status: experimental
 description: >
   A known local AI-agent host spawned a shell or Python whose command line
   pipes curl, wget, or base64 into a shell, or calls exec or eval on a
-  base64 decode. A plain download does not match. Field names are the SERAPH
+  base64 decode. A plain download does not match. Field names are the larc-seraph
   normalized macOS contract.
 references:
   - https://attack.mitre.org/techniques/T1059/004/
@@ -18,7 +18,7 @@ date: 2026-11-13
 modified: 2026-11-13
 license: Detection Rule License 1.1
 scope:
-  - macOS process creation events normalized to the SERAPH field contract
+  - macOS process creation events normalized to the larc-seraph field contract
 tags:
   - attack.execution
   - attack.command-and-control
@@ -27,7 +27,7 @@ tags:
 logsource:
   product: macos
   category: process_creation
-  definition: SERAPH normalized ESF exec event. ParentImage is the agent host, Image is the child shell.
+  definition: larc-seraph normalized ESF exec event. ParentImage is the agent host, Image is the child shell.
 detection:
   selection_parent:
     ParentImage|contains:
@@ -47,7 +47,10 @@ detection:
     CommandLine|contains:
       - 'curl '
       - 'wget '
+      - 'fetch '
       - 'base64 '
+  selection_url:
+    CommandLine|contains: 'urlopen('
   selection_pipe:
     CommandLine|contains:
       - '| sh'
@@ -60,7 +63,7 @@ detection:
     CommandLine|contains:
       - 'exec('
       - 'eval('
-  condition: selection_parent and selection_shell and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec))
+  condition: selection_parent and selection_shell and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec) or (selection_url and selection_py_exec))
 falsepositives:
   - An operator who asked an agent to run a one-off install line that pipes a fetch into a shell. Read the URL.
   - The same command from Terminal or launchd is out of scope for this rule. Content rules cover the config and the plist.

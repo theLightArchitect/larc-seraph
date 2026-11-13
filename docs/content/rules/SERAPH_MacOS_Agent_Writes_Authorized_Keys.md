@@ -10,4 +10,8 @@ The file path has to end in `authorized_keys` or `authorized_keys2`. The image o
 
 ## Limitations
 
-The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the SERAPH contract. A collector that does not supply `ParentImage` can still match on `Image` alone, and will miss the case where only the parent is the agent.
+The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the larc-seraph contract. A collector that does not supply `ParentImage` can still match on `Image` alone, and will miss the case where only the parent is the agent.
+
+## Triage
+
+Diff the keys file. If the operator asked for a bootstrap key, record that. If not, remove the new line and rotate access.

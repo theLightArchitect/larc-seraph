@@ -11,3 +11,7 @@ The target has to be one of the usual user startup files, and the image or paren
 ## Limitations
 
 Project-level rc files and unusual startup names are not in the list. The legitimate "add this alias" request will match, and the note on the rule says so. Do not page on this rule alone. Read the diff.
+
+## Triage
+
+Read the diff. An alias the operator requested is the medium-severity false positive. A command they did not ask for is the lead.

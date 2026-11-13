@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>macOS SSH process opened a reverse tunnel with host-key checking disabled · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>macOS SSH process opened a reverse tunnel with host-key checking disabled · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-SIGMA-014 · sigma · <span class="sev sev-high">high</span></p>
 <h1>macOS SSH process opened a reverse tunnel with host-key checking disabled</h1>
-<p class="deck">ssh was started with a reverse forward and StrictHostKeyChecking set to no. The parent is not required to be an agent host: a LaunchAgent&#x27;s parent is launchd, and that is the persistence case this rule is for. Field names are the SERAPH normalized macOS contract.</p>
+<p class="deck">ssh was started with a reverse forward and StrictHostKeyChecking set to no. The parent is not required to be an agent host: a LaunchAgent&#x27;s parent is launchd, and that is the persistence case this rule is for. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1572/">T1572</a>, <a href="https://attack.mitre.org/techniques/T1021/004/">T1021.004</a></div>
   <div><span>Tactic</span>command-and-control, lateral-movement</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>macOS process creation events normalized to the SERAPH field contract</div>
+  <div><span>Scope</span>macOS process creation events normalized to the larc-seraph field contract</div>
 </div>
 <h2>False positives</h2>
 <ul><li>An administrator who deliberately disables host-key checking on a reverse tunnel.</li><li>accept-new and the default checking mode do not match.</li></ul>
@@ -56,8 +56,10 @@
 <p><code>Image</code> has to be ssh. The command line has to contain a reverse-forward flag surrounded by spaces, and one of the two spellings of the disabled host-key option. <code>accept-new</code> does not match. A disabled check on an ordinary git connection, with no reverse forward, does not match.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Operators do disable host-key checking on purpose. The false-positive note says that, and the severity stays high because the combination is still rare. Options stored in the user&#x27;s ssh config, rather than on the command line, are invisible here. A reverse forward that uses <code>-R</code> glued to the next token, with no spaces, can miss the spaced-flag check.</p>
+<h2 id="triage">Triage</h2>
+<p>Confirm the parent. launchd means a persistent job. An interactive shell may be an operator running a tunnel on purpose.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

@@ -11,3 +11,7 @@ A shebang is the scope, so a Markdown note about hooks does not match. A hook th
 ## Limitations
 
 There is no ATT&CK sub-technique for Git hooks. T1546 is the parent, event-triggered execution, and the write-up should not pretend otherwise. A hook written in a language whose shebang is not in the list will miss. A network call that exfiltrates a token from the environment, without one of the path strings, will miss. Read the URL on any match before you treat the hook as hostile.
+
+## Triage
+
+Do not run git commands in that clone until the hook is read. A hook that only runs the test suite does not match. One that posts a key path does.

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Instruction file contains Unicode tags or bidi overrides · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>Instruction file contains Unicode tags or bidi overrides · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -46,7 +46,7 @@
   <div><span>Scope</span>Agent instruction files such as AGENTS.md, CLAUDE.md, .cursorrules, and .github/copilot-instructions.md. The bytes are rare in ordinary prose, so the rule is content-wide.</div>
 </div>
 <h2>False positives</h2>
-<ul><li>A linguistics note or a security write-up that embeds the raw controls on purpose. SERAPH docs name the code points and do not embed them. Zero-width space and emoji joiners are intentionally not matched.</li></ul>
+<ul><li>A linguistics note or a security write-up that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them. Zero-width space and emoji joiners are intentionally not matched.</li></ul>
 <h2>References</h2>
 <ul><li><a href="https://attack.mitre.org/techniques/T1027/">https://attack.mitre.org/techniques/T1027/</a></li><li><a href="https://www.unicode.org/charts/PDF/UE0000.pdf">https://www.unicode.org/charts/PDF/UE0000.pdf</a></li><li><a href="https://www.usenix.org/conference/usenixsecurity22/presentation/boucher">https://www.usenix.org/conference/usenixsecurity22/presentation/boucher</a></li><li><a href="https://atlas.mitre.org/techniques/AML.T0051">https://atlas.mitre.org/techniques/AML.T0051</a></li></ul>
 <article class="prose">
@@ -55,9 +55,11 @@
 <h2 id="why-this-rule">Why this rule</h2>
 <p>The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. It does not match zero-width space, word joiner, or emoji joiners. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The positive fixtures are labelled, one with a tag-encoded inert word and one with a single override at the end of the file so the heading stays readable.</p>
 <h2 id="limitations">Limitations</h2>
-<p>A write-up that embeds the raw controls on purpose will match. SERAPH&#x27;s own pages name the code points and do not embed them. A motivated author can hide instructions with homoglyphs or with wording alone, and this rule will not see that. Path-scope the scan to instruction filenames if you do not want it running across arbitrary binaries, where a random byte sequence is more plausible.</p>
+<p>A write-up that embeds the raw controls on purpose will match. larc-seraph&#x27;s own pages name the code points and do not embed them. A motivated author can hide instructions with homoglyphs or with wording alone, and this rule will not see that. Path-scope the scan to instruction filenames if you do not want it running across arbitrary binaries, where a random byte sequence is more plausible.</p>
+<h2 id="triage">Triage</h2>
+<p>Open the file in a hex view. If the hidden bytes are a quote in a security note, the false-positive note applies. If they are not, treat the file as untrusted instructions and remove it from the agent path.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

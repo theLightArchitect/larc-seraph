@@ -11,3 +11,7 @@ The rule requires the MCP server map, then either a command value whose path sit
 ## Limitations
 
 A cache-installed CLI can be a real developer choice. Treat the match as a review of who put the file there. Homebrew prefixes are intentionally absent, so a shell in `/usr/local` or `/opt/homebrew` is a gap. The rule does not know whether the file at the path is still present.
+
+## Triage
+
+Read the command path. If the file is a scratch script the operator just wrote, note it and move on. If the path is unexpected, stop that MCP server and inspect who wrote the config.

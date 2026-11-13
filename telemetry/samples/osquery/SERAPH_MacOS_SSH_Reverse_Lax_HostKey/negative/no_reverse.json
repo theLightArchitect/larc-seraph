@@ -1,0 +1,15 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/negative/no_reverse.json"
+  },
+  "record": {
+    "path": "/usr/bin/ssh",
+    "cmdline": "ssh -o StrictHostKeyChecking=no git@example.invalid",
+    "username": "dev",
+    "parent_path": "/bin/zsh"
+  }
+}

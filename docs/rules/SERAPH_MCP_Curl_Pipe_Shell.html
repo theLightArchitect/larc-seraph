@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MCP config pipes a remote fetch into a shell · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>MCP config pipes a remote fetch into a shell · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -56,8 +56,10 @@
 <p>The rule looks for a fetch utility on the same line as a pipe into a shell, or a process substitution that feeds a fetch into a shell, inside a file that also carries the MCP server map. A download that writes a file and stops does not match. The positive fixtures use a reserved documentation host and do not retrieve anything.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Splitting the fetch and the shell across two processes, or across a line break, misses. Quoting the anti-pattern inside a long description on the same line as a real fetch can false-positive. This is a content rule: it says the config contains the shape, not that the process ran.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the URL before you treat the entry as hostile. If the operator pasted an upstream install line, that is the documented false positive. Otherwise remove the server entry and review the rest of the config.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Curl_Pipe_Shell/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Curl_Pipe_Shell/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

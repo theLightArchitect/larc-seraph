@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MCP config runs npx or uvx from a remote or floating tag · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>MCP config runs npx or uvx from a remote or floating tag · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -56,8 +56,10 @@
 <p>The rule requires the MCP server map and one of those specifiers within a short window of <code>npx</code>, <code>uvx</code>, or <code>npm exec</code>. The official filesystem server invoked as a scoped package with no tag is a negative fixture. So is a package whose name contains the word github but not the <code>github:</code> specifier, and so is a version pin such as <code>@0.6.0</code>.</p>
 <h2 id="limitations">Limitations</h2>
 <p><code>@latest</code> is sometimes what an operator typed on purpose during a review. That branch is noisier than the URL branch, and the severity is still high because the two shapes share one rule. Unpinned registry names with no tag are not matched. That omission is deliberate: it is the published quickstart, and a rule that flags it would train people to ignore the pack. Track those with a lockfile policy, not with this signature.</p>
+<h2 id="triage">Triage</h2>
+<p>The package specifier is the decision. A quoted URL, a github: specifier, or @latest means the code can change. Pin it or remove it.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Remote_Npx/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_MCP_Remote_Npx/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>

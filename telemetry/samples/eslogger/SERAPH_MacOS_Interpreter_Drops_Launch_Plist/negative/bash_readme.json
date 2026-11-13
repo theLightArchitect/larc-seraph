@@ -1,0 +1,30 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/negative/bash_readme.json"
+  },
+  "record": {
+    "event_type": "create",
+    "process": {
+      "executable": {
+        "path": "/bin/bash"
+      },
+      "parent": {
+        "executable": {
+          "path": "/sbin/launchd"
+        }
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "create": {
+        "target": {
+          "path": "/Users/dev/projects/README.md"
+        }
+      }
+    }
+  }
+}

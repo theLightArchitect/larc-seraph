@@ -10,4 +10,8 @@ The rule matches the UTF-8 ranges for the tag block and the four bidi override b
 
 ## Limitations
 
-A write-up that embeds the raw controls on purpose will match. SERAPH's own pages name the code points and do not embed them. A motivated author can hide instructions with homoglyphs or with wording alone, and this rule will not see that. Path-scope the scan to instruction filenames if you do not want it running across arbitrary binaries, where a random byte sequence is more plausible.
+A write-up that embeds the raw controls on purpose will match. larc-seraph's own pages name the code points and do not embed them. A motivated author can hide instructions with homoglyphs or with wording alone, and this rule will not see that. Path-scope the scan to instruction filenames if you do not want it running across arbitrary binaries, where a random byte sequence is more plausible.
+
+## Triage
+
+Open the file in a hex view. If the hidden bytes are a quote in a security note, the false-positive note applies. If they are not, treat the file as untrusted instructions and remove it from the agent path.

@@ -1,0 +1,24 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/negative/vim_zshrc.json"
+  },
+  "record": {
+    "process": {
+      "executable": "/usr/bin/vim",
+      "command_line": "vim /Users/dev/.zshrc",
+      "parent": {
+        "executable": "/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal"
+      }
+    },
+    "user": {
+      "name": "dev"
+    },
+    "file": {
+      "path": "/Users/dev/.zshrc"
+    }
+  }
+}

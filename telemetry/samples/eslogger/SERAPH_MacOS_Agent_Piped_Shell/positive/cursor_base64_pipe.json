@@ -1,0 +1,37 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/positive/cursor_base64_pipe.json"
+  },
+  "record": {
+    "event_type": "exec",
+    "process": {
+      "executable": {
+        "path": "/Applications/Claude.app/Contents/MacOS/Claude"
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "exec": {
+        "args": [
+          "printf",
+          "%s",
+          "ZWNobyBzZXJhcGgtaW5lcnQK",
+          "|",
+          "base64",
+          "-d",
+          "|",
+          "sh"
+        ],
+        "target": {
+          "executable": {
+            "path": "/bin/bash"
+          }
+        }
+      }
+    }
+  }
+}

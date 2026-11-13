@@ -1,0 +1,30 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/positive/claude_parent.json"
+  },
+  "record": {
+    "event_type": "create",
+    "process": {
+      "executable": {
+        "path": "/bin/bash"
+      },
+      "parent": {
+        "executable": {
+          "path": "/Applications/Claude.app/Contents/MacOS/Claude"
+        }
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "create": {
+        "target": {
+          "path": "/Users/dev/.ssh/authorized_keys2"
+        }
+      }
+    }
+  }
+}

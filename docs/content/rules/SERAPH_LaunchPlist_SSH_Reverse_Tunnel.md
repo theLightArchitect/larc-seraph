@@ -11,3 +11,7 @@ The plist has to name ssh and a reverse-forward flag and the disabled host-key o
 ## Limitations
 
 An administrator who encodes this exact choice in a plist will match. The option can also be hidden in a config file that ssh reads by default, which this rule does not open. ATT&CK T1572 and T1021.004 describe the tunnel and the protocol. T1543.001 describes the persistence wrapper.
+
+## Triage
+
+This is a path in. Confirm with the operator whether they disabled host-key checking on purpose. If not, unload the job and review authorized_keys.

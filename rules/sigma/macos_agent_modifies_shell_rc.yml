@@ -8,7 +8,7 @@ status: experimental
 description: >
   A process whose image, or its parent image, matches a known local AI-agent
   host wrote a user shell startup file. That is a common place to hide a
-  command that runs in later interactive sessions. Field names are the SERAPH
+  command that runs in later interactive sessions. Field names are the larc-seraph
   normalized macOS contract.
 references:
   - https://attack.mitre.org/techniques/T1546/004/
@@ -17,7 +17,7 @@ date: 2026-11-13
 modified: 2026-11-13
 license: Detection Rule License 1.1
 scope:
-  - macOS file events normalized to the SERAPH field contract
+  - macOS file events normalized to the larc-seraph field contract
 tags:
   - attack.persistence
   - attack.privilege-escalation
@@ -25,7 +25,7 @@ tags:
 logsource:
   product: macos
   category: file_event
-  definition: SERAPH normalized ESF file event. Image, ParentImage, and TargetFilename are absolute paths.
+  definition: larc-seraph normalized ESF file event. Image, ParentImage, and TargetFilename are absolute paths.
 detection:
   selection_target:
     TargetFilename|endswith:

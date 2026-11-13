@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/negative/bash_readme.json"
+  },
+  "record": {
+    "path": "/bin/bash",
+    "cmdline": "bash",
+    "username": "dev",
+    "parent_path": "/sbin/launchd",
+    "target_path": "/Users/dev/projects/README.md"
+  }
+}

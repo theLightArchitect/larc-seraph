@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/positive/claude_parent.json"
+  },
+  "record": {
+    "path": "/bin/bash",
+    "cmdline": "bash",
+    "username": "dev",
+    "parent_path": "/Applications/Claude.app/Contents/MacOS/Claude",
+    "target_path": "/Users/dev/.ssh/authorized_keys2"
+  }
+}

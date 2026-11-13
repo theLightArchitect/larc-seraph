@@ -29,7 +29,7 @@ rule SERAPH_MCP_Remote_Npx
 
     strings:
         $mcp = "\"mcpServers\"" ascii
-        $remote = /((npx)|(uvx)|(npm[ \t]+exec)).{0,220}(https?:\/\/|github:|git\+|gist\.github\.com)/s nocase ascii
+        $remote = /((npx)|(uvx)|(npm[ \t]+exec)).{0,160}(github:|git\+|gist\.github\.com|"https?:\/\/|'https?:\/\/)/s nocase ascii
         $latest = /((npx)|(uvx)).{0,180}@latest\b/s nocase ascii
 
     condition:

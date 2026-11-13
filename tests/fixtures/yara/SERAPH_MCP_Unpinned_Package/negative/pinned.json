@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "expected": "no-match",
+    "rule": "SERAPH_MCP_Unpinned_Package",
+    "note": "Inert larc-seraph fixture. Do not execute."
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "uvx",
+      "args": [
+        "seraph-inert-tool@1.2.3"
+      ]
+    }
+  }
+}

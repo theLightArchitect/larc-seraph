@@ -11,3 +11,7 @@ The parent image has to be an agent host. The child has to be a shell or Python.
 ## Limitations
 
 A LaunchAgent that later runs the same command has launchd as its parent, not the agent, so this rule will not see it. Use the plist rules for that stage. The python branch looks for `exec(` or `eval(` next to a decode call. Other interpreters are a gap. As with the rest of the Sigma set, the fields have to be the normalized contract or the rule is inert.
+
+## Triage
+
+Read the URL and the parent. The same line from Terminal is SERAPH-SIGMA-016, not this rule.

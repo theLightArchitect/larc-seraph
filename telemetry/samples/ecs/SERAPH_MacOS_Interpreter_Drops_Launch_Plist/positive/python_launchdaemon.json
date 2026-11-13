@@ -1,0 +1,24 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/positive/python_launchdaemon.json"
+  },
+  "record": {
+    "process": {
+      "executable": "/usr/bin/python3",
+      "command_line": "python3",
+      "parent": {
+        "executable": "/usr/bin/python3"
+      }
+    },
+    "user": {
+      "name": "root"
+    },
+    "file": {
+      "path": "/Library/LaunchDaemons/com.example.seraph.synthetic.plist"
+    }
+  }
+}

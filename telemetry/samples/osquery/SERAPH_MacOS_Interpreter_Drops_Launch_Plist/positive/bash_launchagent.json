@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Interpreter_Drops_Launch_Plist/positive/bash_launchagent.json"
+  },
+  "record": {
+    "path": "/bin/bash",
+    "cmdline": "bash",
+    "username": "dev",
+    "parent_path": "/sbin/launchd",
+    "target_path": "/Users/dev/Library/LaunchAgents/com.example.seraph.synthetic.plist"
+  }
+}

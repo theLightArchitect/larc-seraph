@@ -11,8 +11,8 @@ import pytest
 import yaml
 import yara
 
-from seraph.eval import rule_matches
-from seraph.inventory import (
+from larc_seraph.eval import rule_matches
+from larc_seraph.inventory import (
     YARA_META_KEYS,
     fixture_dirs,
     load_records,
@@ -20,7 +20,7 @@ from seraph.inventory import (
     load_yara_records,
     parse_yara_meta,
 )
-from seraph.scan import compile_yara
+from larc_seraph.scan import compile_yara
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENT_MARKERS = [
@@ -45,10 +45,10 @@ def sigma_by_name():
 def test_pack_has_the_planned_rule_count():
     records = load_records()
     kinds = {record.kind for record in records}
-    assert len(records) == 15
+    assert len(records) == 17
     assert kinds == {"yara", "sigma"}
-    assert sum(record.kind == "yara" for record in records) == 10
-    assert sum(record.kind == "sigma" for record in records) == 5
+    assert sum(record.kind == "yara" for record in records) == 11
+    assert sum(record.kind == "sigma" for record in records) == 6
 
 
 def test_yara_metadata_is_complete():
@@ -155,6 +155,8 @@ def test_non_unicode_fixtures_are_ascii():
     allowed = {
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tag_characters.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/bidi_override.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/homoglyph.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zero_width.md",
     }
     for path in (ROOT / "tests" / "fixtures").rglob("*"):
         if not path.is_file() or path in allowed:

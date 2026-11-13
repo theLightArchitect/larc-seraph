@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent instructions request secret theft or skipped confirmation · SERAPH</title>
-  <meta name="description" content="SERAPH is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <title>Agent instructions request secret theft or skipped confirmation · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
   <meta name="author" content="Kevin Francis Tan">
   <meta name="theme-color" content="#070F1A">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
       <a class="brand" href="../index.html">
         <img src="../assets/favicon.svg" alt="">
         <span>
-          <span class="brand-name">SERAPH</span>
+          <span class="brand-name">larc-seraph</span>
           <small>Light Architects</small>
         </span>
       </a>
@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-007 · yara · <span class="sev sev-high">high</span></p>
 <h1>Agent instructions request secret theft or skipped confirmation</h1>
-<p class="deck">Instruction-shaped prose tells an agent to skip confirmation, or places a credential path or token name within a short window of a network sink, or pairs an instruction-override sentence with a sink or a token name.</p>
+<p class="deck">Instruction-shaped prose tells an agent to skip confirmation, including case, spacing, a single zero-width gap, or a Cyrillic lookalike, or places a credential path or token name within a short window of a network sink.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -46,7 +46,7 @@
   <div><span>Scope</span>Files that look like agent instructions: a Markdown heading, or a line beginning with You are. Deploy on AGENTS.md, CLAUDE.md, .cursorrules, and copilot-instructions.md.</div>
 </div>
 <h2>False positives</h2>
-<ul><li>A team policy that truly wants agents to skip confirmation, written with the same phrases. A security note that places a credential path and the word webhook in the same short paragraph. Natural language is easy to rephrase past this rule.</li></ul>
+<ul><li>A team policy that truly wants agents to skip confirmation, written with the same phrases. A security note that places a credential path and the word webhook in the same short paragraph. Homoglyphs other than Cyrillic o, and zero-width bytes inside a word past three bytes, still pass.</li></ul>
 <h2>References</h2>
 <ul><li><a href="https://attack.mitre.org/techniques/T1567/">https://attack.mitre.org/techniques/T1567/</a></li><li><a href="https://attack.mitre.org/techniques/T1562/001/">https://attack.mitre.org/techniques/T1562/001/</a></li><li><a href="https://atlas.mitre.org/techniques/AML.T0051">https://atlas.mitre.org/techniques/AML.T0051</a></li></ul>
 <article class="prose">
@@ -56,8 +56,10 @@
 <p>The file has to look like instructions first: a Markdown heading at the start, or a line that begins &quot;You are a&quot; or &quot;You are an&quot;. That keeps shell scripts and JSON configs out of the rule. Inside that scope, the rule matches a short list of confirmation-bypass phrases, or a credential path and a fetch utility within 400 characters, or the override sentence within 400 characters of a sink or a token name. A policy that says to ask first, including one that mentions a token name and tells the reader not to merge without a check, is a negative. So is the same pair of ideas placed far apart.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Natural language is easy to rephrase, and this rule will miss a rewrite. A team that truly wants agents to skip confirmation, and writes that policy with the same phrases, will match. T1562.001 is an approximate mapping for &quot;stop asking&quot;; the enterprise technique is about impairing security tools. Read the sentence before you call it malice. Heading-less instruction files that also avoid the &quot;You are&quot; opening are a gap. Point the scanner at the known filenames anyway.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the sentence in context. A team policy that really wants fewer prompts will say so in the open. A line that also names a credential path or a sink is the case to escalate.</p>
 </article>
-<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/</code>. Positives match this rule and no other SERAPH rule. Negatives match none.</p>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
 
     </div>
   </main>
