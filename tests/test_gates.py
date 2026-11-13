@@ -140,7 +140,7 @@ def test_yara_scan_of_a_wide_tree_stays_quick(tmp_path: Path):
 def _default_filepath(rule: str) -> str:
     if "Git_Hook" in rule:
         return "/repo/.git/hooks/pre-commit"
-    if rule.startswith("SERAPH_MCP"):
+    if rule.startswith("SUSP_SERAPH_MCP"):
         return "/repo/mcp.json"
     if "Instruction" in rule:
         return "/repo/AGENTS.md"
@@ -149,7 +149,7 @@ def _default_filepath(rule: str) -> str:
     return "/tmp/sample"
 
 
-_INSTRUCTION = {"SERAPH_Instruction_Unsafe_Directive", "SERAPH_Instruction_Hidden_Unicode"}
+_INSTRUCTION = {"SUSP_SERAPH_Instruction_Unsafe_Directive", "SUSP_SERAPH_Instruction_Hidden_Unicode"}
 _MARKER = "agent instructions"
 
 

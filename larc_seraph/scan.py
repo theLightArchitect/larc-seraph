@@ -124,7 +124,7 @@ def yara_match(
     if not phrases:
         return hits
     names = {hit.rule for hit in hits}
-    core = "SERAPH_Instruction_Unsafe_Directive"
+    core = "SUSP_SERAPH_Instruction_Unsafe_Directive"
     reported = f"{core}_Path" if use_filepath else core
     if reported not in names and core not in names and instruction_bypass(data, filepath, use_filepath=use_filepath):
         hits.append(NamedHit(reported))

@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_MCP_Unpinned_Package {
+rule SUSP_SERAPH_MCP_Unpinned_Package {
   meta:
     id               = "SERAPH-YARA-016"
     title            = "MCP config runs an unpinned npx or uvx package"
+    old_rule_name    = "SERAPH_MCP_Unpinned_Package"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

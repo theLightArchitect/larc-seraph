@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_MCP_Remote_Npx {
+rule SUSP_SERAPH_MCP_Remote_Npx {
   meta:
     id               = "SERAPH-YARA-004"
     title            = "MCP config runs npx or uvx from a remote or floating tag"
+    old_rule_name    = "SERAPH_MCP_Remote_Npx"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

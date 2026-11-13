@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_LaunchPlist_SSH_Reverse_Tunnel {
+rule SUSP_SERAPH_LaunchPlist_SSH_Reverse_Tunnel {
   meta:
     id               = "SERAPH-YARA-009"
     title            = "LaunchAgent plist opens an SSH reverse tunnel with host-key checking off"
+    old_rule_name    = "SERAPH_LaunchPlist_SSH_Reverse_Tunnel"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

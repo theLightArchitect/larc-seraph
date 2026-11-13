@@ -13,7 +13,7 @@ body:
     id: rule
     attributes:
       label: Rule name or id
-      placeholder: SERAPH_MCP_Unpinned_Package or SERAPH-YARA-016
+      placeholder: SUSP_SERAPH_MCP_Unpinned_Package or SERAPH-YARA-016
     validations:
       required: true
   - type: dropdown

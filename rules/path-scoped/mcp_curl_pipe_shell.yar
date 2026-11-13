@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_MCP_Curl_Pipe_Shell_Path {
+rule SUSP_SERAPH_MCP_Curl_Pipe_Shell_Path {
   meta:
     id               = "SERAPH-YARA-002-PATH"
     title            = "MCP config pipes a remote fetch into a shell"
+    old_rule_name    = "SERAPH_MCP_Curl_Pipe_Shell_Path"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

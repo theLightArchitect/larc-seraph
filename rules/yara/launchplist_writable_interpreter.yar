@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_LaunchPlist_Writable_Interpreter {
+rule SUSP_SERAPH_LaunchPlist_Writable_Interpreter {
   meta:
     id               = "SERAPH-YARA-008"
     title            = "LaunchAgent plist runs a shell from a user-writable path"
+    old_rule_name    = "SERAPH_LaunchPlist_Writable_Interpreter"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

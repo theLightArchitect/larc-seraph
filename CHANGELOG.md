@@ -26,6 +26,7 @@ Project basics for a public detection pack, and detection changes from a review 
 - `@anthropic-ai` replaces `@anthropic` on the `SERAPH-YARA-016` allowlist. Anthropic publishes under `@anthropic-ai`.
 - The Forge copies of the git-hook rule and the two instruction rules score 45 to 50 and describe what a rule with no path matches. `score` is an integer and extra URLs repeat the `reference` key.
 - Sigma: `SERAPH-SIGMA-014` reads `-NR`, a glued `-R`, `RemoteForward`, `off`, and `autossh`. `SERAPH-SIGMA-015` reads more shell sinks and a versioned python. `SERAPH-SIGMA-013` reads perl, ruby, bun, deno, and a versioned python. `SERAPH-SIGMA-012` covers `.bash_login`, `.zlogout`, and fish. The eslogger normalizer reads the Endpoint Security shape of a create and a rename.
+- YARA rules are renamed with the Neo23x0 category prefix `SUSP_`, for example `SERAPH_MCP_Curl_Pipe_Shell` is now `SUSP_SERAPH_MCP_Curl_Pipe_Shell`, and path-scoped twins are `SUSP_SERAPH_*_Path`. Each rule keeps its previous name in `old_rule_name`. Scanner output and fixture folders use the new names. Sigma names and all `SERAPH-YARA-NNN` ids are unchanged.
 - YARA descriptions start with `Detects `. YARA rules carry `status` and `score`. CI runs `yr fmt --check`.
 
 ## v0.1.8 — 2026-11-13

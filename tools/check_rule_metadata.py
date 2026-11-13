@@ -36,6 +36,7 @@ _YARA_REQUIRED = (
     "attack_tactic",
 )
 _YARA_STATUS = {"experimental", "test", "stable", "deprecated"}
+_YARA_NAME = re.compile(r"^SUSP_SERAPH_[A-Za-z0-9]+(_[A-Za-z0-9]+)*$")
 _SERAPH_ID = re.compile(r"^(SERAPH-(?:YARA|SIGMA)-(\d{3}))(?:-PATH)?$")
 _SIGMA_STATUS = {"experimental", "test", "stable", "deprecated", "unsupported"}
 _SIGMA_LEVEL = {"informational", "low", "medium", "high", "critical"}
@@ -70,6 +71,12 @@ def _check_yara_file(
     except ValueError as exc:
         problems.append(f"{path.name}: {exc}")
         return problems
+    # Neo23x0 naming: category first, then the pack, then the subject. The
+    # name before the SUSP_ prefix stays searchable in old_rule_name.
+    if not _YARA_NAME.match(name):
+        problems.append(f"{name}: YARA rule name must start with SUSP_SERAPH_")
+    elif meta.get("old_rule_name") != name.removeprefix("SUSP_"):
+        problems.append(f"{name}: old_rule_name must be {name.removeprefix('SUSP_')}")
     for key in _YARA_REQUIRED:
         missing = _nonempty(meta, key)
         if missing:

@@ -19,7 +19,7 @@ Pass `filepath` as the path is stored, with forward slashes, and keep the origin
 
 English confirmation-bypass sentences live in `larc_seraph/phrases.py`. `python tools/build_phrase_rules.py` writes them into the YARA rule, and `python tools/build_rule_flavors.py` writes both flavors. CI fails if either file drifts. A positive instruction fixture that the CLI matches and YARA does not also fails CI.
 
-YARA descriptions start with `Detects `. Each YARA rule has `status` (`experimental` until there is fleet evidence) and `score` (an integer from 0 to 100). Names stay `SERAPH_*`. This pack does not add Neo23x0 category prefixes such as `MAL_` or `HKTL_`. Those prefixes classify malware families. The `SERAPH-YARA` / `SERAPH-SIGMA` id is the catalog key, and the three-digit number is unique across both families.
+YARA descriptions start with `Detects `. Each YARA rule has `status` (`experimental` until there is fleet evidence) and `score` (an integer from 0 to 100). A YARA rule name is `SUSP_SERAPH_<Subject>`, and a renamed rule keeps its previous name in `old_rule_name`. Sigma names are `SERAPH_MacOS_<Subject>`. The `SERAPH-YARA` / `SERAPH-SIGMA` id is the catalog key, and the three-digit number is unique across both families.
 
 Sigma rules use the normalized macOS field contract: `Image`, `CommandLine`, `ParentImage`, `TargetFilename`, `User`. They do not match raw Apple unified logs. Status stays `experimental` until there is fleet evidence. Do not widen a condition to make a failing fixture pass.
 

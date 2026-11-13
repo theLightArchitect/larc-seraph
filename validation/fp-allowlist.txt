@@ -5,4 +5,4 @@
 # into a shell. The rule is right to point at that line. It is recorded here as
 # an accepted corpus hit and is not exempted in the rule. The Forge rule needs an
 # in-file instruction marker and stays silent on this file.
-SERAPH_Instruction_Unsafe_Directive_Path git/gemini-cli/.gemini/skills/agent-tui/SKILL.md
+SUSP_SERAPH_Instruction_Unsafe_Directive_Path git/gemini-cli/.gemini/skills/agent-tui/SKILL.md

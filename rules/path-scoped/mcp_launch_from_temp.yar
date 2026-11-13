@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_MCP_Launch_From_Temp_Path {
+rule SUSP_SERAPH_MCP_Launch_From_Temp_Path {
   meta:
     id               = "SERAPH-YARA-001-PATH"
     title            = "MCP config launches a server from a temp or cache path"
+    old_rule_name    = "SERAPH_MCP_Launch_From_Temp_Path"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

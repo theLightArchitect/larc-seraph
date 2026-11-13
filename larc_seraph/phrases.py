@@ -452,7 +452,7 @@ def _signal_hit(data: bytes) -> bool:
 
 
 def instruction_bypass(data: bytes, filepath: str, *, use_filepath: bool) -> bool:
-    """True when the Python twin of SERAPH_Instruction_Unsafe_Directive matches."""
+    """True when the Python twin of SUSP_SERAPH_Instruction_Unsafe_Directive matches."""
     if not data or len(data) >= MAX_FILE_BYTES:
         return False
     if not in_scope(data, filepath, use_filepath=use_filepath):

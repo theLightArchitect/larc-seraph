@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_MCP_Secret_Exfil {
+rule SUSP_SERAPH_MCP_Secret_Exfil {
   meta:
     id               = "SERAPH-YARA-005"
     title            = "MCP config places a secret environment variable on a network sink"
+    old_rule_name    = "SERAPH_MCP_Secret_Exfil"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

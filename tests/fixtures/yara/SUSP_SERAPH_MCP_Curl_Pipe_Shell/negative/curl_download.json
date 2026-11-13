@@ -1,0 +1,21 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SUSP_SERAPH_MCP_Curl_Pipe_Shell"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "curl",
+      "args": [
+        "--silent",
+        "--output",
+        "/Users/dev/projects/seraph-inert.bin",
+        "--max-time",
+        "1",
+        "https://example.invalid/file"
+      ]
+    }
+  }
+}

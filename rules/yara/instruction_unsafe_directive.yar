@@ -11,10 +11,11 @@
 
 import "math"
 
-rule SERAPH_Instruction_Unsafe_Directive {
+rule SUSP_SERAPH_Instruction_Unsafe_Directive {
   meta:
     id               = "SERAPH-YARA-007"
     title            = "Agent instructions request secret theft or skipped confirmation"
+    old_rule_name    = "SERAPH_Instruction_Unsafe_Directive"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

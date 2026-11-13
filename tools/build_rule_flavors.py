@@ -281,6 +281,7 @@ def path_text(text: str) -> str:
         raise SystemExit("path source is missing a rule name or id")
     name = rule.group(1)
     updated = text.replace(f"rule {name}", f"rule {name}_Path", 1)
+    updated = re.sub(r'(old_rule_name\s*=\s*")([^"]*)"', r'\1\2_Path"', updated, count=1)
     updated = updated.replace(ident.group(0), f'id = "{ident.group(1)}-PATH"', 1)
     updated = _bump(updated)
     updated = _append_description(

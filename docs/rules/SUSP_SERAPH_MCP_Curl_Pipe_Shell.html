@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP config pipes a remote fetch into a shell · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">larc-seraph</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-YARA-002 · yara · <span class="sev sev-critical">critical</span></p>
+<h1>MCP config pipes a remote fetch into a shell</h1>
+<p class="deck">Detects an MCP client config that contains a fetch utility immediately piped into sh, bash, or zsh, a process substitution that feeds a fetch into a shell, or a shell or eval that runs a fetch through command substitution. Content-only rule: it compiles with no externals.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a>, <a href="https://attack.mitre.org/techniques/T1105/">T1105</a></div>
+  <div><span>Tactic</span>execution, command-and-control</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule has no path. It needs a JSON object at the start of the file (after an optional BOM or blank space), a top-level mcpServers: key, or an mcp_servers table. A JSONC file that opens with a comment, and Markdown, do not match.</div>
+</div>
+<h2>False positives</h2>
+<ul><li>A config that quotes this anti-pattern in a long description field on the same line as a fetch. Review the command and args before deleting a server entry.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1059/004/">https://attack.mitre.org/techniques/T1059/004/</a></li><li><a href="https://attack.mitre.org/techniques/T1105/">https://attack.mitre.org/techniques/T1105/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>The configured server is supposed to be a program. A one-liner that downloads a script and hands it to a shell is an installer, not a server, and the bytes that run are chosen by the remote host at start time.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The rule looks for a fetch utility on the same line as a pipe into a shell, or a process substitution that feeds a fetch into a shell, inside a file that also carries the MCP server map. A download that writes a file and stops does not match. The positive fixtures use a reserved documentation host and do not retrieve anything.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Splitting the fetch and the shell across two processes, or across a line break, misses. Quoting the anti-pattern inside a long description on the same line as a real fetch can false-positive. This is a content rule: it says the config contains the shape, not that the process ran.</p>
+<h2 id="triage">Triage</h2>
+<p>Read the URL before you treat the entry as hostile. If the operator pasted an upstream install line, that is the documented false positive. Otherwise remove the server entry and review the rest of the config.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SUSP_SERAPH_MCP_Curl_Pipe_Shell/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

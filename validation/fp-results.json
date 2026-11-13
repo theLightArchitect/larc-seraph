@@ -1,15 +1,15 @@
 {
   "files_scanned": 15627,
-  "seconds": 20.138,
-  "forge_seconds": 14.159,
-  "path_seconds": 5.979,
+  "seconds": 19.384,
+  "forge_seconds": 13.69,
+  "path_seconds": 5.694,
   "hit_counts": {},
   "path_hit_counts": {
-    "SERAPH_Instruction_Unsafe_Directive_Path": 1
+    "SUSP_SERAPH_Instruction_Unsafe_Directive_Path": 1
   },
   "hits": {},
   "path_hits": {
-    "SERAPH_Instruction_Unsafe_Directive_Path": [
+    "SUSP_SERAPH_Instruction_Unsafe_Directive_Path": [
       "git/gemini-cli/.gemini/skills/agent-tui/SKILL.md"
     ]
   },

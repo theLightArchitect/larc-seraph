@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_Git_Hook_Suspicious_Exec {
+rule SUSP_SERAPH_Git_Hook_Suspicious_Exec {
   meta:
     id               = "SERAPH-YARA-010"
     title            = "Git hook decodes a payload, pipes a fetch into a shell, or posts a credential path"
+    old_rule_name    = "SERAPH_Git_Hook_Suspicious_Exec"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

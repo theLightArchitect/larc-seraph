@@ -11,10 +11,11 @@
 
 import "math"
 
-rule SERAPH_Instruction_Hidden_Unicode {
+rule SUSP_SERAPH_Instruction_Hidden_Unicode {
   meta:
     id               = "SERAPH-YARA-006"
     title            = "Instruction file contains Unicode tags or bidi overrides"
+    old_rule_name    = "SERAPH_Instruction_Hidden_Unicode"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"

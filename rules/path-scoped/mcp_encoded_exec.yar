@@ -6,10 +6,11 @@
    Defensive signature. Not an exploit and not a payload.
 */
 
-rule SERAPH_MCP_Encoded_Exec_Path {
+rule SUSP_SERAPH_MCP_Encoded_Exec_Path {
   meta:
     id               = "SERAPH-YARA-003-PATH"
     title            = "MCP config decodes a payload into a shell or eval"
+    old_rule_name    = "SERAPH_MCP_Encoded_Exec_Path"
     author           = "Kevin Francis Tan"
     organization     = "Light Architects"
     author_url       = "https://lightarchitects.ai"
