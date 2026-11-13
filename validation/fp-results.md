@@ -1,7 +1,7 @@
 # Benign-corpus YARA results
 
 Files scanned: 15615
-Seconds: 6.775
+Seconds: 6.81
 
 ## Hit counts
 

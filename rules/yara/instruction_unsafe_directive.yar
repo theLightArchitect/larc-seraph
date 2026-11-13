@@ -106,7 +106,7 @@ rule SERAPH_Instruction_Unsafe_Directive {
     $exfil           = /(!\[[^\n]{0,120}\]|```mermaid|graph([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)+TD)[^\n]{0,240}(\?data=|webhook\.site)/ nocase ascii
     $encode          = /url[- ]?encode/ nocase ascii
     $pipe            = /(curl|wget)[^\n]{0,180}\|([ \t]|\xE2\x80\x8B|\xE2\x80\x8C|\xE2\x80\x8D|\xE2\x81\xA0|\xEF\xBB\xBF)*(ba)?sh\b/ nocase ascii
-    $installer       = /(githubusercontent\.com|github\.com|google\.com|antigravity\.google|microsoft\.com|nodejs\.org|npmjs\.org|python\.org|rustup\.rs|brew\.sh)/ nocase ascii
+    $installer       = /(https:\/\/antigravity\.google\/cli\/install\.sh(\/|[ \t?]|$)|https:\/\/raw\.githubusercontent\.com\/pproenca\/agent\-tui\/master\/install\.sh(\/|[ \t?]|$)|https:\/\/sh\.rustup\.rs(\/|[ \t?]|$)|https:\/\/get\.docker\.com(\/|[ \t?]|$)|https:\/\/deno\.land\/install\.sh(\/|[ \t?]|$)|https:\/\/bun\.com\/install(\/|[ \t?]|$)|https:\/\/astral\.sh\/uv\/install\.sh(\/|[ \t?]|$)|https:\/\/raw\.githubusercontent\.com\/Homebrew\/install\/HEAD\/install\.sh(\/|[ \t?]|$))/ nocase ascii
 
     $mark_phrase  = /agent instructions/ nocase ascii
     $mark_agents  = /AGENTS\.md/ nocase ascii

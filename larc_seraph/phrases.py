@@ -101,11 +101,20 @@ SENSITIVE_PATH_PATTERN = r"~/\.cursor/mcp\.json|~/\.ssh/id_rsa"
 EXFIL_PATTERN = r"(!\[[^\n]{0,120}\]|```mermaid|graph\s+TD)[^\n]{0,240}(\?data=|webhook\.site)"
 ENCODE_PATTERN = r"url[- ]?encode"
 PIPE_PATTERN = r"(curl|wget)[^\n]{0,180}\|\s*(ba)?sh\b"
-# Official installer hosts. A pipe to one of these in a skill file is a documented install, not the skill backdoor.
-INSTALLER_HOST_PATTERN = (
-    r"(githubusercontent\.com|github\.com|google\.com|antigravity\.google|"
-    r"microsoft\.com|nodejs\.org|npmjs\.org|python\.org|rustup\.rs|brew\.sh)"
+# Exact installer URLs. A match is scheme + host + path, and the next character
+# has to end the URL. Hosts and subdomains are not exempt. The two gemini-cli
+# skill lines are the corpus hits. The rest were read on the vendor's own install page.
+INSTALLER_URLS = (
+    "https://antigravity.google/cli/install.sh",
+    "https://raw.githubusercontent.com/pproenca/agent-tui/master/install.sh",
+    "https://sh.rustup.rs",
+    "https://get.docker.com",
+    "https://deno.land/install.sh",
+    "https://bun.com/install",
+    "https://astral.sh/uv/install.sh",
+    "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh",
 )
+_URL_BOUNDARY = frozenset(" \t\r\n/?|'\"")
 # Cyrillic о (U+043E) in "do not ask for confirmation". Kept here so the
 # generated rule does not carry a private copy of the bytes.
 HOMO_HEX = "{ 64 D0 BE 20 6E D0 BE 74 20 61 73 6B 20 66 D0 BE 72 20 63 D0 BE 6E 66 69 72 6D 61 74 69 D0 BE 6E }"
@@ -197,7 +206,23 @@ _SENSITIVE = re.compile(SENSITIVE_PATH_PATTERN)
 _EXFIL = re.compile(EXFIL_PATTERN, re.IGNORECASE)
 _ENCODE = re.compile(ENCODE_PATTERN, re.IGNORECASE)
 _PIPE = re.compile(PIPE_PATTERN, re.IGNORECASE)
-_INSTALLER = re.compile(INSTALLER_HOST_PATTERN, re.IGNORECASE)
+
+
+def installer_url_allowlisted(command: str) -> bool:
+    """True when the pipe command uses one exact allowlisted installer URL."""
+    lowered = command.lower()
+    for prefix in INSTALLER_URLS:
+        needle = prefix.lower()
+        start = 0
+        while True:
+            found = lowered.find(needle, start)
+            if found < 0:
+                break
+            after = lowered[found + len(needle) : found + len(needle) + 1]
+            if after == "" or after in _URL_BOUNDARY:
+                return True
+            start = found + len(needle)
+    return False
 
 
 def _near(text: str, start: int, end: int, pattern: re.Pattern[str], span: int = 400) -> bool:
@@ -226,7 +251,7 @@ def _token_exfil(text: str) -> bool:
 
 def _pipe_hit(text: str) -> bool:
     for match in _PIPE.finditer(text):
-        if not _INSTALLER.search(match.group(0)):
+        if not installer_url_allowlisted(match.group(0)):
             return True
     return False
 

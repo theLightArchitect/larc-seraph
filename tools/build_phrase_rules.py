@@ -25,7 +25,7 @@ from larc_seraph.phrases import (  # noqa: E402
     HIGH_PATTERNS,
     HIGH_WORD_PATTERN,
     HOMO_HEX,
-    INSTALLER_HOST_PATTERN,
+    INSTALLER_URLS,
     INJECT_FORWARD,
     INJECT_REVERSE,
     LOW_PATTERN,
@@ -59,6 +59,14 @@ def to_yara(pattern: str) -> str:
     text = text.replace(r"\w", "[A-Za-z0-9_]")
     text = re.sub(r"(?<!\\)/", r"\\/", text)
     return text
+
+
+def _installer_regex() -> str:
+    """Exact URL prefixes. The character after the prefix ends the URL."""
+    choices = []
+    for url in INSTALLER_URLS:
+        choices.append(to_yara(re.escape(url)) + r"(\/|[ \t?]|$)")
+    return "(" + "|".join(choices) + ")"
 
 
 def _line(body: str) -> str:
@@ -192,7 +200,7 @@ def render() -> str:
     strings.append(f"    $exfil            = /{to_yara(EXFIL_PATTERN)}/ nocase ascii")
     strings.append(f"    $encode           = /{to_yara(ENCODE_PATTERN)}/ nocase ascii")
     strings.append(f"    $pipe             = /{to_yara(PIPE_PATTERN)}/ nocase ascii")
-    strings.append(f"    $installer        = /{to_yara(INSTALLER_HOST_PATTERN)}/ nocase ascii")
+    strings.append(f"    $installer        = /{_installer_regex()}/ nocase ascii")
 
     parts = [
         _occurrence(name, needs_high=False) for name in confirm_names
