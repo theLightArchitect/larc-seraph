@@ -15,16 +15,16 @@ rule SERAPH_MCP_Remote_Npx {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.2.0"
+    version          = "1.3.0"
     severity         = "high"
     status           = "experimental"
-    score            = "65"
-    description      = "Detects an MCP client config that invokes npx, uvx, or npm exec against a URL, a github: specifier, a git+ specifier, or an explicit @latest tag."
+    score            = 65
+    description      = "Detects an MCP client config that invokes npx, uvx, or npm exec against a URL, a github: specifier, a git+ specifier, or a moving dist-tag such as @latest or @next. bunx, pnpm dlx, and yarn dlx count as runners."
     attack_technique = "T1195.002"
     attack_tactic    = "initial-access"
     reference        = "https://attack.mitre.org/techniques/T1195/002/"
-    reference_2      = "https://modelcontextprotocol.io/specification/2025-06-18"
-    reference_3      = "https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/"
+    reference        = "https://modelcontextprotocol.io/specification/2025-06-18"
+    reference        = "https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/"
     scope            = "MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match."
     false_positives  = "An intentional @latest pin during a review, and any registry package whose name happens to sit within 180 characters of a URL in the same server entry. The stock npx -y scoped package with no tag is not a match."
     license          = "Detection Rule License 1.1"
@@ -44,8 +44,8 @@ rule SERAPH_MCP_Remote_Npx {
     // BOM and blank space (a leading comment is not accepted, because source files start that way), a top-level mcpServers: key, or an mcp_servers table.
     $yaml_top   = /(^|\n)mcpServers[ \t]*:/ ascii
     $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
-    $remote     = /((npx)|(uvx)|(npm[ \t]+exec)).{0,160}(github:|git\+|gist\.github\.com|"https?:\/\/|'https?:\/\/)/s nocase ascii
-    $latest     = /((npx)|(uvx)).{0,180}@latest\b/s nocase ascii
+    $remote     = /((npx)|(uvx)|(bunx)|(npm[ \t]+exec)|(pnpm.{0,20}dlx)|(yarn.{0,20}dlx)).{0,160}(github:|gitlab:|bitbucket:|git\+|git@[A-Za-z0-9.-]{1,80}:|git:\/\/|ssh:\/\/|gist\.github\.com|"https?:\/\/|'https?:\/\/)/s nocase ascii
+    $latest     = /((npx)|(uvx)|(bunx)|(npm[ \t]+exec)|(pnpm.{0,20}dlx)|(yarn.{0,20}dlx)).{0,180}@(latest|next|beta|canary|dev|nightly)\b/s nocase ascii
 
   condition:
     (

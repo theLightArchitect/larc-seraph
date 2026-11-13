@@ -1,1 +1,1 @@
-process_path="*/ssh" process="* -R *" process IN ("*StrictHostKeyChecking=no*", "*StrictHostKeyChecking no*")
+process_path IN ("*/ssh", "*/autossh") process IN ("* -R*", "* -NR*", "* -fNR*", "* -NfR*", "* -TNR*", "*RemoteForward*") process IN ("*StrictHostKeyChecking=no*", "*StrictHostKeyChecking no*", "*StrictHostKeyChecking=off*", "*StrictHostKeyChecking off*")

@@ -207,3 +207,39 @@ def test_evasion_matrix():
     assert not missing, missing
     assert isinstance(path_rules, yara.Rules)
     assert isinstance(forge_rules, yara.Rules)
+
+
+def test_eslogger_create_and_rename_use_the_endpoint_security_shape():
+    """es_event_create_t and es_event_rename_t carry existing_file or new_path."""
+    from larc_seraph.translate import normalize_eslogger
+
+    process = {"executable": {"path": "/usr/bin/python3"}, "user_name": "dev"}
+    created = normalize_eslogger(
+        {
+            "process": process,
+            "event": {
+                "create": {
+                    "destination_type": 1,
+                    "destination": {
+                        "new_path": {
+                            "dir": {"path": "/Users/dev/Library/LaunchAgents"},
+                            "filename": "invalid.example.seraph.plist",
+                        }
+                    },
+                }
+            },
+        }
+    )
+    assert created["TargetFilename"] == "/Users/dev/Library/LaunchAgents/invalid.example.seraph.plist"
+    renamed = normalize_eslogger(
+        {
+            "process": process,
+            "event": {
+                "rename": {
+                    "destination_type": 0,
+                    "destination": {"existing_file": {"path": "/Users/dev/.ssh/authorized_keys"}},
+                }
+            },
+        }
+    )
+    assert renamed["TargetFilename"] == "/Users/dev/.ssh/authorized_keys"

@@ -36,6 +36,9 @@ detection:
       - '/.bashrc'
       - '/.bash_profile'
       - '/.profile'
+      - '/.bash_login'
+      - '/.zlogout'
+      - '/.config/fish/config.fish'
   selection_agent_image:
     Image|contains:
       - '/Cursor'

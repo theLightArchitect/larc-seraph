@@ -6,7 +6,7 @@ name: SERAPH_MacOS_Interpreter_Drops_Launch_Plist
 id: d02261e0-72ff-4943-b615-535f3c525e8f
 status: experimental
 description: >
-  A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents
+  A shell, Python, Node, Bun, Deno, Perl, Ruby, osascript, or curl wrote a plist under LaunchAgents
   or LaunchDaemons. This is the file-drop half of a persistence lead. The
   companion YARA rule inspects whether the plist itself is a rogue job.
   Field names are the larc-seraph normalized macOS contract.
@@ -36,7 +36,7 @@ detection:
       - '/Library/LaunchDaemons/'
   selection_ext:
     TargetFilename|endswith: '.plist'
-  selection_writer:
+  selection_writer_name:
     Image|endswith:
       - '/bash'
       - '/bin/sh'
@@ -46,7 +46,13 @@ detection:
       - '/node'
       - '/osascript'
       - '/curl'
-  condition: selection_dir and selection_ext and selection_writer
+      - '/perl'
+      - '/ruby'
+      - '/bun'
+      - '/deno'
+  selection_writer_versioned:
+    Image|contains: '/python3.'
+  condition: selection_dir and selection_ext and 1 of selection_writer_*
 falsepositives:
   - Installers and Homebrew casks that drop a LaunchAgent from a shell script.
   - An operator scripting their own login job. Correlate with SERAPH-YARA-008 or SERAPH-YARA-009 before escalating.

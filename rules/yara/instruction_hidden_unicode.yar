@@ -18,41 +18,50 @@ rule SERAPH_Instruction_Hidden_Unicode {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.5.0"
+    version          = "1.7.0"
     severity         = "high"
     status           = "experimental"
-    score            = "80"
-    description      = "Detects Unicode tag characters or a bidi override in an instruction file. The three subdivision flags Unicode recommends (England, Scotland, Wales) are ignored. Every tag character is checked, however many flags come first. Content-only rule: it compiles with no externals."
+    score            = 50
+    description      = "Detects Unicode tag characters, a bidi override or isolate, or a run of variation selectors in a text file. This rule has no path, so ordinary right-to-left text that uses an embedding mark also matches. The England, Scotland, and Wales flag emoji are ignored. Content-only rule: it compiles with no externals."
     attack_technique = "T1027"
     attack_tactic    = "defense-evasion"
     reference        = "https://attack.mitre.org/techniques/T1027/"
-    reference_2      = "https://www.unicode.org/charts/PDF/UE0000.pdf"
-    reference_3      = "https://www.usenix.org/conference/usenixsecurity23/presentation/boucher"
-    reference_4      = "https://atlas.mitre.org/techniques/AML.T0051"
-    reference_5      = "https://securityaffairs.com/175593/hacking/rules-file-backdoor-ai-code-editors-silent-supply-chain-attacks.html"
-    reference_6      = "https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents"
+    reference        = "https://www.unicode.org/charts/PDF/UE0000.pdf"
+    reference        = "https://www.usenix.org/conference/usenixsecurity23/presentation/boucher"
+    reference        = "https://atlas.mitre.org/techniques/AML.T0051"
+    reference        = "https://securityaffairs.com/175593/hacking/rules-file-backdoor-ai-code-editors-silent-supply-chain-attacks.html"
+    reference        = "https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents"
     scope            = "Text with a Unicode tag or a bidi override (LRE, RLE, LRO, RLO). The portable rule does not require the file to mention its own name, because a real CLAUDE.md or .cursor/rules file often does not. The England, Scotland, and Wales flag emoji do not match. A file whose first kilobyte holds eight or more control bytes is treated as binary and skipped."
-    false_positives  = "An instruction file that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them."
+    false_positives  = "An instruction file that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them. Right-to-left text that an editor wrapped in bidi embeddings or isolates also matches."
     license          = "Detection Rule License 1.1"
 
   strings:
     // UTF-8 for U+E0000..U+E007F. Hex atoms stay inside the fast path.
-    $tag  = { F3 A0 (80 | 81) ?? }
+    $tag    = { F3 A0 (80 | 81) ?? }
     // U+1F3F4, tag g, tag b, then eng, sct, or wls, then the cancel tag U+E007F.
     // These three are the only subdivision flags in Unicode's RGI emoji set.
     // A black flag followed by any other tag run is not exempt.
-    $flag = { F0 9F 8F B4 F3 A0 81 A7 F3 A0 81 A2 (F3 A0 81 A5 F3 A0 81 AE F3 A0 81 A7 | F3 A0 81 B3 F3 A0 81 A3 F3 A0 81 B4 | F3 A0 81 B7 F3 A0 81 AC F3 A0 81 B3) F3 A0 81 BF }
+    $flag   = { F0 9F 8F B4 F3 A0 81 A7 F3 A0 81 A2 (F3 A0 81 A5 F3 A0 81 AE F3 A0 81 A7 | F3 A0 81 B3 F3 A0 81 A3 F3 A0 81 B4 | F3 A0 81 B7 F3 A0 81 AC F3 A0 81 B3) F3 A0 81 BF }
     // Trojan Source controls: LRE U+202A, RLE U+202B, LRO U+202D, RLO U+202E.
-    $lre  = { E2 80 AA }
-    $rle  = { E2 80 AB }
-    $lro  = { E2 80 AD }
-    $rlo  = { E2 80 AE }
+    $lre    = { E2 80 AA }
+    $rle    = { E2 80 AB }
+    $lro    = { E2 80 AD }
+    $rlo    = { E2 80 AE }
+    // Trojan Source isolates: LRI U+2066, RLI U+2067, FSI U+2068.
+    $lri    = { E2 81 A6 }
+    $rli    = { E2 81 A7 }
+    $fsi    = { E2 81 A8 }
+    // Two variation selectors from the supplement (U+E0100 to U+E01EF) in a row, or
+    // three from the basic block (U+FE00 to U+FE0F). One after a base character is
+    // ordinary. A run is how bytes are smuggled.
+    $vs_run = { F3 A0 (84 | 85 | 86 | 87) ?? F3 A0 (84 | 85 | 86 | 87) ?? }
+    $vs_bmp = { EF B8 8? EF B8 8? EF B8 8? }
 
   condition:
     filesize > 0 and filesize < 5000000 and
     not for 8 i in (0..math.min(1023, filesize - 1)): (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27)) and
     (
-      any of ($lre, $rle, $lro, $rlo) or
+      any of ($lre, $rle, $lro, $rlo, $lri, $rli, $fsi) or $vs_run or $vs_bmp or
       // Each exempt flag holds exactly six tag characters. More tags than that
       // means at least one tag sits outside a listed flag. No loop, so no bound.
       #tag > 6 * #flag

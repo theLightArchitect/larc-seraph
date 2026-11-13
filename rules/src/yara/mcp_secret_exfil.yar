@@ -15,15 +15,15 @@ rule SERAPH_MCP_Secret_Exfil {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.3.0"
+    version          = "1.4.0"
     severity         = "critical"
     status           = "experimental"
-    score            = "75"
-    description      = "Detects an MCP client config that sends a well-known API token to a host that is not that token's vendor, or pipes printenv into a fetch utility. A token used against its own vendor API does not match. A lookalike host such as github.com.attacker.example is not the vendor."
+    score            = 75
+    description      = "Detects an MCP client config that sends a well-known API token to a host that is not that token's vendor, or pipes printenv or env into a fetch utility or nc. A token used against its own vendor API does not match. A lookalike host such as github.com.attacker.example is not the vendor."
     attack_technique = "T1552.001, T1567"
     attack_tactic    = "credential-access, exfiltration"
     reference        = "https://attack.mitre.org/techniques/T1567/"
-    reference_2      = "https://attack.mitre.org/techniques/T1552/001/"
+    reference        = "https://attack.mitre.org/techniques/T1552/001/"
     scope            = "MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. Presence of a token variable in an env map is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match."
     false_positives  = "A proxy or mirror of a vendor API on another host. An AWS secret beside any URL matches, because that secret signs requests and is not sent."
     license          = "Detection Rule License 1.1"
@@ -43,19 +43,19 @@ rule SERAPH_MCP_Secret_Exfil {
     // BOM and blank space (a leading comment is not accepted, because source files start that way), a top-level mcpServers: key, or an mcp_servers table.
     $yaml_top   = /(^|\n)mcpServers[ \t]*:/ ascii
     $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
-    $curl       = /curl [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b(\\"|[^\n"]){0,220}/ nocase ascii
-    $wget       = /wget [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b(\\"|[^\n"]){0,220}/ nocase ascii
-    $url        = /https?:\/\/[^\s"']{0,180}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b/ nocase ascii
-    $printenv   = /printenv[^\n]{0,80}\|[^\n]{0,40}(curl |wget )/ nocase ascii
+    $curl       = /curl [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b(\\"|[^\n"]){0,220}/ nocase ascii
+    $wget       = /wget [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b(\\"|[^\n"]){0,220}/ nocase ascii
+    $url        = /https?:\/\/[^\s"']{0,180}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b/ nocase ascii
+    $printenv   = /\b(printenv|env)[ \t]*\|[^\n]{0,60}(curl |wget |nc )/ nocase ascii
     // An escaped quote followed by the quote that closes the JSON string also ends the host.
     // A vendor host has to end where the URL's authority ends, so
     // github.com.attacker.example and github.com@attacker.example are not GitHub.
     // AWS secrets have no vendor host here: a SigV4 secret is never sent, and
     // anyone can own a bucket under amazonaws.com.
     // Vendor URL first, then that vendor's token, on one line.
-    $off_a      = /https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(GITHUB_TOKEN|GH_TOKEN)\b|https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?OPENAI_API_KEY\b|https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?ANTHROPIC_API_KEY\b|https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?NPM_TOKEN\b|https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?CURSOR_API_KEY\b/ nocase ascii
+    $off_a      = /https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN)\b|https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?OPENAI_API_KEY\b|https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?ANTHROPIC_API_KEY\b|https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?NPM_TOKEN\b|https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?CURSOR_API_KEY\b/ nocase ascii
     // That vendor's token first, then the vendor URL, on one line.
-    $off_b      = /\$\{?(GITHUB_TOKEN|GH_TOKEN)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?OPENAI_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?ANTHROPIC_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?NPM_TOKEN\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?CURSOR_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
+    $off_b      = /\$\{?(GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?OPENAI_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?ANTHROPIC_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?NPM_TOKEN\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?CURSOR_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
     $anyurl     = /https?:\/\/[^ \t\r\n"'\/?#\\]{1,255}/ nocase ascii
     $ven_any    = /https?:\/\/([A-Za-z0-9-]+\.)*(github\.com|openai\.com|anthropic\.com|npmjs\.org|cursor\.com)(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
 

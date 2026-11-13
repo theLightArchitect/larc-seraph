@@ -1,16 +1,16 @@
 {
-  "_larc": {
+  "_seraph": {
     "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
     "expected": "no-match",
-    "rule": "SERAPH_MCP_Unpinned_Package",
-    "note": "Inert larc-seraph fixture. Do not execute."
+    "rule": "SERAPH_MCP_Unpinned_Package"
   },
   "mcpServers": {
     "demo": {
       "command": "npx",
       "args": [
         "-y",
-        "@anthropic/seraph-inert-server"
+        "@anthropic-ai/seraph-inert-server"
       ]
     }
   }

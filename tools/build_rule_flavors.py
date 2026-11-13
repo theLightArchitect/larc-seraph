@@ -36,7 +36,7 @@ _MCP_BLOCK = re.compile(
 _INSTRUCTION_BLOCK = re.compile(
     r"\(\s*"
     r"filepath matches /\(\\/\(agents\|claude\|gemini\)\\.md\$\)\|.*?"
-    r"filepath matches /\\\.\(json\|jsonc\)\$/i and \$desc\)\s*"
+    r"filepath matches /\\\.\(json\|jsonc\)\$/i and \$desc(?: and \$toolkey)?\)\s*"
     r"\)",
     re.S,
 )
@@ -121,6 +121,48 @@ _SCOPES = {
 }
 
 
+# The Forge copies of these three rules have no path to consult, so they see far
+# more files than the path-scoped twins. Their score and description say so.
+_FORGE_SCORES = {
+    "git_hook_suspicious_exec.yar": 45,
+    "instruction_hidden_unicode.yar": 50,
+    "instruction_unsafe_directive.yar": 50,
+}
+_FORGE_DESCRIPTIONS = {
+    "git_hook_suspicious_exec.yar": (
+        "Detects a shell or interpreter script that pipes a fetch into a shell, decodes into a shell, "
+        "runs a fetch through command substitution, or sends a credential path to a network tool. "
+        "In a Git hook this is the pattern from the cited incident. This rule has no path, "
+        "so an installer script with the same line also matches. Treat a match as a lead."
+    ),
+    "instruction_hidden_unicode.yar": (
+        "Detects Unicode tag characters, a bidi override or isolate, or a run of variation selectors "
+        "in a text file. This rule has no path, so ordinary right-to-left text that uses an embedding "
+        "mark also matches. The England, Scotland, and Wales flag emoji are ignored."
+    ),
+}
+_FORGE_NOTES = {
+    "instruction_unsafe_directive.yar": (
+        "This rule has no path. Any text that names an instruction file is in scope, "
+        "including source code that mentions CLAUDE.md."
+    ),
+}
+
+
+def _forge_meta(name: str, text: str) -> str:
+    if name in _FORGE_SCORES:
+        text, count = re.subn(r"(score\s*=\s*)\d+", rf"\g<1>{_FORGE_SCORES[name]}", text, count=1)
+        if count != 1:
+            raise SystemExit(f"{name}: score not found")
+    if name in _FORGE_DESCRIPTIONS:
+        text = re.sub(
+            r'description\s*=\s*"[^"]*"', f'description = "{_FORGE_DESCRIPTIONS[name]}"', text, count=1
+        )
+    if name in _FORGE_NOTES:
+        text = _append_description(text, _FORGE_NOTES[name])
+    return text
+
+
 def _bump(text: str) -> str:
     def repl(match: re.Match[str]) -> str:
         major, minor, _patch = match.groups()
@@ -179,6 +221,7 @@ def forge_text(name: str, text: str) -> str:
     updated = _drop_filepath_comments(text)
     updated = _bump(updated)
     updated = _replace_scope(name, updated)
+    updated = _forge_meta(name, updated)
     updated = _append_description(
         updated,
         "Content-only rule: it compiles with no externals.",
@@ -208,9 +251,10 @@ def forge_text(name: str, text: str) -> str:
             if count != 1:
                 raise SystemExit(f"{name}: could not drop the self-name gate")
             updated = re.sub(r"(?m)^[ \t]*\$desc\s*=.*\n", "", stripped, count=1)
+            updated = re.sub(r"(?m)^[ \t]*// A JSON file is a tool list[^\n]*\n[ \t]*\$toolkey\s*=.*\n", "", updated, count=1)
         else:
             updated = _INSTRUCTION_BLOCK.sub(
-                "(\n      any of ($mark_*) or\n      ($desc and uint8(0) == 0x7B)\n    )",
+                "(\n      any of ($mark_*) or\n      ($desc and $toolkey and uint8(0) == 0x7B)\n    )",
                 updated,
                 count=1,
             )

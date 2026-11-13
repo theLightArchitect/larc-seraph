@@ -1,1 +1,1 @@
-process.executable:*\/ssh AND process.command_line:*\ \-R\ * AND (process.command_line:(*StrictHostKeyChecking\=no* OR *StrictHostKeyChecking\ no*))
+(process.executable:(*\/ssh OR *\/autossh)) AND (process.command_line:(*\ \-R* OR *\ \-NR* OR *\ \-fNR* OR *\ \-NfR* OR *\ \-TNR* OR *RemoteForward*)) AND (process.command_line:(*StrictHostKeyChecking\=no* OR *StrictHostKeyChecking\ no* OR *StrictHostKeyChecking\=off* OR *StrictHostKeyChecking\ off*))

@@ -36,13 +36,16 @@ detection:
       - '/codex'
       - '/.npm/_npx/'
       - '/Code Helper'
-  selection_shell:
+  selection_shell_name:
     Image|endswith:
       - '/bash'
       - '/bin/sh'
       - '/zsh'
       - '/python'
       - '/python3'
+      - '/dash'
+  selection_shell_versioned:
+    Image|contains: '/python3.'
   selection_loader:
     CommandLine|contains:
       - 'curl '
@@ -57,13 +60,20 @@ detection:
       - '| bash'
       - '|bash'
       - '|sh'
+      - '| zsh'
+      - '|zsh'
+      - '| dash'
+      - '| /bin/'
+      - '|/bin/'
+      - '| sudo '
+      - '|& '
   selection_py_decode:
     CommandLine|contains: 'b64decode'
   selection_py_exec:
     CommandLine|contains:
       - 'exec('
       - 'eval('
-  condition: selection_parent and selection_shell and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec) or (selection_url and selection_py_exec))
+  condition: selection_parent and 1 of selection_shell_* and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec) or (selection_url and selection_py_exec))
 falsepositives:
   - An operator who asked an agent to run a one-off install line that pipes a fetch into a shell. Read the URL.
   - The same command from Terminal or launchd is out of scope for this rule. Content rules cover the config and the plist.

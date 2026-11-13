@@ -10,7 +10,64 @@ from __future__ import annotations
 
 import re
 
-_ZW = re.compile(r"[\u200b\u200c\u200d\u2060\ufeff]")
+# What counts as a gap between two words, as UTF-8 bytes: a space, a tab, a
+# vertical tab, a form feed, a carriage return, U+0085, U+00A0, U+1680, U+2000 to
+# U+200D (the Unicode spaces and the zero-width marks), U+2028, U+2029, U+202F,
+# U+205F, U+2060, U+3000, and U+FEFF. It has no newline, so a phrase never spans
+# two lines. Every \s in a pattern below means this.
+GAP_BYTES = (
+    r"([ \t\x0B\x0C\r]|\xC2[\x85\xA0]|\xE1\x9A\x80|\xE2\x80[\x80-\x8D\xA8\xA9\xAF]"
+    r"|\xE2\x81[\x9F\xA0]|\xE3\x80\x80|\xEF\xBB\xBF)"
+)
+# An apostrophe in "don't": straight, curly, a backtick, or none.
+APOSTROPHE = "('|\u2019|`)?"
+# "never", "do not", "don't", "must not", "should not", then a gap. A bypass
+# phrase or a fetch that follows one of these is a prohibition, not an instruction.
+# The word boundary keeps "whenever" from reading as "never".
+NEGATION_PATTERN = r"\b(never|do\s+not|don" + APOSTROPHE + r"t|must\s+not|should\s+not)\s+(ever\s+)?"
+# How far into its line a phrase may start and still be judged with its line,
+# in bytes. yara-python 4.5.4 does not match a regex span much longer than this,
+# so a larger number would make the engines disagree. A phrase further into its
+# line than this is a match outright: nobody pads an instruction by a kilobyte.
+# OUTER_BOUND is how many occurrences of one phrase the generated rule judges
+# before it treats the count as a match.
+LINE_REACH = 1000
+OUTER_BOUND = 256
+
+
+def byte_regex(pattern: str) -> str:
+    """Translate one pattern in this module into a byte regex.
+
+    The result is the text of the YARA string, and it is also what the CLI
+    compiles. Both sides therefore match the same bytes: ASCII-only case
+    folding, byte offsets, and the same gap class.
+    """
+    text = pattern.replace("(?:", "(")
+    text = re.sub(r"(?<!\\)\.", r"[^\\n]", text)
+    text = text.replace(r"\s", GAP_BYTES)
+    text = text.replace(r"\w", "[A-Za-z0-9_]")
+    text = re.sub(r"(?<!\\)/", r"\\/", text)
+    # YARA's strict-escape check rejects an escaped double quote.
+    text = text.replace('\\"', '"')
+    # A character outside ASCII becomes its UTF-8 bytes.
+    return "".join(
+        char if ord(char) < 128 else "".join(f"\\x{byte:02X}" for byte in char.encode("utf-8"))
+        for char in text
+    )
+
+
+def line_regex(body: str) -> str:
+    """A whole line that holds ``body`` and does not open with # or |."""
+    return (
+        r"(^|\n)[ \t]*(" + body + r"|[^# \t|\n][^\n]{0," + str(LINE_REACH) + "}" + body + r")[^\n]*"
+    )
+
+
+def compile_bytes(pattern: str, *, translated: bool = False) -> re.Pattern[bytes]:
+    text = pattern if translated else byte_regex(pattern)
+    return re.compile(text.encode("ascii"), re.IGNORECASE)
+
+
 _PATH = re.compile(
     r"(/agents\.md|/claude\.md|/gemini\.md|/skill\.md|/\.cursorrules|"
     r"/copilot-instructions\.md|/\.cursor/rules/|\.mdc$)",
@@ -19,7 +76,7 @@ _PATH = re.compile(
 # Phrases that match on their own. A nearby read-only word still suppresses them.
 CONFIRM_PATTERNS = (
     r"do\s+not\s+ask\s+for\s+confirm",
-    r"don.?t\s+ask\s+for\s+confirm",
+    r"don" + APOSTROPHE + r"t\s+ask\s+for\s+confirm",
     r"never\s+ask(\s+the\s+(user|operator))?\s+for\s+confirm",
     r"skip(\s+all)?\s+confirm\w*\s+prompts?",
     r"disable\s+confirm",
@@ -28,13 +85,13 @@ CONFIRM_PATTERNS = (
     r"(you must|do not ask|never ask|always).{0,40}auto-approve\s+(all|every)\s+tools?",
     r"do\s+not\s+prompt\s+for\s+confirm",
     r"no\s+confirmation\s+needed\s+before\s+a\s+tool",
-    r"(never|do\s+not|don.?t)\s+(ask|prompt)\s+(for\s+)?(confirm\w*|permission|approval|consent)",
+    r"(never|do\s+not|don" + APOSTROPHE + r"t)\s+(ask|prompt)\s+(for\s+)?(confirm\w*|permission|approval|consent)",
 )
 # These match only when a high-risk action is on the same short window.
 HIGH_PATTERNS = (
     r"without\s+asking(\s+the\s+(user|operator))?\s+for\s+(confirm\w*|permission)",
     r"never\s+(request|seek|wait)\s+(for\s+)?(confirm\w*|permission|approval|consent)",
-    r"(do\s+not|don.?t)\s+wait\s+(for\s+)?(confirm\w*|permission|approval|consent)",
+    r"(do\s+not|don" + APOSTROPHE + r"t)\s+wait\s+(for\s+)?(confirm\w*|permission|approval|consent)",
 )
 HIGH_WORD_PATTERN = (
     r"(\bshell\b|\bexec\b|\bbash\b|\bcredentials?\b|\bsecrets?\b|\bcurl\b|\bwget\b|"
@@ -53,10 +110,13 @@ POISON_PATTERN = (
 ABSOLUTE_VETO_PATTERNS = (
     r"--[A-Za-z0-9].{0,40}(skip confirmation|confirm)",
     r"`[^`]{0,40}bypass\s+permissions?[^`]{0,40}`",
+    # "never bypass permissions" and "do not disable confirmation" forbid the bypass.
+    NEGATION_PATTERN + r"(try\s+to\s+)?(bypass\s+permissions?|disable\s+confirm|disable\s+permission\s+prompts)",
 )
 TOKENS = (
     "GITHUB_TOKEN",
     "GH_TOKEN",
+    "GITHUB_PERSONAL_ACCESS_TOKEN",
     "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",
     "AWS_SECRET_ACCESS_KEY",
@@ -66,6 +126,7 @@ TOKENS = (
 VENDOR_HOST = {
     "GITHUB_TOKEN": "github.com",
     "GH_TOKEN": "github.com",
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "github.com",
     "OPENAI_API_KEY": "openai.com",
     "ANTHROPIC_API_KEY": "anthropic.com",
     "NPM_TOKEN": "npmjs.org",
@@ -78,24 +139,37 @@ VENDOR_HOST = {
 # A quote, a bracket, or a backslash only ends the host when the token ends there
 # too. A shell drops the backslash in github.com\\@attacker.example and joins
 # "https://github.com"@attacker.example, so neither is GitHub.
-HOST_END_PATTERN = r"(/|\?|#|\s|$|\\?[\"')>`](\s|[,;\]}]|$))"
-# High-precision signals. They do not use the confirmation veto.
+HOST_END_PATTERN = r"(/|\?|#|[ \t\r\n]|$|\\?[\"')>`]([ \t\r\n,;\]}]|$))"
+# High-precision signals. They do not use the confirmation veto. Three of them
+# need more than the bare words: a recipient has to be a literal number or
+# address, the inventory file has to sit beside what is being inventoried, and
+# the CopyPasta license has to be claimed, not just named.
 SIGNAL_PATTERNS = (
     r"do\s+not\s+mention\s+this\s+to\s+the\s+user",
-    r"don.?t\s+notify\s+the\s+user",
+    r"don" + APOSTROPHE + r"t\s+notify\s+the\s+user",
     r"no\s+need\s+to\s+mention\s+this\s+to\s+the\s+user",
     r"do\s+this\s+secretly,?\s+never\s+mentioning",
     r"must\s+send\s+all\s+emails\s+to",
-    r"change\s+the\s+recipient\s+to",
+    r"change\s+the\s+recipient\s+to\s+[^ \t\n]{0,40}[0-9@]",
     r"chat\.tools\.autoApprove[\"']?\s*:\s*true",
-    chr(47) + "tmp" + chr(47) + "inventory\\." + "txt",
+    r"(paths?|wallets?|keystores?|secrets?|credentials?|\.env|id_rsa)[^\n]{0,120}"
+    + chr(47) + "tmp" + chr(47) + "inventory\\." + "txt",
     r"<human_chat_interruption>",
     r"always\s+consult\s+this\s+tool\s+immediately\s+as\s+the\s+first\s+step",
     r"replace\s+any\s+thoughts\s+with\s+<thinking>",
     r"<!--[^\n]{0,160}<(user_query|user_info)>",
-    r"copypasta\s+license",
+    r"(protected\s+by|licensed\s+under|under)\s+the\s+copypasta\s+license",
     r"include\s+everything\s+between[^\n]{0,80}in\s+a\s+comment\s+at\s+the\s+end\s+of\s+every\s+file",
-    r"\b(run|invoke|launch|start|execute)\b[^\n]{0,80}(--dangerously-skip-permissions|--yolo\b|--trust-all-tools)",
+)
+# Starting an agent CLI with prompts off. Judged apart from the signals above,
+# because "never run with --dangerously-skip-permissions" is a prohibition.
+CLI_FLAG_PATTERN = r"\b(run|invoke|launch|start|execute)\b[^\n]{0,80}(--dangerously-skip-permissions|--yolo\b|--trust-all-tools)"
+# The negated form is narrow on purpose. Only filler words may sit between the
+# verb and the flag, so "never launch claude without --yolo" is not a prohibition.
+NEGATED_CLI_FLAG_PATTERN = (
+    NEGATION_PATTERN
+    + r"(run|invoke|launch|start|execute)(\s+(with|it|claude|gemini|codex|q|the|a|any|cli|agent|using))*"
+    + r"\s+[`'\"]?(--dangerously-skip-permissions|--yolo\b|--trust-all-tools)"
 )
 CONCEAL_PATTERNS = SIGNAL_PATTERNS[:4]
 RECIPIENT_PATTERNS = SIGNAL_PATTERNS[4:6]
@@ -107,7 +181,18 @@ SIDENOTE_PATTERNS = (
 SENSITIVE_PATH_PATTERN = r"~/\.cursor/mcp\.json|~/\.ssh/id_rsa"
 EXFIL_PATTERN = r"(!\[[^\n]{0,120}\]|```mermaid|graph\s+TD)[^\n]{0,240}(\?data=|webhook\.site)"
 ENCODE_PATTERN = r"url[- ]?encode"
-PIPE_PATTERN = r"(curl|wget)[^\n]{0,180}\|\s*(ba)?sh\b"
+# The sink is a shell by any of its usual names, with an optional sudo, an
+# optional directory, and |& as well as |. What follows the name has to end the
+# command or start an argument. A Markdown table cell (| zsh |) and a longer
+# word (dash-case) are not a shell.
+SHELL_SINK_PATTERN = (
+    r"\|&?\s*(sudo\s+)?(/[a-z/]{1,20}/)?(ba|z|da|k|fi)?sh"
+    r"(\\?[\"'`;&)]|[\.,:]([ \t\r\n]|$)|[ \t]+[^| \t\r\n]|[ \t]*\r?\n|[ \t]*$)"
+)
+PIPE_PATTERN = r"(curl|wget)[^\n]{0,180}" + SHELL_SINK_PATTERN
+# "do not run `curl ...`": the fetch tool that follows is quoted as a bad example.
+NEGATED_FETCH_PATTERN = NEGATION_PATTERN + r"(run|use|execute|pipe|paste)\s+(the\s+)?[`'\"]?(curl|wget)"
+NEGATED_FETCH_BOUND = 256  # the generated rule compares this many "do not run" phrases
 # Exact first-party installer URLs. Each was read on the vendor's own install page.
 # A pipe is exempt only when the whole command is the vendor's documented shape:
 # the fetch tool in command position, options from a closed list, one of these
@@ -120,13 +205,14 @@ INSTALLER_URLS = (
     "https://get.docker.com",
     "https://deno.land/install.sh",
     "https://bun.com/install",
+    "https://bun.sh/install",
     "https://astral.sh/uv/install.sh",
     "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh",
 )
 # The command has to sit in command position: at the start of a line, after a
 # shell prompt, or right after a backtick. PATH=./bin:$PATH curl and ./bin/curl
 # are not the vendor's line.
-INSTALLER_PREFIX_PATTERN = r"(^|\n|`)[ \t]*(\$[ \t]+)?"
+INSTALLER_PREFIX_PATTERN = r"(^|\n|`)[ \t$]{0,39}"
 # Options are a closed list. A generic dash option would let -K (a config file),
 # -x (a proxy), or wget -i (a URL list) choose what is downloaded.
 INSTALLER_OPTION_PATTERN = (
@@ -134,11 +220,14 @@ INSTALLER_OPTION_PATTERN = (
 )
 # Bounded on purpose. The whole line stays shorter than PIPE_PATTERN's window, so a
 # listed line is always one PIPE_PATTERN match and the generated rule can compare counts.
-# After the shell only "-s ..." may follow, so "| sh ./other.sh" is not exempt.
+# After the shell only "-s" and plain words may follow, so "| sh ./other.sh" and
+# "| sh -s -c ..." are not exempt.
 INSTALLER_BODY_PATTERN = (
     r"(curl|wget)(\s{1,2}" + INSTALLER_OPTION_PATTERN + r"){0,4}\s{1,2}['\"]?("
     + "|".join(re.escape(url) for url in INSTALLER_URLS)
-    + r")['\"]?\s{0,2}\|\s{0,2}(ba)?sh([ \t]+-s[^\n|;&`]{0,40})?[ \t]*(`|\r?\n|$)"
+    + r")['\"]?\s{0,2}\|\s{0,2}(ba)?sh"
+    # Only "-s", an optional "--", and plain words may follow the shell.
+    + r"([ \t]+-s([ \t]+--)?([ \t]+[A-Za-z0-9_=\./:-]{1,40}){0,4})?[ \t]*(`|\r?\n|$)"
 )
 INSTALLER_PIPE_PATTERN = INSTALLER_PREFIX_PATTERN + INSTALLER_BODY_PATTERN
 # Cyrillic о (U+043E) in "do not ask for confirmation". Kept here so the
@@ -148,6 +237,12 @@ CRED_FORWARD = r"(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.
 CRED_REVERSE = r"(curl |wget )[^\n]{0,320}(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)"
 INJECT_FORWARD = r"ignore (all )?(previous|prior|above) instructions[^\n]{0,400}(curl |wget |https?:\/\/)"
 INJECT_REVERSE = r"(curl |wget |https?:\/\/)[^\n]{0,400}ignore (all )?(previous|prior|above) instructions"
+
+# A JSON file counts as tool descriptions only when it also has one of these keys.
+# A CLI manifest or an API description has a "description" key and is not a tool list.
+TOOL_KEY_PATTERN = r'"(tools|inputSchema|input_schema|mcpServers|context_servers)"'
+_TOOL_KEY = re.compile(TOOL_KEY_PATTERN.encode())
+MAX_FILE_BYTES = 5_000_000
 
 # A file is treated as binary when its first kilobyte holds this many control
 # bytes. Two ASCII letters (MZ) or one NUL are not enough. The path-scoped rules
@@ -166,178 +261,208 @@ def looks_binary(data: bytes) -> bool:
     return count >= BINARY_CONTROL_BYTES
 
 
-_HIGH = re.compile(HIGH_WORD_PATTERN, re.IGNORECASE)
-_LOW = re.compile(LOW_PATTERN, re.IGNORECASE)
-_POISON = re.compile(POISON_PATTERN, re.IGNORECASE)
-_PHRASES = tuple(re.compile(item, re.IGNORECASE) for item in CONFIRM_PATTERNS + HIGH_PATTERNS)
-_NEEDS_HIGH = re.compile(
-    "|".join(f"(?:{item})" for item in HIGH_PATTERNS),
-    re.IGNORECASE,
-)
-_ABSOLUTE = tuple(re.compile(item, re.IGNORECASE) for item in ABSOLUTE_VETO_PATTERNS)
-_TOKEN = re.compile(r"\b(" + "|".join(TOKENS) + r")\b")
-# Any authority counts, so an IP literal or a bare host name is still a URL.
-URL_PATTERN = r"https?://[^\s\"'/?#\\]{1,255}"
-_URL = re.compile(URL_PATTERN, re.IGNORECASE)
-_VENDOR = {
-    token: re.compile(
-        rf"https?://([A-Za-z0-9-]+\.)*{re.escape(host)}{HOST_END_PATTERN}", re.IGNORECASE
+# Everything below reads bytes with the same patterns the generated rule holds,
+# and follows that rule's condition step by step. Offsets are byte offsets.
+URL_PATTERN = r"https?://[^ \t\r\n\"'/?#\\]{1,255}"
+FETCH_PATTERN = r"(curl |wget )"
+_HIGH = compile_bytes(HIGH_WORD_PATTERN)
+_SOFT = compile_bytes(f"({POISON_PATTERN})|({LOW_PATTERN})")
+_BAD = compile_bytes("|".join(ABSOLUTE_VETO_PATTERNS))
+_CONFIRM_LINES = tuple(compile_bytes(line_regex(byte_regex(item)), translated=True) for item in CONFIRM_PATTERNS)
+_HIGH_LINES = tuple(compile_bytes(line_regex(byte_regex(item)), translated=True) for item in HIGH_PATTERNS)
+_BARE = tuple(compile_bytes(item) for item in CONFIRM_PATTERNS + HIGH_PATTERNS)
+_PLAIN = tuple(compile_bytes(item) for item in (CRED_FORWARD, CRED_REVERSE, INJECT_FORWARD, INJECT_REVERSE))
+_HOMO = bytes.fromhex(HOMO_HEX.strip("{} ").replace(" ", ""))
+_URL = compile_bytes(URL_PATTERN)
+_FETCH = compile_bytes(FETCH_PATTERN)
+_TOKENS: tuple[tuple[re.Pattern[bytes], re.Pattern[bytes] | None], ...] = tuple(
+    (
+        re.compile(rb"\b(" + "|".join(names).encode() + rb")\b"),
+        compile_bytes(rf"https?://([A-Za-z0-9-]+\.)*{re.escape(host)}{HOST_END_PATTERN}") if host else None,
     )
-    for token, host in VENDOR_HOST.items()
-}
+    for host, names in (
+        [(host, [t for t in TOKENS if VENDOR_HOST.get(t) == host]) for host in dict.fromkeys(VENDOR_HOST.values())]
+        + [("", [t for t in TOKENS if t not in VENDOR_HOST])]
+    )
+    if names
+)
+_SIGNALS = tuple(compile_bytes(item) for item in SIGNAL_PATTERNS)
+_CONCEAL_RECIPIENT = tuple(compile_bytes(item) for item in CONCEAL_PATTERNS + RECIPIENT_PATTERNS)
+_DETAIL = compile_bytes(DETAIL_PATTERN)
+_SIDENOTE = tuple(compile_bytes(item) for item in SIDENOTE_PATTERNS)
+_SENSITIVE = re.compile(byte_regex(SENSITIVE_PATH_PATTERN).encode("ascii"))
+_EXFIL = compile_bytes(EXFIL_PATTERN)
+_ENCODE = compile_bytes(ENCODE_PATTERN)
+_PIPE = compile_bytes(PIPE_PATTERN)
+_INSTALLER_BODY = compile_bytes(INSTALLER_BODY_PATTERN)
+_NEGATED_FETCH = compile_bytes(NEGATED_FETCH_PATTERN)
+_CLI_FLAG = compile_bytes(CLI_FLAG_PATTERN)
+_NEGATED_CLI_FLAG = compile_bytes(NEGATED_CLI_FLAG_PATTERN)
+_MARKERS = (
+    b"agent instructions",
+    b"agents.md",
+    b"claude.md",
+    b"gemini.md",
+    b"skill.md",
+    b".cursorrules",
+    b"copilot-instructions",
+    b".cursor/rules/",
+)
+
+
+def _is_tool_json(data: bytes) -> bool:
+    return b'"description"' in data and _TOOL_KEY.search(data) is not None
 
 
 def in_scope(data: bytes, filepath: str, *, use_filepath: bool) -> bool:
     if use_filepath:
         if _PATH.search(filepath or ""):
             return True
-        lowered = (filepath or "").lower()
-        return lowered.endswith((".json", ".jsonc")) and b'"description"' in data
-    if data[:1:] == b"{" and b'"description"' in data:
+        return (filepath or "").lower().endswith((".json", ".jsonc")) and _is_tool_json(data)
+    if data[:1] == b"{" and _is_tool_json(data):
         return True
     folded = data.lower()
-    return any(
-        marker in folded
-        for marker in (
-            b"agent instructions",
-            b"agents.md",
-            b"claude.md",
-            b"gemini.md",
-            b"skill.md",
-            b".cursorrules",
-            b"copilot-instructions",
-            b".cursor/rules/",
-        )
+    return any(marker in folded for marker in _MARKERS)
+
+
+def _starts(pattern: re.Pattern[bytes], data: bytes, low: int = 0, high: int | None = None) -> list[int]:
+    """Every offset in [low, high] where ``pattern`` matches, overlapping ones too."""
+    found: list[int] = []
+    position = max(0, low)
+    limit = len(data) if high is None else min(high, len(data))
+    while position <= limit:
+        match = pattern.search(data, position)
+        if match is None or match.start() > limit:
+            break
+        found.append(match.start())
+        position = match.start() + 1
+    return found
+
+
+def _starts_in(pattern: re.Pattern[bytes], data: bytes, low: int, high: int) -> bool:
+    match = pattern.search(data, max(0, low))
+    return match is not None and match.start() <= high
+
+
+def _occurrence_hit(pattern: re.Pattern[bytes], data: bytes, *, needs_high: bool) -> bool:
+    count = 0
+    for match in pattern.finditer(data):
+        count += 1
+        if count > OUTER_BOUND:
+            # More occurrences than the generated rule judges.
+            return True
+        low, high = match.start(), match.end() - 1
+        if _starts_in(_BAD, data, low, high):
+            continue
+        risky = _starts_in(_HIGH, data, low, high)
+        if _starts_in(_SOFT, data, low, high) and not risky:
+            continue
+        if needs_high and not risky:
+            continue
+        return True
+    return False
+
+
+def _far_hit(data: bytes) -> bool:
+    """A bypass phrase more than LINE_REACH + 1 bytes into its line."""
+    span = LINE_REACH + 2
+    for pattern in _BARE:
+        for start in _starts(pattern, data)[:OUTER_BOUND]:
+            if start >= span and b"\n" not in data[start - span : start]:
+                return True
+    return False
+
+
+def _phrase_hit(data: bytes) -> bool:
+    return _far_hit(data) or any(_occurrence_hit(pattern, data, needs_high=False) for pattern in _CONFIRM_LINES) or any(
+        _occurrence_hit(pattern, data, needs_high=True) for pattern in _HIGH_LINES
     )
 
 
-def _line_veto(line: str) -> bool:
-    stripped = line.strip()
-    if stripped.startswith("|") or stripped.startswith("#"):
-        return True
-    if re.search(r"bypass\s+permissions?\s+(on|off)\b", line, re.IGNORECASE) and "=" in line:
-        return True
-    if "`" in line and re.search(r"=\s*|status bar|\bmode\b", line, re.IGNORECASE):
-        if re.search(r"bypass\s+permissions?", line, re.IGNORECASE):
+def _token_exfil(data: bytes) -> bool:
+    for token, vendor in _TOKENS:
+        for anchor in _starts(token, data)[:OUTER_BOUND]:
+            low, high = anchor - 200, anchor + 200
+            urls = len(_starts(_URL, data, low, high))
+            vendors = len(_starts(vendor, data, low, high)) if vendor is not None else 0
+            if urls > vendors and _starts_in(_FETCH, data, low, high):
+                return True
+    return False
+
+
+_FETCH_NAME = re.compile(rb"curl|wget", re.IGNORECASE)
+_BLANKS = b" \t$"
+
+
+def _command_position(data: bytes, start: int) -> bool:
+    """The fetch tool starts a line, follows a shell prompt, or follows a backtick."""
+    for back in range(1, 41):
+        if start < back:
+            return True  # only blanks back to the start of the file
+        byte = data[start - back : start - back + 1]
+        if byte in (b"\n", b"`"):
             return True
-    if _POISON.search(line) and not _HIGH.search(line):
-        return True
-    if any(pattern.search(line) for pattern in _ABSOLUTE):
-        return True
+        if byte not in (b" ", b"\t", b"$"):
+            return False
     return False
 
 
-def _phrase_hit(text: str) -> bool:
-    folded = _ZW.sub("", text)
-    for line_no, line in enumerate(folded.splitlines()):
-        if _line_veto(line):
-            continue
-        if not any(pattern.search(line) for pattern in _PHRASES):
-            continue
-        window = "\n".join(folded.splitlines()[max(0, line_no - 2) : line_no + 3])
-        if _NEEDS_HIGH.search(line) and not _HIGH.search(window):
-            continue
-        if _LOW.search(window) and not _HIGH.search(window):
-            continue
-        return True
-    return False
-
-
-_FETCH = re.compile(r"curl |wget ")
-_SIGNALS = tuple(re.compile(item, re.IGNORECASE) for item in SIGNAL_PATTERNS)
-_CONCEAL = tuple(re.compile(item, re.IGNORECASE) for item in CONCEAL_PATTERNS)
-_RECIPIENT = tuple(re.compile(item, re.IGNORECASE) for item in RECIPIENT_PATTERNS)
-_DETAIL = re.compile(DETAIL_PATTERN, re.IGNORECASE)
-_SIDENOTE = tuple(re.compile(item, re.IGNORECASE) for item in SIDENOTE_PATTERNS)
-_SENSITIVE = re.compile(SENSITIVE_PATH_PATTERN)
-_EXFIL = re.compile(EXFIL_PATTERN, re.IGNORECASE)
-_ENCODE = re.compile(ENCODE_PATTERN, re.IGNORECASE)
-_PIPE = re.compile(PIPE_PATTERN, re.IGNORECASE)
-
-
-_INSTALLER_BODY = re.compile(INSTALLER_BODY_PATTERN, re.IGNORECASE)
-_INSTALLER_PREFIX = re.compile(INSTALLER_PREFIX_PATTERN + r"\Z")
-_FETCH_NAME = re.compile(r"curl|wget", re.IGNORECASE)
-
-
-def installer_pipe_allowlisted(text: str, start: int = 0) -> bool:
+def installer_pipe_allowlisted(data: bytes, start: int = 0) -> bool:
     """True when the fetch tool at ``start`` begins a listed installer line."""
-    if _INSTALLER_BODY.match(text, start) is None:
-        return False
-    return _INSTALLER_PREFIX.search(text[max(0, start - 200) : start]) is not None
+    return _INSTALLER_BODY.match(data, start) is not None and _command_position(data, start)
 
 
-def _near(text: str, start: int, end: int, pattern: re.Pattern[str], span: int = 400) -> bool:
-    window = text[max(0, start - span) : min(len(text), end + span)]
-    return pattern.search(window) is not None
-
-
-def _token_exfil(text: str) -> bool:
-    for match in _TOKEN.finditer(text):
-        start = max(0, match.start() - 200)
-        end = min(len(text), match.end() + 200)
-        window = text[start:end]
-        if not _FETCH.search(window):
+def _pipe_hit(data: bytes) -> bool:
+    pipes = [name.start() for name in _FETCH_NAME.finditer(data) if _PIPE.match(data, name.start())]
+    if len(pipes) > OUTER_BOUND:
+        return True
+    negated_ends = set()
+    for start in _starts(_NEGATED_FETCH, data)[:NEGATED_FETCH_BOUND]:
+        negated_ends.add(_NEGATED_FETCH.match(data, start).end())
+    for start in pipes:
+        if installer_pipe_allowlisted(data, start):
             continue
-        vendor = _VENDOR.get(match.group(1))
-        for url in _URL.finditer(window):
-            # The vendor pattern is anchored at the URL and needs the host to end.
-            # It reads the whole text, not the window: a window that stops right
-            # after github.com would make github.com.attacker.example look official.
-            if vendor is not None and vendor.match(text, start + url.start()):
-                continue
+        if start + 4 in negated_ends:
+            continue
+        return True
+    return False
+
+
+def _cli_flag_hit(data: bytes) -> bool:
+    # A prohibition negates exactly the flag sentence that follows it.
+    return len(_starts(_CLI_FLAG, data)) > len(_starts(_NEGATED_CLI_FLAG, data))
+
+
+def _near_hit(left: re.Pattern[bytes], rights: tuple[re.Pattern[bytes], ...], data: bytes, reach: int = 400) -> bool:
+    for anchor in _starts(left, data)[:OUTER_BOUND]:
+        if any(_starts_in(right, data, anchor - reach, anchor + reach) for right in rights):
             return True
     return False
 
 
-def _pipe_hit(text: str) -> bool:
-    # Every fetch-tool name is a candidate start, so a second pipe on a line that
-    # begins with a listed installer is still judged on its own.
-    for name in _FETCH_NAME.finditer(text):
-        if _PIPE.match(text, name.start()) and not installer_pipe_allowlisted(text, name.start()):
-            return True
-    return False
-
-
-def _window_has(text: str, match: re.Match[str], patterns: tuple[re.Pattern[str], ...]) -> bool:
-    window = text[max(0, match.start() - 400) : match.end() + 400]
-    return any(pattern.search(window) for pattern in patterns)
-
-
-def _detail_hit(text: str) -> bool:
-    return any(
-        _window_has(text, match, _CONCEAL + _RECIPIENT) for match in _DETAIL.finditer(text)
-    )
-
-
-def _sidenote_hit(text: str) -> bool:
-    return any(
-        _window_has(text, match, _SIDENOTE) for match in _SENSITIVE.finditer(text)
-    )
-
-
-def _exfil_hit(text: str) -> bool:
-    return any(_near(text, match.start(), match.end(), _ENCODE) for match in _EXFIL.finditer(text))
-
-
-def _signal_hit(text: str) -> bool:
+def _signal_hit(data: bytes) -> bool:
     return (
-        _pipe_hit(text)
-        or any(pattern.search(text) for pattern in _SIGNALS)
-        or _detail_hit(text)
-        or _sidenote_hit(text)
-        or _exfil_hit(text)
+        any(pattern.search(data) for pattern in _SIGNALS)
+        or _cli_flag_hit(data)
+        or _near_hit(_DETAIL, _CONCEAL_RECIPIENT, data)
+        or any(_near_hit(side, (_SENSITIVE,), data) for side in _SIDENOTE)
+        or _near_hit(_EXFIL, (_ENCODE,), data)
+        or _pipe_hit(data)
     )
 
 
 def instruction_bypass(data: bytes, filepath: str, *, use_filepath: bool) -> bool:
-    """True when the Python half of SERAPH_Instruction_Unsafe_Directive matches."""
+    """True when the Python twin of SERAPH_Instruction_Unsafe_Directive matches."""
+    if not data or len(data) >= MAX_FILE_BYTES:
+        return False
     if not in_scope(data, filepath, use_filepath=use_filepath):
         return False
     if not use_filepath and looks_binary(data):
         return False
-    try:
-        text = data.decode("utf-8")
-    except UnicodeDecodeError:
-        text = data.decode("utf-8", errors="replace")
-    return _phrase_hit(text) or _token_exfil(text) or _signal_hit(text)
+    return (
+        _HOMO in data
+        or any(pattern.search(data) for pattern in _PLAIN)
+        or _phrase_hit(data)
+        or _token_exfil(data)
+        or _signal_hit(data)
+    )

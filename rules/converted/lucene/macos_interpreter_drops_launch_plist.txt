@@ -1,1 +1,1 @@
-(file.path:(*\/Library\/LaunchAgents\/* OR *\/Library\/LaunchDaemons\/*)) AND file.path:*.plist AND (process.executable:(*\/bash OR *\/bin\/sh OR *\/zsh OR *\/python OR *\/python3 OR *\/node OR *\/osascript OR *\/curl))
+(file.path:(*\/Library\/LaunchAgents\/* OR *\/Library\/LaunchDaemons\/*)) AND file.path:*.plist AND ((process.executable:(*\/bash OR *\/bin\/sh OR *\/zsh OR *\/python OR *\/python3 OR *\/node OR *\/osascript OR *\/curl OR *\/perl OR *\/ruby OR *\/bun OR *\/deno)) OR process.executable:*\/python3.*)

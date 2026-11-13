@@ -39,6 +39,25 @@ def _clean(event: dict[str, Any]) -> dict[str, str]:
     return {key: value for key, value in event.items() if value}
 
 
+def _es_destination(destination: Any) -> str | None:
+    """Read an Endpoint Security create or rename destination.
+
+    es_event_create_t and es_event_rename_t carry either ``existing_file``
+    (a file with a path) or ``new_path`` (a directory plus a file name).
+    The flat ``target.path`` and ``destination.path`` keys read after this
+    are the shape of the samples in this repository, which are derived from
+    the Sigma fixtures and not captured from eslogger.
+    """
+    existing = _string(_dig(destination, "existing_file", "path"))
+    if existing:
+        return existing
+    directory = _string(_dig(destination, "new_path", "dir", "path"))
+    filename = _string(_dig(destination, "new_path", "filename"))
+    if directory and filename:
+        return directory.rstrip("/") + "/" + filename
+    return None
+
+
 def normalize_eslogger(event: dict[str, Any]) -> dict[str, str]:
     """Map one eslogger JSON object onto the Sigma field contract."""
 
@@ -57,8 +76,10 @@ def normalize_eslogger(event: dict[str, Any]) -> dict[str, str]:
         image = _string(_dig(event, "process", "executable", "path"))
         parent = _string(_dig(event, "process", "parent", "executable", "path"))
     target = (
-        _string(_dig(event, "event", "create", "target", "path"))
+        _es_destination(_dig(event, "event", "create", "destination"))
+        or _string(_dig(event, "event", "create", "target", "path"))
         or _string(_dig(event, "event", "write", "target", "path"))
+        or _es_destination(_dig(event, "event", "rename", "destination"))
         or _string(_dig(event, "event", "rename", "destination", "path"))
     )
     user = _string(_dig(event, "process", "user_name")) or _string(

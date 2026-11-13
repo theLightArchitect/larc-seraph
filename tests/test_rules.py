@@ -285,6 +285,17 @@ def test_non_unicode_fixtures_are_ascii():
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Notes.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case-mixed/Readme.MD",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/homo/GEMINI.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/selector-pairs/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/selector-bmp/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/emoji-selector/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/ogham-space/SKILL.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/isolate/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/selector-run/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/single-selector/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/curly-apostrophe/SKILL.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/nbsp/SKILL.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/em-space/SKILL.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/negative/zw-inside-word/SKILL.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zw/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zw-gaps/SKILL.md",
     }
@@ -514,3 +525,26 @@ def test_status_label_flag_table_vendor_curl_and_rename_stay_silent(yara_rules):
     ]
     for text in samples:
         assert _instruction_hits(yara_rules, text) == set(), text
+
+
+def test_python_twin_agrees_with_yara_on_every_fixture(yara_rules, forge_rules):
+    """larc_seraph.phrases follows the generated rule step by step, on bytes.
+
+    Every fixture of every rule, and every evasion-matrix body, has to get the
+    same answer from the Python twin and from YARA alone, in both flavors.
+    """
+    from larc_seraph.phrases import instruction_bypass
+    from larc_seraph.scan import rule_filepath
+
+    rule = "SERAPH_Instruction_Unsafe_Directive"
+    samples = [(rule_filepath(str(path)), path.read_bytes()) for path in (ROOT / "tests" / "fixtures").rglob("*") if path.is_file()]
+    matrix = yaml.safe_load((ROOT / "validation" / "evasion-matrix.yml").read_text(encoding="utf-8"))
+    samples += [("/repo/AGENTS.md", case["body"].encode()) for case in matrix["cases"] if "body" in case]
+    assert len(samples) > 300
+    for filepath, data in samples:
+        if not data:
+            continue
+        path_yara = any(hit.rule == f"{rule}_Path" for hit in yara_rules.match(data=data, externals={"filepath": filepath}))
+        forge_yara = any(hit.rule == rule for hit in forge_rules.match(data=data))
+        assert instruction_bypass(data, filepath, use_filepath=True) == path_yara, filepath
+        assert instruction_bypass(data, filepath, use_filepath=False) == forge_yara, filepath

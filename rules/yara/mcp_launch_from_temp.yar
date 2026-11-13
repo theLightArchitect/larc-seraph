@@ -15,15 +15,15 @@ rule SERAPH_MCP_Launch_From_Temp {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.3.0"
+    version          = "1.4.0"
     severity         = "high"
     status           = "experimental"
-    score            = "60"
+    score            = 60
     description      = "Detects an MCP client config that sets a server command to a temp, cache, or shared-memory path, or points a shell at a script in one of those paths. Content-only rule: it compiles with no externals."
     attack_technique = "T1059.004"
     attack_tactic    = "execution"
     reference        = "https://attack.mitre.org/techniques/T1059/004/"
-    reference_2      = "https://modelcontextprotocol.io/specification/2025-06-18"
+    reference        = "https://modelcontextprotocol.io/specification/2025-06-18"
     scope            = "MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. Pair with a path filter such as mcp.json or claude_desktop_config.json. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule has no path. It needs a JSON object at the start of the file (after an optional BOM or blank space), a top-level mcpServers: key, or an mcp_servers table. A JSONC file that opens with a comment, and Markdown, do not match."
     false_positives  = "A short-lived local experiment that intentionally runs a server from /tmp or Library/Caches. A bare /tmp directory grant with no trailing path segment is not matched."
     license          = "Detection Rule License 1.1"
@@ -45,12 +45,12 @@ rule SERAPH_MCP_Launch_From_Temp {
     $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
 
     // The key may be quoted (JSON) or bare (TOML, YAML). The value may be quoted or bare.
-    $cmd_tmp   = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/var\/tmp\/|\/dev\/shm\/)[^"'\n]{0,180}/ ascii
+    $cmd_tmp   = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/private\/var\/folders\/|\/var\/tmp\/|\/private\/var\/tmp\/|\/dev\/shm\/)[^"'\n]{0,180}/ ascii
     $cmd_cache = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?[^"'\n]{0,180}\/Library\/Caches\/[^"'\n]{0,120}/ ascii
 
     $shell     = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/bin\/bash|\/bin\/sh|\/bin\/zsh|\/usr\/bin\/python3?|\/usr\/bin\/osascript)(["']|[ \t\r]*\n)/ ascii
     // A quoted string, or a YAML list item.
-    $arg_tmp   = /(["']|\n[ \t]*-[ \t]+)(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/var\/tmp\/|\/dev\/shm\/)[^"'\n]{0,180}/ ascii
+    $arg_tmp   = /(["']|\n[ \t]*-[ \t]+)(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/private\/var\/folders\/|\/var\/tmp\/|\/private\/var\/tmp\/|\/dev\/shm\/)[^"'\n]{0,180}/ ascii
     $arg_cache = /(["']|\n[ \t]*-[ \t]+)[^"'\n]{0,80}\/Library\/Caches\/[^"'\n]{0,160}/ ascii
 
   condition:
