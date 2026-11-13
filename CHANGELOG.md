@@ -8,6 +8,7 @@ Project basics for a public detection pack. No detection logic changed.
 - The test workflow runs pytest, `yarac --fail-on-warnings`, a yara-x (`yr`) compile, `sigma check`, the benign-corpus scan, a rule-metadata check, and gitleaks. Action SHAs are pinned. The workflow token can read contents. The release workflow is the job that can write contents.
 - Pushing a `vX.Y.Z` tag builds a zip and a tarball (YARA, Sigma, converted queries, the false-positive allowlist, and the license files), writes `SHA256SUMS`, and attaches them to a GitHub Release whose notes are this section. This commit does not create the tag.
 - `SECURITY.md`, `CONTRIBUTING.md`, and the Contributor Covenant 2.1. Issue forms, a pull request checklist, Dependabot, and `CODEOWNERS`.
+- YARA rules now ship as two flavors from `rules/src/yara`. `rules/yara` is the Forge set: canonical `SERAPH_*` names and `SERAPH-YARA-NNN` ids, and it compiles with no externals. `rules/path-scoped` keeps the `filepath` gate under `SERAPH_*_Path` / `SERAPH-YARA-NNN-PATH`. The CLI uses the path-scoped set. Forge MCP rules require a leading `{`. Forge instruction rules require an in-file instruction marker. A hook payload outside `.git/hooks` or `.husky` matches Forge and not the path-scoped rule. A bare confirmation sentence in a file named `AGENTS.md` matches the path-scoped rule and not Forge.
 
 ## v0.1.8 — 2026-11-13
 

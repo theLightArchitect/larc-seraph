@@ -2,3 +2,5 @@
 # SERAPH synthetic fixture. classification: synthetic-benign. expected: no-match. inert.
 # The decoded bytes are the ASCII sentence: echo seraph-inert
 printf '%s\n' 'ZWNobyBzZXJhcGgtaW5lcnQK' | base64 -d | sh
+
+# To enable this hook, rename this file to "pre-commit".

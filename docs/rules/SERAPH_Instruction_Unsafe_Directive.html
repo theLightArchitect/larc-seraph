@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-YARA-007 · yara · <span class="sev sev-high">high</span></p>
 <h1>Agent instructions request secret theft or skipped confirmation</h1>
-<p class="deck">An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential&#x27;s vendor. A normal flag such as --force does not suppress that. A Markdown heading, a table row, or a known permission flag such as --yolo or --dangerously-skip-permissions does.</p>
+<p class="deck">An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential&#x27;s vendor. A normal flag such as --force does not suppress that. A Markdown heading, a table row, or a known permission flag such as --yolo or --dangerously-skip-permissions does. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1567/">T1567</a>, <a href="https://attack.mitre.org/techniques/T1562/001/">T1562.001</a></div>
   <div><span>Tactic</span>exfiltration, defense-evasion</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON tool descriptions, any case. Set filepath to the path as stored. A bypass must be an instruction, not a flag, env var, or Markdown table row. A token sent to its own vendor host does not match.</div>
+  <div><span>Scope</span>Text that tells an agent to skip confirmation before a high-risk action, or sends a credential to a host that is not that credential&#x27;s vendor, and that contains an instruction marker or a JSON description. A Markdown heading, a table row, or a known permission flag such as --yolo does not match. A token sent to its own vendor host does not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A real policy that tells the agent not to ask before a shell command, a delete, a secret, or a network send. Homoglyphs other than Cyrillic o still pass. A mark between every letter still passes. More than eight hits of one phrase in one file are not all judged.</li></ul>

@@ -86,7 +86,7 @@ def test_libyara_compiles_without_warnings():
     if yarac is None:
         pytest.fail("yarac 4.5.x is not installed")
     result = subprocess.run(
-        [yarac, "--fail-on-warnings", "--strict-escape", "-d", "filepath=", *[str(path) for path in sorted((ROOT / "rules" / "yara").glob("*.yar"))], str(ROOT / ".cache-libyara.yac")],
+        [yarac, "--fail-on-warnings", "--strict-escape", *[str(path) for path in sorted((ROOT / "rules" / "yara").glob("*.yar"))], str(ROOT / ".cache-libyara.yac")],
         capture_output=True,
         text=True,
         check=False,
@@ -107,7 +107,7 @@ def test_yara_x_compiles_without_warnings():
     if yr is None:
         pytest.fail("yara-x yr CLI is not installed")
     result = subprocess.run(
-        [yr, "compile", "--define", 'filepath=""', str(ROOT / "rules" / "yara"), "-o", str(ROOT / ".cache-yara-x.yarc")],
+        [yr, "compile", str(ROOT / "rules" / "yara"), "-o", str(ROOT / ".cache-yara-x.yarc")],
         capture_output=True,
         text=True,
         check=False,
@@ -149,32 +149,61 @@ def _default_filepath(rule: str) -> str:
     return "/tmp/sample"
 
 
+_INSTRUCTION = {"SERAPH_Instruction_Unsafe_Directive", "SERAPH_Instruction_Hidden_Unicode"}
+_MARKER = "agent instructions"
+
+
+def _forge_body(case: dict) -> str:
+    body = case["body"]
+    if case["rule"] not in _INSTRUCTION or case.get("forge_body") == "raw":
+        return body
+    if _MARKER in body.lower():
+        return body
+    return "# Agent instructions\n" + body
+
+
+def _assert_expect(matched: bool, expect: str, case: dict) -> None:
+    if expect == "match":
+        assert matched, case["name"]
+        return
+    assert expect == "miss", case
+    assert not matched, case["name"]
+    assert case.get("note"), case["name"]
+
+
 def test_evasion_matrix():
     document = yaml.safe_load((ROOT / "validation" / "evasion-matrix.yml").read_text(encoding="utf-8"))
-    rules = compile_yara()
+    path_rules = compile_yara("path")
+    forge_rules = compile_yara("forge")
     sigma = {rule.name: rule for rule, _path in load_sigma_rules()}
     covered = set()
     for case in document["cases"]:
         covered.add(case["rule"])
-        expect = case["expect"]
         if case.get("engine") == "sigma":
             hits = [name for name, rule in sigma.items() if rule_matches(rule, case["event"])]
-            matched = case["rule"] in hits
-        else:
-            filepath = case.get("filepath") or _default_filepath(case["rule"])
-            matched = any(
-                hit.rule == case["rule"]
-                for hit in yara_match(rules, data=case["body"].encode(), filepath=filepath)
+            _assert_expect(case["rule"] in hits, case["expect"], case)
+            continue
+        filepath = case.get("filepath") or _default_filepath(case["rule"])
+        path_hits = {
+            hit.rule[:-5] if hit.rule.endswith("_Path") else hit.rule
+            for hit in yara_match(path_rules, data=case["body"].encode(), filepath=filepath)
+        }
+        forge_hits = {
+            hit.rule
+            for hit in yara_match(
+                forge_rules,
+                data=_forge_body(case).encode(),
+                use_filepath=False,
             )
-        if expect == "match":
-            assert matched, case["name"]
-        else:
-            assert expect == "miss", case
-            assert not matched, case["name"]
-            assert case.get("note"), case["name"]
+        }
+        path_expect = case["path_expect"] if "path_expect" in case else case["expect"]
+        forge_expect = case["forge_expect"] if "forge_expect" in case else case["expect"]
+        _assert_expect(case["rule"] in path_hits, path_expect, case)
+        _assert_expect(case["rule"] in forge_hits, forge_expect, case)
     from larc_seraph.inventory import load_records
 
     names = {record.name for record in load_records()}
     missing = names - covered
     assert not missing, missing
-    assert isinstance(rules, yara.Rules)
+    assert isinstance(path_rules, yara.Rules)
+    assert isinstance(forge_rules, yara.Rules)

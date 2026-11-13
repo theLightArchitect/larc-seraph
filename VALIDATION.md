@@ -13,9 +13,9 @@ This file is the methodology and the results. A green test run proves the fixtur
 | pySigma conversion | Pass. Lucene via `pipelines/ecs-macos.yml` and Splunk via `pipelines/splunk-macos.yml`. Output is in `rules/converted/`. |
 | Telemetry round-trip | Pass. Every Sigma rule has eslogger, ECS, and osquery samples, positive and negative. `larc_seraph.translate` maps them onto the field contract and the evaluator agrees with the fixture. |
 | libyara | Pass. `yara-python` compiles the set. |
-| yara-x 1.23.0 | Pass. `yr compile rules/yara` exits 0 with no warning text, including no slow-rule warning. |
+| yara-x 1.23.0 | Pass. `yr compile rules/yara` with no externals exits 0 with no warning text. The path-scoped set compiles with `filepath` defined. |
 | Wide-tree speed | Pass. 400 benign Markdown files scanned in the unit test in under 10 seconds. The corpus scan below is the larger number. |
-| Benign corpus | Pass. 15615 files in about 1.8 seconds. Zero hits after the v0.1.1 scope tuning. |
+| Benign corpus | Pass. 15615 files. Zero hits for the Forge flavor and zero hits for the path-scoped flavor. |
 | Metadata | Pass. Author is Kevin Francis Tan. Date, references, ATT&CK, severity, and false-positive notes are required by the test. Sigma UUIDs and YARA ids are unique. |
 | Evasion matrix | Pass. `validation/evasion-matrix.yml` is executed by pytest. Misses are asserted, not ignored. |
 
@@ -65,18 +65,20 @@ v0.1.6 on a Mac produced 14 hits: 3 expected and 11 true positives, with no fals
 
 ## Scanner contract
 
-Every rule that looks at a path reads the external string `filepath`. Pass the path as it is stored, with forward slashes. Do not lowercase it. The `larc-seraph` CLI sets this from the path you give it.
+The CLI uses the path-scoped rules. Pass `filepath` as the path is stored, with forward slashes. Do not lowercase it. `rules/yara` is the Forge flavor and compiles with no externals.
 
 ```bash
-yara -d filepath=/abs/path rules/yara /abs/path
-yr scan --define 'filepath="/abs/path"' rules/yara /abs/path
+yara rules/yara /abs/path
+yara -d filepath=/abs/path rules/path-scoped /abs/path
+yr scan rules/yara /abs/path
+yr scan --define 'filepath="/abs/path"' rules/path-scoped /abs/path
 ```
 
 ```python
 rules.match(path, externals={"filepath": path})
 ```
 
-Quote the YARA-X `--define` value. An empty `filepath` means the instruction rules and the git-hook rule do not match. MCP rules still match a file that starts with `{`.
+Quote the YARA-X `--define` value. A bare confirmation sentence in a file named `AGENTS.md` matches the path-scoped rule only. A hook payload outside `.git/hooks` and `.husky` matches the Forge rule only.
 
 ## Evasion
 

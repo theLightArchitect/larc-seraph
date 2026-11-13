@@ -5,7 +5,6 @@
    Licensed under the Detection Rule License 1.1. See LICENSE.rules.
    Defensive signature. Not an exploit and not a payload.
 
-   Scanners must pass the external string filepath with forward slashes.
    The regexes are case-insensitive. Do not lowercase the path.
 */
 
@@ -21,15 +20,15 @@ rule SERAPH_Instruction_Unsafe_Directive
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.7.0"
+        version = "1.8.0"
         severity = "high"
-        description = "An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential's vendor. A normal flag such as --force does not suppress that. A Markdown heading, a table row, or a known permission flag such as --yolo or --dangerously-skip-permissions does."
+        description = "An instruction file tells the agent to skip confirmation or permission before a high-risk action, or sends a credential to a host that is not that credential's vendor. A normal flag such as --force does not suppress that. A Markdown heading, a table row, or a known permission flag such as --yolo or --dangerously-skip-permissions does. Content-only rule: it compiles with no externals."
         attack_technique = "T1567, T1562.001"
         attack_tactic = "exfiltration, defense-evasion"
         reference = "https://attack.mitre.org/techniques/T1567/"
         reference_2 = "https://attack.mitre.org/techniques/T1562/001/"
         reference_3 = "https://atlas.mitre.org/techniques/AML.T0051"
-        scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON tool descriptions, any case. Set filepath to the path as stored. A bypass must be an instruction, not a flag, env var, or Markdown table row. A token sent to its own vendor host does not match."
+        scope = "Text that tells an agent to skip confirmation before a high-risk action, or sends a credential to a host that is not that credential's vendor, and that contains an instruction marker or a JSON description. A Markdown heading, a table row, or a known permission flag such as --yolo does not match. A token sent to its own vendor host does not match."
         false_positives = "A real policy that tells the agent not to ask before a shell command, a delete, a secret, or a network send. Homoglyphs other than Cyrillic o still pass. A mark between every letter still passes. More than eight hits of one phrase in one file are not all judged."
         license = "Detection Rule License 1.1"
 
@@ -78,6 +77,16 @@ rule SERAPH_Instruction_Unsafe_Directive
         $open = /(^|\n)[ \t]{0,3}```[A-Za-z0-9_-]*[ \t]*\r?\n/
         $inject_fwd = /ignore (all )?(previous|prior|above) instructions[^\n]{0,400}(curl |wget |https?:\/\/|ANTHROPIC_API_KEY|OPENAI_API_KEY|GITHUB_TOKEN|\.ssh\/)/ nocase ascii
         $inject_rev = /(curl |wget |https?:\/\/|ANTHROPIC_API_KEY|OPENAI_API_KEY|GITHUB_TOKEN|\.ssh\/)[^\n]{0,400}ignore (all )?(previous|prior|above) instructions/ nocase ascii
+
+        $mark_phrase = /agent instructions/ nocase ascii
+        $mark_agents = /AGENTS\.md/ nocase ascii
+        $mark_claude = /CLAUDE\.md/ nocase ascii
+        $mark_gemini = /GEMINI\.md/ nocase ascii
+        $mark_skill = /SKILL\.md/ nocase ascii
+        $mark_cursor = ".cursorrules" nocase ascii
+        $mark_copilot = /copilot-instructions/ nocase ascii
+        $mark_ruledir = ".cursor/rules/" nocase ascii
+
     condition:
         filesize > 0 and filesize < 5000000 and
         not (uint32(0) == 0x464c457f) and
@@ -87,8 +96,8 @@ rule SERAPH_Instruction_Unsafe_Directive
         not (uint16(0) == 0x8b1f) and
         not for any i in (0..math.min(1023, filesize - 1)) : (uint8(i) == 0) and
         (
-            filepath matches /(\/(agents|claude|gemini)\.md$)|(\/\.cursorrules$)|(\/skill\.md$)|(\/copilot-instructions\.md$)|(\/\.cursor\/rules\/)/i or
-            (filepath matches /\.(json|jsonc)$/i and $desc)
+            any of ($mark_*) or
+            ($desc and uint8(0) == 0x7B)
         ) and
         (
             for any i in (1..8) : (

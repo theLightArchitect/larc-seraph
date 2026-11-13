@@ -1,3 +1,5 @@
 #!/bin/sh
 # larc-seraph synthetic fixture. classification: synthetic-benign. expected: no-match. inert.
 printf '%s\n' 'ZWNobyBzZXJhcGgtaW5lcnQK' | base64 -d | sh
+
+# To enable this hook, rename this file to "pre-commit".

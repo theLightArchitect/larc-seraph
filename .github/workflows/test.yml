@@ -32,7 +32,7 @@ jobs:
           set -euo pipefail
           version=8.30.1
           archive="gitleaks_${version}_linux_x64.tar.gz"
-          curl -fsSL -o "/tmp/${archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${version}/${archive}"
+          curl --proto '=https' --tlsv1.2 -fsSL -o "/tmp/${archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${version}/${archive}"
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/${archive}" | sha256sum -c
           tar -xzf "/tmp/${archive}" -C /tmp gitleaks
           /tmp/gitleaks git --config .gitleaks.toml --redact --no-banner --verbose .
@@ -63,7 +63,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install pack and test tools
-        run: python -m pip install -e ".[test]"
+        run: python -m pip install --only-binary :all: -e ".[test]"
 
       - name: Rule metadata consistency
         run: python tools/check_rule_metadata.py
@@ -71,7 +71,7 @@ jobs:
       - name: Install yara-x 1.23.0
         run: |
           set -euo pipefail
-          curl -fL -o /tmp/yara-x.tgz https://github.com/VirusTotal/yara-x/releases/download/v1.23.0/yara-x-v1.23.0-x86_64-unknown-linux-gnu.tar.gz
+          curl --proto '=https' --tlsv1.2 -fL -o /tmp/yara-x.tgz https://github.com/VirusTotal/yara-x/releases/download/v1.23.0/yara-x-v1.23.0-x86_64-unknown-linux-gnu.tar.gz
           sudo tar -xzf /tmp/yara-x.tgz -C /usr/local/bin
           sudo chmod 0755 /usr/local/bin/yr
           yr --version
@@ -81,7 +81,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq autoconf automake libtool pkg-config flex bison
-          curl -fL -o /tmp/yara-src.tar.gz https://github.com/VirusTotal/yara/archive/refs/tags/v4.5.4.tar.gz
+          curl --proto '=https' --tlsv1.2 -fL -o /tmp/yara-src.tar.gz https://github.com/VirusTotal/yara/archive/refs/tags/v4.5.4.tar.gz
           tar -xzf /tmp/yara-src.tar.gz -C /tmp
           cd /tmp/yara-4.5.4
           ./bootstrap.sh
@@ -94,17 +94,17 @@ jobs:
       - name: pytest
         run: pytest
 
-      - name: Compile YARA with yarac
+      - name: Compile Forge YARA with no externals
         run: |
           set -euo pipefail
-          yarac --fail-on-warnings --strict-escape -d filepath= rules/yara/*.yar /tmp/larc-seraph.yac
-          rm -f /tmp/larc-seraph.yac
-
-      - name: Compile YARA with yara-x
-        run: |
-          set -euo pipefail
-          yr compile --define 'filepath=""' rules/yara -o /tmp/larc-seraph.yarc
-          rm -f /tmp/larc-seraph.yarc
+          if grep -R -n -w filepath rules/yara; then
+            echo "Forge rules must not reference filepath" >&2
+            exit 1
+          fi
+          yarac --fail-on-warnings --strict-escape rules/yara/*.yar /tmp/larc-seraph-forge.yac
+          yr compile rules/yara -o /tmp/larc-seraph-forge.yarc
+          yarac --fail-on-warnings --strict-escape -d filepath= rules/path-scoped/*.yar /tmp/larc-seraph-path.yac
+          rm -f /tmp/larc-seraph-forge.yac /tmp/larc-seraph-forge.yarc /tmp/larc-seraph-path.yac
 
       - name: Sigma rule validation
         # d3_fendtag downloads an ontology before checking the tag namespace.
@@ -125,7 +125,7 @@ jobs:
 
           payload = json.loads(Path("validation/fp-results.json").read_text(encoding="utf-8"))
           failed = [note for note in payload["fetch_notes"] if "failed" in note]
-          if failed or payload["files_scanned"] < 1000 or payload["unexpected"]:
+          if failed or payload["files_scanned"] < 1000 or payload["unexpected"] or payload["unexpected_path"]:
               print(json.dumps({
                   "files_scanned": payload["files_scanned"],
                   "failed": failed,

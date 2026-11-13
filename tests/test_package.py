@@ -55,6 +55,8 @@ def test_release_archive_contains_rules_and_licenses(tmp_path: Path):
     assert not any(name.startswith(prefix + "tests/") for name in names)
     assert not any(name.startswith(prefix + "docs/") for name in names)
     yara = [name for name in names if name.startswith(prefix + "rules/yara/") and name.endswith(".yar")]
+    scoped = [name for name in names if name.startswith(prefix + "rules/path-scoped/") and name.endswith(".yar")]
     sigma = [name for name in names if name.startswith(prefix + "rules/sigma/") and name.endswith(".yml")]
     assert len(yara) == 11
+    assert len(scoped) == 9
     assert len(sigma) == 6

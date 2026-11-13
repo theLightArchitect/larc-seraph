@@ -36,7 +36,12 @@ AGENT_MARKERS = [
 
 @pytest.fixture(scope="module")
 def yara_rules():
-    return compile_yara()
+    return compile_yara("path")
+
+
+@pytest.fixture(scope="module")
+def forge_rules():
+    return compile_yara("forge")
 
 
 @pytest.fixture(scope="module")
@@ -51,6 +56,17 @@ def test_pack_has_the_planned_rule_count():
     assert kinds == {"yara", "sigma"}
     assert sum(record.kind == "yara" for record in records) == 11
     assert sum(record.kind == "sigma" for record in records) == 6
+
+
+def test_rule_flavors_match_the_source():
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools" / "build_rule_flavors.py"), "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_metadata_script_passes():
@@ -121,14 +137,30 @@ def test_every_rule_has_labelled_fixtures(yara_rules, sigma_by_name):
             assert "synthetic-benign" in text, path
 
 
+# Payload outside a hook directory. The path-scoped rule stays silent.
+# The Forge rule has no path to consult, so the same bytes match.
+FORGE_BROADER = {
+    "SERAPH_Git_Hook_Suspicious_Exec": {
+        "negative/loose/pre-commit",
+    }
+}
+
+
+def _path_rule_name(record) -> str:
+    if record.path.name.startswith("launchplist_"):
+        return record.name
+    return f"{record.name}_Path"
+
+
 def test_yara_fixtures_match_only_the_documented_rule(yara_rules):
     for record in load_yara_records():
+        expected = _path_rule_name(record)
         positive, negative = fixture_dirs("yara", record.name)
         for path in positive.rglob("*"):
             if not path.is_file():
                 continue
             hits = {match.rule for match in yara_match(yara_rules, path=str(path))}
-            assert hits == {record.name}, (path, hits)
+            assert hits == {expected}, (path, hits)
         for path in negative.rglob("*"):
             if not path.is_file():
                 continue
@@ -136,11 +168,34 @@ def test_yara_fixtures_match_only_the_documented_rule(yara_rules):
             assert hits == set(), (path, hits)
 
 
-def test_yara_known_good_matches_nothing(yara_rules):
+def test_forge_fixtures_match_only_the_documented_rule(forge_rules):
+    names = {record.name for record in load_yara_records()}
+    for record_name in sorted(names):
+        positive, negative = fixture_dirs("yara", record_name)
+        broader = FORGE_BROADER.get(record_name, set())
+        for path in positive.rglob("*"):
+            if not path.is_file():
+                continue
+            hits = {match.rule for match in yara_match(forge_rules, path=str(path), use_filepath=False)}
+            assert hits == {record_name}, (path, hits)
+        for path in negative.rglob("*"):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(negative.parent).as_posix()
+            hits = {match.rule for match in yara_match(forge_rules, path=str(path), use_filepath=False)}
+            if relative in broader:
+                assert hits == {record_name}, (path, hits)
+            else:
+                assert hits == set(), (path, hits)
+
+
+def test_yara_known_good_matches_nothing(yara_rules, forge_rules):
     folder = ROOT / "tests" / "fixtures" / "yara" / "known_good"
     for path in folder.iterdir():
         hits = {match.rule for match in yara_match(yara_rules, path=str(path))}
         assert hits == set(), (path.name, hits)
+        forge_hits = {match.rule for match in yara_match(forge_rules, path=str(path), use_filepath=False)}
+        assert forge_hits == set(), (path.name, forge_hits)
 
 
 def test_sigma_fixtures_match_only_the_documented_rule(sigma_by_name):
@@ -252,7 +307,7 @@ def test_rules_compile_as_one_yara_set():
 def test_filepath_regexes_are_case_insensitive():
     """Raw yara and yr pass the path as stored. A lowercase-only gate misses AGENTS.md."""
     found = []
-    for path in sorted((ROOT / "rules" / "yara").glob("*.yar")):
+    for path in sorted((ROOT / "rules" / "path-scoped").glob("*.yar")):
         for match in re.finditer(r"filepath matches /((?:[^/\\]|\\.)+)/([a-z]*)", path.read_text(encoding="utf-8")):
             found.append((path.name, match.group(0)))
             assert "i" in match.group(2), (path.name, match.group(0))
@@ -269,9 +324,9 @@ def test_instruction_and_hook_paths_keep_their_case(yara_rules):
         "/Users/dev/src/SKILL.md",
         "/Users/dev/src/GEMINI.md",
     ):
-        hits = {match.rule for match in yara_rules.match(data=hidden, externals={"filepath": filepath})}
+        hits = {_canon(match.rule) for match in yara_rules.match(data=hidden, externals={"filepath": filepath})}
         assert "SERAPH_Instruction_Hidden_Unicode" in hits, filepath
-    missed = {match.rule for match in yara_rules.match(data=hidden, externals={"filepath": "/Users/dev/src/README.md"})}
+    missed = {_canon(match.rule) for match in yara_rules.match(data=hidden, externals={"filepath": "/Users/dev/src/README.md"})}
     assert "SERAPH_Instruction_Hidden_Unicode" not in missed
 
     hook = (ROOT / "tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/positive/repo/.git-hooks/pre-commit").read_bytes()
@@ -279,16 +334,16 @@ def test_instruction_and_hook_paths_keep_their_case(yara_rules):
         "/repo/.Git/Hooks/Pre-Commit",
         "/repo/.HUSKY/Pre-Commit",
     ):
-        hits = {match.rule for match in yara_rules.match(data=hook, externals={"filepath": filepath})}
+        hits = {_canon(match.rule) for match in yara_rules.match(data=hook, externals={"filepath": filepath})}
         assert hits == {"SERAPH_Git_Hook_Suspicious_Exec"}, filepath
-    sample = {match.rule for match in yara_rules.match(data=hook, externals={"filepath": "/repo/.Git/Hooks/pre-commit.Sample"})}
+    sample = {_canon(match.rule) for match in yara_rules.match(data=hook, externals={"filepath": "/repo/.Git/Hooks/pre-commit.Sample"})}
     assert sample == set()
 
     backup = (
         ROOT / "tests/fixtures/yara/SERAPH_MCP_Unpinned_Package/positive/claude-backup/.claude.json.backup.1700000000"
     ).read_bytes()
     hits = {
-        match.rule
+        _canon(match.rule)
         for match in yara_rules.match(
             data=backup,
             externals={"filepath": "/Users/dev/.claude/backups/.claude.json.backup.1700000000"},
@@ -296,7 +351,7 @@ def test_instruction_and_hook_paths_keep_their_case(yara_rules):
     }
     assert hits == {"SERAPH_MCP_Unpinned_Package"}
     docs = {
-        match.rule
+        _canon(match.rule)
         for match in yara_rules.match(
             data=backup,
             externals={"filepath": "/Users/dev/docs/config.json.backup.md"},
@@ -305,9 +360,13 @@ def test_instruction_and_hook_paths_keep_their_case(yara_rules):
     assert "SERAPH_MCP_Unpinned_Package" not in docs
 
 
+def _canon(name: str) -> str:
+    return name[:-5] if name.endswith("_Path") else name
+
+
 def _instruction_hits(yara_rules, text: str) -> set[str]:
     return {
-        match.rule
+        _canon(match.rule)
         for match in yara_rules.match(data=text.encode(), externals={"filepath": "/repo/SKILL.md"})
     }
 

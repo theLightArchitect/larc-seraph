@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-YARA-003 · yara · <span class="sev sev-high">high</span></p>
 <h1>MCP config decodes a payload into a shell or eval</h1>
-<p class="deck">An MCP client config pipes a base64 decode into a shell, or pairs a base64 decode call with eval or exec.</p>
+<p class="deck">An MCP client config pipes a base64 decode into a shell, or pairs a base64 decode call with eval or exec. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1027/">T1027</a>, <a href="https://attack.mitre.org/techniques/T1140/">T1140</a>, <a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a></div>
   <div><span>Tactic</span>defense-evasion, execution</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>MCP client configs that contain an mcpServers object. A long token alone is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
+  <div><span>Scope</span>MCP client configs that contain an mcpServers object. A long token alone is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule also requires the first byte to be {. YAML or TOML that does not start with {, and Markdown, do not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A server whose documented command line legitimately shells out through a decode step. Rare in MCP configs. The rule does not flag a bare base64 blob.</li></ul>

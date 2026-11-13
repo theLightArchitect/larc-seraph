@@ -28,6 +28,7 @@ _INCLUDE_FILES = (
 )
 _INCLUDE_DIRS = (
     "rules/yara",
+    "rules/path-scoped",
     "rules/sigma",
     "rules/converted",
 )
@@ -75,10 +76,17 @@ def _archive_name(version: str, suffix: str) -> str:
     return f"larc-seraph-{version}{suffix}"
 
 
+def _member_name(prefix: str, path: Path) -> str:
+    relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
+    if Path(relative).is_absolute() or ".." in Path(relative).parts or "\\" in relative:
+        raise SystemExit(f"refusing archive member {relative}")
+    return f"{prefix}/{relative}"
+
+
 def _write_zip(destination: Path, prefix: str, files: list[Path]) -> None:
     with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
-            info = zipfile.ZipInfo(f"{prefix}/{path.relative_to(ROOT).as_posix()}")
+            info = zipfile.ZipInfo(_member_name(prefix, path))
             info.date_time = FIXED_MTIME
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
@@ -88,7 +96,7 @@ def _write_zip(destination: Path, prefix: str, files: list[Path]) -> None:
 def _write_tar(destination: Path, prefix: str, files: list[Path]) -> None:
     with tarfile.open(destination, "w:gz", format=tarfile.GNU_FORMAT) as archive:
         for path in files:
-            info = archive.gettarinfo(path, arcname=f"{prefix}/{path.relative_to(ROOT).as_posix()}")
+            info = archive.gettarinfo(path, arcname=_member_name(prefix, path))
             info.mtime = FIXED_EPOCH
             info.uid = 0
             info.gid = 0

@@ -10,7 +10,12 @@ One rule per file. YARA rule names stay in the `SERAPH_` series. Stable ids stay
 
 Rules describe suspicious shapes. They are not exploits and not payloads. Fixtures are synthetic and inert. Hosts in fixtures are `example.invalid`. A fixture file contains the label `synthetic-benign`.
 
-YARA rules that care about a path read the external string `filepath`. Pass the path as stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. An empty `filepath` means the scanner did not say where the bytes came from. Instruction rules and the git-hook rule then do not match. MCP rules can still match a file whose first byte is `{`.
+YARA ships as two flavors generated from `rules/src/yara` by `python tools/build_rule_flavors.py`. Edit the source, regenerate, and commit both outputs. `pytest` fails if they drift.
+
+- `rules/yara` is the Forge flavor. Canonical rule names and `SERAPH-YARA-NNN` ids. It must compile with no externals. Do not write `filepath` in that tree.
+- `rules/path-scoped` is the path-scoped flavor. Names end in `_Path`, ids end in `-PATH`, and the rules read `filepath`. The CLI uses this set plus the plist rules.
+
+Pass `filepath` as the path is stored, with forward slashes, and keep the original case. The path regexes are case-insensitive. The Forge flavor cannot see that string. MCP rules there require a leading `{`. Instruction rules there require an in-file marker such as `agent instructions` or `AGENTS.md`. The git-hook rule there skips git's sample banner instead of a `.sample` filename.
 
 Sigma rules use the normalized macOS field contract: `Image`, `CommandLine`, `ParentImage`, `TargetFilename`, `User`. They do not match raw Apple unified logs. Status stays `experimental` until there is fleet evidence. Do not widen a condition to make a failing fixture pass.
 
@@ -70,8 +75,9 @@ pip install -e ".[test]"
 pytest
 python tools/check_rule_metadata.py
 sigma check --fail-on-issues --exclude d3_fendtag rules/sigma
-yarac --fail-on-warnings --strict-escape -d filepath= rules/yara/*.yar /tmp/larc-seraph.yac
-yr compile --define 'filepath=""' rules/yara -o /tmp/larc-seraph.yarc
+yarac --fail-on-warnings --strict-escape rules/yara/*.yar /tmp/larc-forge.yac
+yr compile rules/yara -o /tmp/larc-forge.yarc
+yarac --fail-on-warnings --strict-escape -d filepath= rules/path-scoped/*.yar /tmp/larc-path.yac
 python -m larc_seraph.docsgen --check
 python tools/fp_scan.py
 ```

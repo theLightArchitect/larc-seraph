@@ -16,15 +16,15 @@ rule SERAPH_Git_Hook_Suspicious_Exec
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.3.0"
+        version = "1.4.0"
         severity = "high"
-        description = "A script under .git/hooks or .husky pipes a fetch into a shell, decodes into a shell, or posts a credential path. Sample hooks are excluded."
+        description = "A script under .git/hooks or .husky pipes a fetch into a shell, decodes into a shell, or posts a credential path. Sample hooks are excluded. Content-only rule: it compiles with no externals."
         attack_technique = "T1059.004, T1546"
         attack_tactic = "execution, persistence"
         reference = "https://attack.mitre.org/techniques/T1059/004/"
         reference_2 = "https://attack.mitre.org/techniques/T1546/"
         reference_3 = "https://git-scm.com/docs/githooks"
-        scope = "Paths under .git/hooks/ or .husky/, any case, excluding names that end in .sample. Set filepath to the path as stored. A hook that only runs a test suite is not a match."
+        scope = "A shell or interpreter script that pipes a fetch or a decode into a shell, or posts a credential path. Git's sample banner (To enable this hook, rename this file) does not match. A hook that only runs a test suite does not match."
         false_positives = "A hook that posts a local SSH path to an internal inventory host the operator actually runs. Read the URL. There is no dedicated ATT&CK sub-technique for Git hooks; T1546 is the parent."
         license = "Detection Rule License 1.1"
 
@@ -36,8 +36,9 @@ rule SERAPH_Git_Hook_Suspicious_Exec
         $net = /(curl |wget |nc )/ nocase ascii
         $persist = /(\.ssh\/|authorized_keys|LaunchAgents\/|LaunchDaemons\/)/ ascii
 
+        $sample_banner = /To enable this hook, rename this file/ nocase ascii
+
     condition:
-        not filepath matches /\.sample$/i and
-        (filepath matches /\.git\/hooks\/[^\/]+$/i or filepath matches /\.husky\/[^\/]+$/i) and
+        not $sample_banner and
         $shebang and ( $pipe or $pipe_zsh or $b64 or ( $net and $persist ) )
 }

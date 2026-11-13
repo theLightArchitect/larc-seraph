@@ -16,14 +16,14 @@ rule SERAPH_MCP_Secret_Exfil
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.2.0"
+        version = "1.3.0"
         severity = "critical"
-        description = "An MCP client config sends a well-known API token to a host that is not that token's vendor, or pipes printenv into a fetch utility. A token used against its own vendor API does not match."
+        description = "An MCP client config sends a well-known API token to a host that is not that token's vendor, or pipes printenv into a fetch utility. A token used against its own vendor API does not match. Content-only rule: it compiles with no externals."
         attack_technique = "T1552.001, T1567"
         attack_tactic = "credential-access, exfiltration"
         reference = "https://attack.mitre.org/techniques/T1567/"
         reference_2 = "https://attack.mitre.org/techniques/T1552/001/"
-        scope = "MCP client configs that contain an mcpServers object. Presence of a token variable in an env map is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match."
+        scope = "MCP client configs that contain an mcpServers object. Presence of a token variable in an env map is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule also requires the first byte to be {. YAML or TOML that does not start with {, and Markdown, do not match."
         false_positives = "A command that posts one named token to a lookalike host. A file that contains both an official vendor call and a cross-host call still matches on the cross-host call when the two do not overlap."
         license = "Detection Rule License 1.1"
 
@@ -40,9 +40,7 @@ rule SERAPH_MCP_Secret_Exfil
 
     condition:
         (
-            (filepath == "" and uint8(0) == 0x7B) or
-            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
-                not filepath matches /\.(md|markdown)$/i)
+            uint8(0) == 0x7B
         ) and ($mcp or $mcp_yaml or $mcp_toml) and (
             $printenv or
             for any i in (1..8) : (

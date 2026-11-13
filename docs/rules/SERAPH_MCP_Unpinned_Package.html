@@ -36,14 +36,14 @@
 
 <p class="eyebrow">SERAPH-YARA-016 · yara · <span class="sev sev-medium">medium</span></p>
 <h1>MCP config runs an unpinned npx or uvx package</h1>
-<p class="deck">An MCP client config starts npx or uvx with a package that has no numeric version and is not an allowlisted first-party scope. Remote URLs and explicit @latest tags are SERAPH-YARA-004.</p>
+<p class="deck">An MCP client config starts npx or uvx with a package that has no numeric version and is not an allowlisted first-party scope. Remote URLs and explicit @latest tags are SERAPH-YARA-004. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1195/002/">T1195.002</a></div>
   <div><span>Tactic</span>initial-access</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>JSON, TOML, or YAML MCP configs. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
+  <div><span>Scope</span>JSON, TOML, or YAML MCP configs. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule also requires the first byte to be {. YAML or TOML that does not start with {, and Markdown, do not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A community MCP server installed the way its README shows, with npx -y and no version. The allowlist is short on purpose. Review the package name.</li></ul>

@@ -16,14 +16,14 @@ rule SERAPH_MCP_Launch_From_Temp
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.1.0"
+        version = "1.2.0"
         severity = "high"
-        description = "An MCP client config sets a server command to a temp, cache, or shared-memory path, or points a shell at a script in one of those paths."
+        description = "An MCP client config sets a server command to a temp, cache, or shared-memory path, or points a shell at a script in one of those paths. Content-only rule: it compiles with no externals."
         attack_technique = "T1059.004"
         attack_tactic = "execution"
         reference = "https://attack.mitre.org/techniques/T1059/004/"
         reference_2 = "https://modelcontextprotocol.io/specification/2025-06-18"
-        scope = "MCP client configs that contain an mcpServers object. Pair with a path filter such as mcp.json or claude_desktop_config.json. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match."
+        scope = "MCP client configs that contain an mcpServers object. Pair with a path filter such as mcp.json or claude_desktop_config.json. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule also requires the first byte to be {. YAML or TOML that does not start with {, and Markdown, do not match."
         false_positives = "A short-lived local experiment that intentionally runs a server from /tmp or Library/Caches. A bare /tmp directory grant with no trailing path segment is not matched."
         license = "Detection Rule License 1.1"
 
@@ -41,9 +41,7 @@ rule SERAPH_MCP_Launch_From_Temp
 
     condition:
         (
-            (filepath == "" and uint8(0) == 0x7B) or
-            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
-                not filepath matches /\.(md|markdown)$/i)
+            uint8(0) == 0x7B
         ) and ($mcp or $mcp_yaml or $mcp_toml) and (
             $cmd_tmp or
             $cmd_cache or

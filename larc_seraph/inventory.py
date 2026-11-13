@@ -11,6 +11,8 @@ from sigma.rule import SigmaRule
 
 ROOT = Path(__file__).resolve().parents[1]
 YARA_DIR = ROOT / "rules" / "yara"
+PATH_YARA_DIR = ROOT / "rules" / "path-scoped"
+SRC_YARA_DIR = ROOT / "rules" / "src" / "yara"
 SIGMA_DIR = ROOT / "rules" / "sigma"
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 CONTENT_DIR = ROOT / "docs" / "content"

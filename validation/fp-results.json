@@ -1,8 +1,12 @@
 {
   "files_scanned": 15615,
-  "seconds": 2.533,
+  "seconds": 4.068,
+  "forge_seconds": 1.665,
+  "path_seconds": 2.403,
   "hit_counts": {},
+  "path_hit_counts": {},
   "hits": {},
+  "path_hits": {},
   "fetch_notes": [
     "reuse servers",
     "reuse husky",
@@ -12,5 +16,6 @@
     "reuse gemini-cli",
     "pip download requests pyyaml"
   ],
-  "unexpected": []
+  "unexpected": [],
+  "unexpected_path": []
 }

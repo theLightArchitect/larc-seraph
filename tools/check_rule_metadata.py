@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from larc_seraph.inventory import SIGMA_DIR, YARA_DIR, parse_yara_meta  # noqa: E402
+from larc_seraph.inventory import PATH_YARA_DIR, SIGMA_DIR, YARA_DIR, parse_yara_meta  # noqa: E402
 from larc_seraph.inventory import load_sigma_rules  # noqa: E402
 
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -44,6 +44,49 @@ def _nonempty(meta: dict[str, str], key: str) -> str | None:
     return None
 
 
+def _check_yara_file(path: Path, seen: dict[str, str], *, forge: bool) -> list[str]:
+    problems: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    if forge and "filepath" in text:
+        problems.append(f"{path.name}: Forge rule mentions filepath")
+    if not forge and "filepath" not in text:
+        problems.append(f"{path.name}: path-scoped rule does not read filepath")
+    rules = _RULE.findall(text)
+    if len(rules) != 1:
+        problems.append(f"{path.name}: expected one rule, found {len(rules)}")
+        return problems
+    try:
+        name, meta = parse_yara_meta(text)
+    except ValueError as exc:
+        problems.append(f"{path.name}: {exc}")
+        return problems
+    for key in _YARA_REQUIRED:
+        missing = _nonempty(meta, key)
+        if missing:
+            problems.append(f"{name}: {missing}")
+    if meta.get("date") and not _DATE.match(meta["date"]):
+        problems.append(f"{name}: date is not YYYY-MM-DD")
+    if meta.get("modified") and not _DATE.match(meta["modified"]):
+        problems.append(f"{name}: modified is not YYYY-MM-DD")
+    if meta.get("reference") and not meta["reference"].startswith("https://"):
+        problems.append(f"{name}: reference is not an https URL")
+    technique = meta.get("attack_technique", "")
+    if technique and not _TECHNIQUE.match(technique):
+        problems.append(f"{name}: attack_technique is not ATT&CK technique ids")
+    rule_id = meta.get("id", "")
+    if rule_id:
+        if forge and rule_id.endswith("-PATH"):
+            problems.append(f"{name}: Forge id must stay the canonical SERAPH-YARA id")
+        if not forge and not rule_id.endswith("-PATH"):
+            problems.append(f"{name}: path-scoped id must end in -PATH")
+        if not forge and not name.endswith("_Path"):
+            problems.append(f"{name}: path-scoped rule name must end in _Path")
+        if rule_id in seen:
+            problems.append(f"{name}: duplicate id {rule_id} (also {seen[rule_id]})")
+        seen[rule_id] = name
+    return problems
+
+
 def check_yara() -> list[str]:
     problems: list[str] = []
     seen: dict[str, str] = {}
@@ -51,34 +94,12 @@ def check_yara() -> list[str]:
     if not paths:
         return ["rules/yara has no .yar files"]
     for path in paths:
-        text = path.read_text(encoding="utf-8")
-        rules = _RULE.findall(text)
-        if len(rules) != 1:
-            problems.append(f"{path.name}: expected one rule, found {len(rules)}")
-            continue
-        try:
-            name, meta = parse_yara_meta(text)
-        except ValueError as exc:
-            problems.append(f"{path.name}: {exc}")
-            continue
-        for key in _YARA_REQUIRED:
-            missing = _nonempty(meta, key)
-            if missing:
-                problems.append(f"{name}: {missing}")
-        if meta.get("date") and not _DATE.match(meta["date"]):
-            problems.append(f"{name}: date is not YYYY-MM-DD")
-        if meta.get("modified") and not _DATE.match(meta["modified"]):
-            problems.append(f"{name}: modified is not YYYY-MM-DD")
-        if meta.get("reference") and not meta["reference"].startswith("https://"):
-            problems.append(f"{name}: reference is not an https URL")
-        technique = meta.get("attack_technique", "")
-        if technique and not _TECHNIQUE.match(technique):
-            problems.append(f"{name}: attack_technique is not ATT&CK technique ids")
-        rule_id = meta.get("id", "")
-        if rule_id:
-            if rule_id in seen:
-                problems.append(f"{name}: duplicate id {rule_id} (also {seen[rule_id]})")
-            seen[rule_id] = name
+        problems.extend(_check_yara_file(path, seen, forge=True))
+    twins = sorted(PATH_YARA_DIR.glob("*.yar"))
+    if len(twins) != 9:
+        problems.append(f"rules/path-scoped has {len(twins)} rules, expected 9")
+    for path in twins:
+        problems.extend(_check_yara_file(path, seen, forge=False))
     return problems
 
 

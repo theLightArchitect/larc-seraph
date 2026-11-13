@@ -18,16 +18,33 @@ from larc_seraph.eval import rule_matches
 from larc_seraph.inventory import ROOT, load_sigma_rules
 
 
-def compile_yara() -> yara.Rules:
-    paths = sorted((ROOT / "rules" / "yara").glob("*.yar"))
-    if not paths:
-        raise SystemExit("no YARA rules found")
-    # filepath is empty unless a scanner sets it. Rules that care about scope
-    # treat an empty path as "judge the bytes only where that is safe".
-    return yara.compile(
-        filepaths={path.stem: str(path) for path in paths},
-        externals={"filepath": ""},
+def _yara_paths(flavor: str) -> list[Path]:
+    forge = sorted((ROOT / "rules" / "yara").glob("*.yar"))
+    if flavor == "forge":
+        return forge
+    if flavor != "path":
+        raise ValueError(f"unknown YARA flavor {flavor}")
+    # Path-scoped twins plus the plist rules, which never read a path.
+    paths = sorted((ROOT / "rules" / "path-scoped").glob("*.yar"))
+    paths.extend(
+        path for path in forge if path.name.startswith("launchplist_")
     )
+    return paths
+
+
+def compile_yara(flavor: str = "path") -> yara.Rules:
+    """Compile one flavor.
+
+    ``forge`` is rules/yara and must compile with no externals.
+    ``path`` is the CLI set: path-scoped rules plus the plist rules.
+    """
+    paths = _yara_paths(flavor)
+    if not paths:
+        raise SystemExit(f"no YARA rules found for {flavor}")
+    filepaths = {f"{flavor}-{path.stem}": str(path) for path in paths}
+    if flavor == "forge":
+        return yara.compile(filepaths=filepaths)
+    return yara.compile(filepaths=filepaths, externals={"filepath": ""})
 
 
 # Git will not store a fixture inside a directory named .git. The fixture
@@ -47,18 +64,32 @@ def rule_filepath(path: str) -> str:
     return _GIT_HOOKS_MARKER.sub(lambda match: match.group(0).replace("-", "/"), text)
 
 
-def yara_match(rules: yara.Rules, path: str | None = None, data: bytes | None = None, filepath: str | None = None):
-    """Match one file. filepath is the scope string the rules see."""
+def yara_match(
+    rules: yara.Rules,
+    path: str | None = None,
+    data: bytes | None = None,
+    filepath: str | None = None,
+    *,
+    use_filepath: bool = True,
+):
+    """Match one file.
+
+    Path-scoped rules read ``filepath``. Forge rules compile with no
+    externals, so ``use_filepath`` must be false for that set.
+    """
 
     if filepath is None:
         filepath = "" if path is None else rule_filepath(path)
     else:
         filepath = rule_filepath(filepath)
+    options: dict[str, object] = {}
+    if use_filepath:
+        options["externals"] = {"filepath": filepath}
     if data is not None:
-        return rules.match(data=data, externals={"filepath": filepath})
+        return rules.match(data=data, **options)
     if path is None:
         raise ValueError("path or data is required")
-    return rules.match(path, externals={"filepath": filepath})
+    return rules.match(path, **options)
 
 
 def scan_yara(targets: list[Path]) -> int:

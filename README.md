@@ -72,8 +72,13 @@ How to run the metadata check, `sigma check`, the benign-corpus scan, and the do
 Pass `filepath` as the path is stored. Use forward slashes. Quote the yara-x define so the shell does not eat the quotes.
 
 ```bash
-yara -d filepath=/abs/path rules/yara /abs/path
-yr scan --define 'filepath="/abs/path"' rules/yara /abs/path
+# Forge / no externals
+yara rules/yara /abs/path
+yr scan rules/yara /abs/path
+
+# Path-scoped, when you know the path
+yara -d filepath=/abs/path rules/path-scoped /abs/path
+yr scan --define 'filepath="/abs/path"' rules/path-scoped /abs/path
 ```
 
 ```python
@@ -123,7 +128,7 @@ The scanner prints matches and does not block, quarantine, or send telemetry. It
 
 ## Scanner contract
 
-Rules that care about a path read the external string `filepath`. An empty value means the scanner did not say where the bytes came from. Instruction rules and the git-hook rule then do not match. MCP rules still match a file whose first byte is `{`.
+The CLI compiles `rules/path-scoped` plus the two plist rules and sets `filepath` from the path you passed. `rules/yara` does not read that external. An instruction file whose body never names itself matches the path-scoped rule and not the Forge rule.
 
 Pass the path as it is stored. The regexes are case-insensitive. `AGENTS.md` and `Agents.md` are the same gate. The commands are in [Consume the rules](#consume-the-rules). Use forward slashes in the value.
 
@@ -145,6 +150,7 @@ These are the misses recorded in [validation/evasion-matrix.yml](validation/evas
 - A plist that is not under LaunchAgents or LaunchDaemons.
 - An MCP file that contains both a pinned package and an unpinned one can suppress `SERAPH-YARA-016`, because a numeric version anywhere in the file clears it.
 - osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire. A piped shell whose parent is launchd is left to the plist rules.
+- The Forge flavor misses a YAML or TOML MCP config that does not start with `{`, and a confirmation sentence whose only instruction signal is the file name. The path-scoped rules still catch those. Forge matches a hook payload that is not under `.git/hooks` or `.husky`. The path-scoped rule does not.
 - The benign corpus is a sample of public trees, not every workstation. The Mac scans are summarized in VALIDATION.md.
 
 ## Validation
@@ -158,23 +164,32 @@ yr compile rules/yara -o /tmp/larc.yarc
 
 ## YARA-Forge
 
-Checked against [YARA-Forge](https://github.com/YARAHQ/yara-forge) `qa/rule_qa.py` and the metadata that pipeline normalizes (`description`, `author`, `date`, `modified`, `reference`, `id`). This is not a claim that the pack is in a forge release.
+`rules/yara` is the flavor YARA-Forge can compile. It has no `filepath` external. `yarac --fail-on-warnings` and `yr compile` both run on that directory with no `-d` and no `--define`. CI fails if the word `filepath` shows up there.
 
-What lines up:
+`rules/path-scoped` is the same behavior with the path gate kept. Rule names end in `_Path` and ids end in `-PATH`. The `larc-seraph` CLI compiles those plus the two LaunchAgent plist rules, and it passes `filepath`. Use this set when you know the path:
 
-- The repository is public. Rules are Detection Rule License 1.1, which keeps author attribution on copies.
-- No private rules, and no `elf`, `cuckoo`, or `magic` import.
-- `yarac --fail-on-warnings` and `yr compile` are clean when the `filepath` external is defined. CI runs both.
-- Every YARA rule has the metadata fields above, plus `version` and ATT&CK in `attack_technique` and `attack_tactic`.
+```bash
+yara -d filepath=/abs/path rules/path-scoped /abs/path
+yr scan --define 'filepath="/abs/path"' rules/path-scoped /abs/path
+```
 
-What does not:
+Point Forge, or any scanner that cannot set externals, at `rules/yara` only. Do not compile the two trees together unless you define `filepath`, because the path-scoped rules need it.
 
-- Nine of the eleven YARA rules read the external string `filepath`. Forge compiles with no externals. A rule that does not compile there is a critical failure and is dropped. Those nine rules stay out unless a forge build passes `-d filepath=""`. The two LaunchAgent plist rules do not use an external.
-- This pack does not set a forge `score` or a sample `hash`. Forge computes a score. These rules are not file-hash malware signatures, so there is no sample hash to put in meta.
-- Ids are `SERAPH-YARA-NNN`, not UUIDs. Forge derives a UUIDv5 during normalization.
-- This repository is not listed in `yara-forge-config.yml`. Nothing here is in a forge package until a forge maintainer adds it.
+What the Forge flavor uses instead of the path:
 
-yaraQA's string-performance score is not run in this CI. A clean `yarac --fail-on-warnings` is the compile bar this pack claims.
+- MCP rules match a file whose first byte is `{` and that contains an `mcpServers` object. Markdown, and YAML or TOML that does not start with `{`, do not match.
+- Instruction rules match when the bytes contain an instruction marker (`agent instructions`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `copilot-instructions`, or `.cursor/rules/`) or a JSON object with a `description`.
+- The git-hook rule matches a shebang plus the payload, and it skips a file that contains git's sample banner (`To enable this hook, rename this file`).
+- The two plist rules never used a path. They are only in `rules/yara`.
+
+That is narrower than the path-scoped rules in three places, and wider in one:
+
+- A bare `do not ask for confirmation` in a file named `AGENTS.md` matches the path-scoped rule and does not match Forge. The evasion case `bare_sentence_without_instruction_marker` is that gap.
+- A YAML or TOML MCP config whose first byte is not `{` matches the path-scoped rule when the path ends in `.yml`, `.yaml`, or `.toml`, and does not match Forge.
+- A hook payload in a file whose name ends in `.sample` is skipped by the path-scoped rule. Forge skips it only when the body contains the sample banner.
+- A hook payload that is not under `.git/hooks` or `.husky` is silent for the path-scoped rule and matches Forge. `tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/negative/loose/pre-commit` is that case.
+
+Checked against [YARA-Forge](https://github.com/YARAHQ/yara-forge) `qa/rule_qa.py`: the metadata it normalizes is present (`description`, `author`, `date`, `modified`, `reference`, `id`), plus `version` and ATT&CK in `attack_technique` and `attack_tactic`. No private rules, and no `elf`, `cuckoo`, or `magic` import. This pack does not set a forge `score` or a sample `hash`. Ids are `SERAPH-YARA-NNN`, not UUIDs. The repository is not in `yara-forge-config.yml` until a forge maintainer adds it. yaraQA's string-performance score is not run here.
 
 ## CI and releases
 
