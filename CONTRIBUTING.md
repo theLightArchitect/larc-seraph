@@ -110,7 +110,15 @@ Signed-off-by: Your Name <you@example.com>
 
 That line certifies you can submit the change under the project licenses: Apache-2.0 for code, tests, the scanner, and docs, and the Detection Rule License 1.1 for `rules/`. There is no separate CLA.
 
-CI checks `Signed-off-by` on pull request commits. Merge commits are skipped. Do not rewrite published history to add a trailer. A sign-off certifies that a person has the right to submit the change. A coding agent may write a commit, and the sign-off on it has to be the maintainer's or the contributor's own name.
+CI checks `Signed-off-by` on pull request commits with `tools/check_dco.sh`. Merge commits are skipped. A sign-off certifies that a person has the right to submit the change, so a commit whose only sign-off is a coding agent's address fails. A coding agent may write a commit. The sign-off on it has to be the maintainer's or the contributor's own name.
+
+Do not rewrite published history to add a trailer. Push a remediation commit instead, signed off by you, with one line per commit in the format the [DCO app](https://github.com/dcoapp/app) reads:
+
+```text
+On behalf of Cursor Agent <cursoragent@cursor.com>, I, Your Name <you@example.com>, hereby add my Signed-off-by to this commit: <full sha>
+```
+
+Use `I, Your Name <you@example.com>, hereby add my Signed-off-by to this commit: <full sha>` for your own commit. `.github/dco.yml` turns both forms on for that app, and `tools/check_dco.sh` accepts them.
 
 CI also runs gitleaks on the git history. `.gitleaks.toml` keeps the default rules and ignores one false positive: a `SERAPH-SIGMA-NNN` or `SERAPH-YARA-NNN` id. Do not add a real credential to that allowlist.
 
