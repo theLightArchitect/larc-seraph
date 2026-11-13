@@ -67,7 +67,7 @@ cases:
   - rule: SERAPH_MCP_Remote_Npx
     name: url_split_from_npx_by_distance
     expect: miss
-    note: The remote specifier has to sit within 220 bytes of npx, uvx, or npm exec.
+    note: The remote specifier has to sit within 160 bytes of npx, uvx, or npm exec.
     body: |
       {"mcpServers":{"demo":{"command":"npx","args":["-y","pad"]}},"pad":"................................................................................................................................................................................................................................ github:example/seraph-inert"}
 

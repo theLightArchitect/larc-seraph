@@ -94,16 +94,21 @@ Telemetry normalizers for eslogger JSON, Elastic Common Schema, and osquery rows
 
 ## Known limitations
 
-These are the gaps that are still open after the v0.1.4 wording fix. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
+These are the misses recorded in [validation/evasion-matrix.yml](validation/evasion-matrix.yml). The methodology and the numbers are in [VALIDATION.md](VALIDATION.md). A numeric version pin is a non-match on purpose, and so is a backticked status-bar label.
 
-- A zero-width mark between every letter of a confirmation-bypass sentence. One mark inside the phrase is caught.
+- A fetch or `base64` whose name is split (`ba''se64`) or stored in a variable, so the file never contains the word.
+- A package name that is not one JSON string, and a remote specifier more than 160 bytes after `npx`, `uvx`, or `npm exec`.
+- A bare `/tmp` grant with no further path segment.
+- A secret variable that is not on the short name list.
+- A zero-width mark between every letter of a confirmation-bypass sentence. A mark between the words is caught. U+200B with no other hidden-text signal is not.
 - Homoglyphs other than Cyrillic `o` in that same sentence.
-- A fetch or `base64` whose name is split or stored in a variable, so the file never contains the word.
-- `KeepAlive` set to the integer 1, and an SSH `-R` glued to its value with no space.
-- Shell startup files the path list does not name, such as Fish. A project file that still ends in `.zshrc` does match.
+- `KeepAlive` set to the integer 1, and an SSH `-R` glued to its value with no space. A host-key option that lives only in `~/.ssh/config` is not in the plist.
+- A git hook with no shebang.
+- Shell startup files the path list does not name, such as Fish `config.fish`. `authorized_keys.bak` is not in the path list. A project file that still ends in `.zshrc` does match.
+- A plist that is not under LaunchAgents or LaunchDaemons.
 - An MCP file that contains both a pinned package and an unpinned one can suppress `SERAPH-YARA-016`, because a numeric version anywhere in the file clears it.
-- osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire.
-- The benign corpus is a sample of public trees, not every workstation. The v0.1.1 Linux scan of that sample had no hits. The Mac scan that motivated this version is summarized in VALIDATION.md.
+- osquery rows that only have a parent pid. The normalizer leaves `ParentImage` empty, and parent rules do not fire. A piped shell whose parent is launchd is left to the plist rules.
+- The benign corpus is a sample of public trees, not every workstation. The Mac scans are summarized in VALIDATION.md.
 
 ## Validation
 

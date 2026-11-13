@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.5 — 2026-11-13
+
+Pre-publish hygiene. No detection logic changed.
+
+- `.gitignore` now covers compiled YARA output (`*.yac`, `*.yarc`) and logs. The benign-corpus cache and `uploads/` were already ignored.
+- The adjacency fixture no longer names a live vendor host. Official-host negatives still use `api.github.com` and `api.openai.com`, because that is the exception under test, with a fake `$GITHUB_TOKEN` or `$OPENAI_API_KEY`.
+- The evasion-matrix note for a far remote specifier now says 160 bytes, matching the rule. The README lists the matrix misses.
+
+The repository stays private. This changelog entry is not a public release.
+
 ## v0.1.4 — 2026-11-13
 
 A rescan of 72,025 files produced 16 hits: 3 expected, 11 true positives, and 2 false positives. Two adversarial cases did not fire.

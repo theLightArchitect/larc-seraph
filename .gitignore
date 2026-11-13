@@ -11,4 +11,6 @@ htmlcov/
 uploads/
 .DS_Store
 validation/cache/
-.cache-yara-x.yarc
+*.log
+*.yac
+*.yarc

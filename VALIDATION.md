@@ -1,6 +1,6 @@
 # Validation
 
-larc-seraph v0.1.4. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
+larc-seraph v0.1.5. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
 
 This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
 
@@ -85,7 +85,7 @@ Not caught, on purpose or because the fix would be a different detector:
 | Fetch tool named only by a variable | The bytes never contain `curl` or `wget`. |
 | `base64` split as `ba''se64` | The literal is broken. |
 | Package name built by concatenation | There is no single JSON string to judge. |
-| Remote URL more than 160 bytes after `npx`, or an unquoted `https://` used only as a Markdown link | Tightened so READMEs that link the word npx do not match. |
+| Remote URL more than 160 bytes after `npx`, or an unquoted `https://` used only as a Markdown link | Tightened so READMEs that link the word npx do not match. The rule's window is 160 bytes. |
 | Bare `/tmp` with no further path segment | A directory grant, not a launched binary. |
 | Custom secret variable name | The name list is finite. |
 | Zero-width mark between every letter | One mark is tolerated. A mark per letter is not. |
