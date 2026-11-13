@@ -36,26 +36,26 @@
 
 <p class="eyebrow">SERAPH-YARA-007 · yara · <span class="sev sev-high">high</span></p>
 <h1>Agent instructions request secret theft or skipped confirmation</h1>
-<p class="deck">An instruction file tells an agent to skip confirmation, or places a credential path near a network sink. CLI flag help and non-instruction paths do not match.</p>
+<p class="deck">An instruction file tells the agent to skip confirmation, or sends a credential to a host that is not that credential&#x27;s vendor. Flag tables, env-var rows, official vendor API examples, a bypass scoped only to a low-risk call, and pairs split across fenced blocks do not match.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1567/">T1567</a>, <a href="https://attack.mitre.org/techniques/T1562/001/">T1562.001</a></div>
   <div><span>Tactic</span>exfiltration, defense-evasion</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs, any case. Set filepath to the path as stored. Flag-help lines that mention --yes or -y do not match.</div>
+  <div><span>Scope</span>AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON tool descriptions, any case. Set filepath to the path as stored. A bypass must be an instruction, not a flag, env var, or Markdown table row. A token sent to its own vendor host does not match.</div>
 </div>
 <h2>False positives</h2>
-<ul><li>A team policy in a real instruction file that wants agents to skip confirmation. Homoglyphs other than Cyrillic o still pass.</li></ul>
+<ul><li>A real policy that tells the agent not to ask before a shell command, a delete, a secret, or a network send. Homoglyphs other than Cyrillic o still pass. More than eight phrase hits in one file are not all judged.</li></ul>
 <h2>References</h2>
 <ul><li><a href="https://attack.mitre.org/techniques/T1567/">https://attack.mitre.org/techniques/T1567/</a></li><li><a href="https://attack.mitre.org/techniques/T1562/001/">https://attack.mitre.org/techniques/T1562/001/</a></li><li><a href="https://atlas.mitre.org/techniques/AML.T0051">https://atlas.mitre.org/techniques/AML.T0051</a></li></ul>
 <article class="prose">
 <h2 id="threat">Threat</h2>
 <p>Instruction files are policy. Two policies are worth a look without any further context: a demand that the agent stop asking the operator, and a demand that a credential path or a well-known token name be sent to a network sink. A third shape pairs a sentence that tells the model to discard earlier directions with a sink or a token name. On its own, that sentence is a cliché. Next to a sink, it is a lead.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The file has to look like instructions first: a Markdown heading at the start, or a line that begins &quot;You are a&quot; or &quot;You are an&quot;. That keeps shell scripts and JSON configs out of the rule. Inside that scope, the rule matches a short list of confirmation-bypass phrases, or a credential path and a fetch utility within 400 characters, or the override sentence within 400 characters of a sink or a token name. A policy that says to ask first, including one that mentions a token name and tells the reader not to merge without a check, is a negative. So is the same pair of ideas placed far apart.</p>
+<p>The scanner passes <code>filepath</code>. The rule only then looks at instruction names and at JSON tool descriptions. A confirmation phrase has to be an instruction: a Markdown table row, a <code>--flag</code> on the same line, or an <code>ENV_VAR</code> token on the same line does not count. <code>auto-approve all tools</code> also needs an imperative cue such as &quot;you must&quot;. A bypass that only covers a low-risk call such as <code>rename_chat</code> does not count. An unconstrained &quot;do not ask for confirmation&quot;, or the same sentence next to a shell command, a delete, or a secret, still does. A credential and a network sink have to share a command line or one fenced block. A token sent to its own vendor host, and the word webhookSecret, do not count. A credential file or a token sent to a different host still does.</p>
 <h2 id="limitations">Limitations</h2>
-<p>Natural language is easy to rephrase, and this rule will miss a rewrite. A team that truly wants agents to skip confirmation, and writes that policy with the same phrases, will match. T1562.001 is an approximate mapping for &quot;stop asking&quot;; the enterprise technique is about impairing security tools. Read the sentence before you call it malice. Heading-less instruction files that also avoid the &quot;You are&quot; opening are a gap. Point the scanner at the known filenames anyway.</p>
+<p>Natural language is easy to rephrase, and this rule will miss a rewrite. A team that truly wants agents to skip confirmation before a shell command, and writes that policy with the same phrases, will match. T1562.001 is an approximate mapping for &quot;stop asking&quot;. A fenced block that uses tildes instead of backticks is not treated as one block. Only the first handful of phrase hits in a file are judged.</p>
 <h2 id="triage">Triage</h2>
 <p>Read the sentence in context. A team policy that really wants fewer prompts will say so in the open. A line that also names a credential path or a sink is the case to escalate.</p>
 </article>

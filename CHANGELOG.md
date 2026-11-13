@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.3 — 2026-11-13
+
+A rescan of 72,541 files confirmed the case-insensitive paths and the Claude backup names. Every checked true positive fired, including a live `~/.claude.json` and its backups. Uppercase `SKILL.md` files then produced 23 false positives, all from confirmation-bypass and secret-exfil wording.
+
+- Flag tables, env-var rows, and `--flag` help no longer match Unsafe Directive. A bypass has to be an instruction. `auto-approve` needs an imperative cue. A bypass scoped only to a low-risk call such as `rename_chat` does not match. An unconstrained bypass, or one tied to a shell command, a delete, or a secret, still does.
+- A credential and a network sink have to share a command line or one fenced block. A token sent to its own vendor host does not match, and `webhookSecret` is not a sink. A token or a key file sent to a different host still does.
+- The MCP secret rule uses the same vendor-host exception. `printenv` piped to a fetch still matches.
+
+The repository stays private. This changelog entry is not a public release.
+
 ## v0.1.2 — 2026-11-13
 
 A rescan of the same Mac found no false positives, and it found a miss. Instruction paths were compared case-sensitively, so `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, and `GEMINI.md` never entered the gate.

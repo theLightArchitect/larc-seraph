@@ -1,6 +1,6 @@
 # Validation
 
-larc-seraph v0.1.2. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
+larc-seraph v0.1.3. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
 
 This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
 
@@ -54,6 +54,8 @@ A scan of 70,470 files on a Mac, with `yr` and libyara agreeing on every hit, pr
 Regression fixtures for each unwanted class live next to the rules' other fixtures. The true positives that must keep firing were re-checked: an SSH reverse-tunnel LaunchAgent with host-key checking disabled, a LaunchAgent that runs `/bin/bash` on a user script with RunAtLoad and KeepAlive, unpinned `npx -y` inside a real MCP JSON config, and a plugin-shipped `@latest` MCP package.
 
 A later scan of that same Mac, after v0.1.1, reported 0 false positives. It also showed a miss. The instruction gates compared paths case-sensitively, so real `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, and `GEMINI.md` files never entered the rule. v0.1.2 makes every `filepath` regex case-insensitive and adds uppercase and mixed-case fixtures. The same scan shape missed Claude backup configs: `~/.claude/backups/.claude.json.backup.<timestamp>` holding an unpinned `npx -y` package. That name now matches. Markdown docs still do not.
+
+A v0.1.2 rescan of 72,541 files confirmed those two fixes. The true positives fired, including a live `~/.claude.json` and its backups. With real `SKILL.md` names now in scope, 23 benign hits remained. Seven were flag, env, or table wording. Fourteen were official API or SDK pages, including a fenced `curl` to `api.github.com` with that vendor's token and pages that mention a token beside `webhookSecret`. One put an SSH key example in one block and a vendor `curl` in another. One told the agent not to ask before a low-risk rename call. v0.1.3 drops those shapes and keeps an imperative bypass of a shell, delete, or secret, and a credential sent to a different host inside one fenced block.
 
 ## Scanner contract
 

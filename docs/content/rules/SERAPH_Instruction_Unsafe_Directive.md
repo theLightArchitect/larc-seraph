@@ -6,11 +6,11 @@ Instruction files are policy. Two policies are worth a look without any further 
 
 ## Why this rule
 
-The file has to look like instructions first: a Markdown heading at the start, or a line that begins "You are a" or "You are an". That keeps shell scripts and JSON configs out of the rule. Inside that scope, the rule matches a short list of confirmation-bypass phrases, or a credential path and a fetch utility within 400 characters, or the override sentence within 400 characters of a sink or a token name. A policy that says to ask first, including one that mentions a token name and tells the reader not to merge without a check, is a negative. So is the same pair of ideas placed far apart.
+The scanner passes `filepath`. The rule only then looks at instruction names and at JSON tool descriptions. A confirmation phrase has to be an instruction: a Markdown table row, a `--flag` on the same line, or an `ENV_VAR` token on the same line does not count. `auto-approve all tools` also needs an imperative cue such as "you must". A bypass that only covers a low-risk call such as `rename_chat` does not count. An unconstrained "do not ask for confirmation", or the same sentence next to a shell command, a delete, or a secret, still does. A credential and a network sink have to share a command line or one fenced block. A token sent to its own vendor host, and the word webhookSecret, do not count. A credential file or a token sent to a different host still does.
 
 ## Limitations
 
-Natural language is easy to rephrase, and this rule will miss a rewrite. A team that truly wants agents to skip confirmation, and writes that policy with the same phrases, will match. T1562.001 is an approximate mapping for "stop asking"; the enterprise technique is about impairing security tools. Read the sentence before you call it malice. Heading-less instruction files that also avoid the "You are" opening are a gap. Point the scanner at the known filenames anyway.
+Natural language is easy to rephrase, and this rule will miss a rewrite. A team that truly wants agents to skip confirmation before a shell command, and writes that policy with the same phrases, will match. T1562.001 is an approximate mapping for "stop asking". A fenced block that uses tildes instead of backticks is not treated as one block. Only the first handful of phrase hits in a file are judged.
 
 ## Triage
 
