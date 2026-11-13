@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -29,15 +30,21 @@ def compile_yara() -> yara.Rules:
     )
 
 
+# Git will not store a fixture inside a directory named .git. The fixture
+# tree uses .git-hooks, and this rewrite presents it as .git/hooks while
+# keeping the case of that marker (.GIT-HOOKS becomes .GIT/HOOKS).
+_GIT_HOOKS_MARKER = re.compile(r"\.git-hooks(?=/)", re.IGNORECASE)
+
+
 def rule_filepath(path: str) -> str:
     """Normalize a path for rule scope.
 
-    Git will not store a fixture inside a directory named .git, so the
-    fixture tree uses .git-hooks and this function presents it to the
-    rules as .git/hooks. Real hook paths are unchanged.
+    Backslashes become forward slashes. Case is preserved: the rules'
+    filepath regexes are case-insensitive, and a scanner that lowercases
+    the path hides bugs in those regexes.
     """
-    text = path.replace("\\", "/").lower()
-    return text.replace("/.git-hooks/", "/.git/hooks/")
+    text = path.replace("\\", "/")
+    return _GIT_HOOKS_MARKER.sub(lambda match: match.group(0).replace("-", "/"), text)
 
 
 def yara_match(rules: yara.Rules, path: str | None = None, data: bytes | None = None, filepath: str | None = None):

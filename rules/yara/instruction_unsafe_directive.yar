@@ -20,7 +20,7 @@ rule SERAPH_Instruction_Unsafe_Directive
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.2.0"
+        version = "1.3.0"
         severity = "high"
         description = "An instruction file tells an agent to skip confirmation, or places a credential path near a network sink. CLI flag help and non-instruction paths do not match."
         attack_technique = "T1567, T1562.001"
@@ -28,7 +28,7 @@ rule SERAPH_Instruction_Unsafe_Directive
         reference = "https://attack.mitre.org/techniques/T1567/"
         reference_2 = "https://attack.mitre.org/techniques/T1562/001/"
         reference_3 = "https://atlas.mitre.org/techniques/AML.T0051"
-        scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs. Set filepath. Flag-help lines that mention --yes or -y do not match."
+        scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs, any case. Set filepath to the path as stored. Flag-help lines that mention --yes or -y do not match."
         false_positives = "A team policy in a real instruction file that wants agents to skip confirmation. Homoglyphs other than Cyrillic o still pass."
         license = "Detection Rule License 1.1"
 
@@ -66,8 +66,8 @@ rule SERAPH_Instruction_Unsafe_Directive
         not (uint16(0) == 0x8b1f) and
         not for any i in (0..math.min(1023, filesize - 1)) : (uint8(i) == 0) and
         (
-            filepath matches /(\/(agents|claude|gemini)\.md$)|(\/\.cursorrules$)|(\/skill\.md$)|(\/copilot-instructions\.md$)|(\/\.cursor\/rules\/)/ or
-            (filepath matches /\.(json|jsonc)$/ and $desc)
+            filepath matches /(\/(agents|claude|gemini)\.md$)|(\/\.cursorrules$)|(\/skill\.md$)|(\/copilot-instructions\.md$)|(\/\.cursor\/rules\/)/i or
+            (filepath matches /\.(json|jsonc)$/i and $desc)
         ) and
         any of ($bypass*, $pair_*, $inject_*, $homo)
 }

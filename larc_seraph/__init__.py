@@ -5,5 +5,5 @@ Detection Rule License 1.1. Rule IDs stay in the SERAPH-YARA / SERAPH-SIGMA
 series. See README for the split.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "Kevin Francis Tan"

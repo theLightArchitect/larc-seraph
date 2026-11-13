@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a></div>
   <div><span>Tactic</span>execution</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>MCP client configs that contain an mcpServers object. Pair with a path filter such as mcp.json or claude_desktop_config.json.</div>
+  <div><span>Scope</span>MCP client configs that contain an mcpServers object. Pair with a path filter such as mcp.json or claude_desktop_config.json. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A short-lived local experiment that intentionally runs a server from /tmp or Library/Caches. A bare /tmp directory grant with no trailing path segment is not matched.</li></ul>

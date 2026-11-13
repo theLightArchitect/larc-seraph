@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -163,6 +164,15 @@ def test_non_unicode_fixtures_are_ascii():
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/bin/AGENTS.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tool/mcp.json",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/vendor/CHANGELOG.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/case/SKILL.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/case/GEMINI.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Agents.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Claude.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Skill.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/mixed/Gemini.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/README.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Notes.md",
+        ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/negative/case/Readme.MD",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/homo/GEMINI.md",
         ROOT / "tests/fixtures/yara/SERAPH_Instruction_Unsafe_Directive/positive/zw/CLAUDE.md",
     }
@@ -214,3 +224,59 @@ def test_sigma_check_passes():
 def test_rules_compile_as_one_yara_set():
     compiled = compile_yara()
     assert isinstance(compiled, yara.Rules)
+
+
+def test_filepath_regexes_are_case_insensitive():
+    """Raw yara and yr pass the path as stored. A lowercase-only gate misses AGENTS.md."""
+    found = []
+    for path in sorted((ROOT / "rules" / "yara").glob("*.yar")):
+        for match in re.finditer(r"filepath matches /((?:[^/\\]|\\.)+)/([a-z]*)", path.read_text(encoding="utf-8")):
+            found.append((path.name, match.group(0)))
+            assert "i" in match.group(2), (path.name, match.group(0))
+    assert len(found) >= 15
+
+
+def test_instruction_and_hook_paths_keep_their_case(yara_rules):
+    hidden = (ROOT / "tests/fixtures/yara/SERAPH_Instruction_Hidden_Unicode/positive/tags/AGENTS.md").read_bytes()
+    for filepath in (
+        "/Users/dev/src/AGENTS.md",
+        "/Users/dev/src/Agents.md",
+        "/Users/dev/src/agents.MD",
+        "/Users/dev/src/CLAUDE.md",
+        "/Users/dev/src/SKILL.md",
+        "/Users/dev/src/GEMINI.md",
+    ):
+        hits = {match.rule for match in yara_rules.match(data=hidden, externals={"filepath": filepath})}
+        assert "SERAPH_Instruction_Hidden_Unicode" in hits, filepath
+    missed = {match.rule for match in yara_rules.match(data=hidden, externals={"filepath": "/Users/dev/src/README.md"})}
+    assert "SERAPH_Instruction_Hidden_Unicode" not in missed
+
+    hook = (ROOT / "tests/fixtures/yara/SERAPH_Git_Hook_Suspicious_Exec/positive/repo/.git-hooks/pre-commit").read_bytes()
+    for filepath in (
+        "/repo/.Git/Hooks/Pre-Commit",
+        "/repo/.HUSKY/Pre-Commit",
+    ):
+        hits = {match.rule for match in yara_rules.match(data=hook, externals={"filepath": filepath})}
+        assert hits == {"SERAPH_Git_Hook_Suspicious_Exec"}, filepath
+    sample = {match.rule for match in yara_rules.match(data=hook, externals={"filepath": "/repo/.Git/Hooks/pre-commit.Sample"})}
+    assert sample == set()
+
+    backup = (
+        ROOT / "tests/fixtures/yara/SERAPH_MCP_Unpinned_Package/positive/claude-backup/.claude.json.backup.1700000000"
+    ).read_bytes()
+    hits = {
+        match.rule
+        for match in yara_rules.match(
+            data=backup,
+            externals={"filepath": "/Users/dev/.claude/backups/.claude.json.backup.1700000000"},
+        )
+    }
+    assert hits == {"SERAPH_MCP_Unpinned_Package"}
+    docs = {
+        match.rule
+        for match in yara_rules.match(
+            data=backup,
+            externals={"filepath": "/Users/dev/docs/config.json.backup.md"},
+        )
+    }
+    assert "SERAPH_MCP_Unpinned_Package" not in docs

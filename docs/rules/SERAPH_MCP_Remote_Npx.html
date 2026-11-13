@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1195/002/">T1195.002</a></div>
   <div><span>Tactic</span>initial-access</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>MCP client configs that contain an mcpServers object.</div>
+  <div><span>Scope</span>MCP client configs that contain an mcpServers object. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>An intentional @latest pin during a review, and any registry package whose name happens to sit within 180 characters of a URL in the same server entry. The stock npx -y scoped package with no tag is not a match.</li></ul>

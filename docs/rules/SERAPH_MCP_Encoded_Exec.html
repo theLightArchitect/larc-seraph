@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1027/">T1027</a>, <a href="https://attack.mitre.org/techniques/T1140/">T1140</a>, <a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a></div>
   <div><span>Tactic</span>defense-evasion, execution</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>MCP client configs that contain an mcpServers object. A long token alone is not enough.</div>
+  <div><span>Scope</span>MCP client configs that contain an mcpServers object. A long token alone is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A server whose documented command line legitimately shells out through a decode step. Rare in MCP configs. The rule does not flag a bare base64 blob.</li></ul>

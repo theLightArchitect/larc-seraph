@@ -21,7 +21,7 @@ rule SERAPH_Instruction_Hidden_Unicode
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.2.0"
+        version = "1.3.0"
         severity = "high"
         description = "An instruction file contains Unicode tag characters or a bidi override. Subdivision-flag emoji (U+1F3F4 plus tags plus U+E007F) are ignored. Binaries are ignored."
         attack_technique = "T1027"
@@ -30,7 +30,7 @@ rule SERAPH_Instruction_Hidden_Unicode
         reference_2 = "https://www.unicode.org/charts/PDF/UE0000.pdf"
         reference_3 = "https://www.usenix.org/conference/usenixsecurity22/presentation/boucher"
         reference_4 = "https://atlas.mitre.org/techniques/AML.T0051"
-        scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs. Set filepath to the file path. Binaries and subdivision flags are skipped."
+        scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON MCP configs, any case. Set filepath to the path as stored. Binaries and subdivision flags are skipped."
         false_positives = "An instruction file that embeds the raw controls on purpose. larc-seraph docs name the code points and do not embed them."
         license = "Detection Rule License 1.1"
 
@@ -53,8 +53,8 @@ rule SERAPH_Instruction_Hidden_Unicode
         not (uint16(0) == 0x8b1f) and
         not for any i in (0..math.min(1023, filesize - 1)) : (uint8(i) == 0) and
         (
-            filepath matches /(\/(agents|claude|gemini)\.md$)|(\/\.cursorrules$)|(\/skill\.md$)|(\/copilot-instructions\.md$)|(\/\.cursor\/rules\/)/ or
-            (filepath matches /\.(json|jsonc)$/ and $desc)
+            filepath matches /(\/(agents|claude|gemini)\.md$)|(\/\.cursorrules$)|(\/skill\.md$)|(\/copilot-instructions\.md$)|(\/\.cursor\/rules\/)/i or
+            (filepath matches /\.(json|jsonc)$/i and $desc)
         ) and
         (
             any of ($lre, $rle, $lro, $rlo) or

@@ -1,6 +1,6 @@
 # Validation
 
-larc-seraph v0.1.0. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
+larc-seraph v0.1.2. Author: Kevin Francis Tan / Light Architects. Date: 2026-11-13.
 
 This file is the methodology and the results. A green test run proves the fixtures, the conversions, and this corpus. It does not prove a false-positive rate on a fleet we have not seen.
 
@@ -52,6 +52,23 @@ A scan of 70,470 files on a Mac, with `yr` and libyara agreeing on every hit, pr
 | Tests and editor file-history copies of the pack's own fixtures | 12 | Expected. Those files are the synthetic true positives. No rule change. |
 
 Regression fixtures for each unwanted class live next to the rules' other fixtures. The true positives that must keep firing were re-checked: an SSH reverse-tunnel LaunchAgent with host-key checking disabled, a LaunchAgent that runs `/bin/bash` on a user script with RunAtLoad and KeepAlive, unpinned `npx -y` inside a real MCP JSON config, and a plugin-shipped `@latest` MCP package.
+
+A later scan of that same Mac, after v0.1.1, reported 0 false positives. It also showed a miss. The instruction gates compared paths case-sensitively, so real `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, and `GEMINI.md` files never entered the rule. v0.1.2 makes every `filepath` regex case-insensitive and adds uppercase and mixed-case fixtures. The same scan shape missed Claude backup configs: `~/.claude/backups/.claude.json.backup.<timestamp>` holding an unpinned `npx -y` package. That name now matches. Markdown docs still do not.
+
+## Scanner contract
+
+Every rule that looks at a path reads the external string `filepath`. Pass the path as it is stored, with forward slashes. Do not lowercase it. The `larc-seraph` CLI sets this from the path you give it.
+
+```bash
+yara -d filepath=/abs/path rules/yara /abs/path
+yr scan --define 'filepath="/abs/path"' rules/yara /abs/path
+```
+
+```python
+rules.match(path, externals={"filepath": path})
+```
+
+Quote the YARA-X `--define` value. An empty `filepath` means the instruction rules and the git-hook rule do not match. MCP rules still match a file that starts with `{`.
 
 ## Evasion
 

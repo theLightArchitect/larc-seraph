@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a>, <a href="https://attack.mitre.org/techniques/T1105/">T1105</a></div>
   <div><span>Tactic</span>execution, command-and-control</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>MCP client configs that contain an mcpServers object.</div>
+  <div><span>Scope</span>MCP client configs that contain an mcpServers object. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A config that quotes this anti-pattern in a long description field on the same line as a fetch. Review the command and args before deleting a server entry.</li></ul>

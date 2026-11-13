@@ -71,13 +71,30 @@ larc-seraph path/to/mcp.json
 larc-seraph --sigma tests/fixtures/sigma/known_good/agent_pytest.json
 ```
 
-The scanner prints matches and does not block, quarantine, or send telemetry.
+The scanner prints matches and does not block, quarantine, or send telemetry. It sets the `filepath` external to the path you passed, with backslashes turned into forward slashes and the original case kept.
+
+## Scanner contract
+
+Rules that care about a path read the external string `filepath`. An empty value means the scanner did not say where the bytes came from. Instruction rules and the git-hook rule then do not match. MCP rules still match a file whose first byte is `{`.
+
+Pass the path as it is stored. The regexes are case-insensitive. `AGENTS.md` and `Agents.md` are the same gate.
+
+```bash
+yara -d filepath=/abs/path rules/yara /abs/path
+yr scan --define 'filepath="/abs/path"' rules/yara /abs/path
+```
+
+```python
+rules.match(path, externals={"filepath": path})
+```
+
+`larc-seraph path/to/AGENTS.md` does this itself. Use forward slashes in the value. Quote the YARA-X define so the shell does not eat the quotes around the path.
 
 Telemetry normalizers for eslogger JSON, Elastic Common Schema, and osquery rows live in `larc_seraph/translate.py`. pySigma pipelines in `pipelines/` emit Lucene and Splunk queries with those field names. Converted queries are in `rules/converted/`.
 
 ## Known limitations
 
-These are the gaps that are still open after the v0.1.1 scope tuning. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
+These are the gaps that are still open after the v0.1.2 path fix. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
 
 - A zero-width mark between every letter of a confirmation-bypass sentence. One mark inside the phrase is caught.
 - Homoglyphs other than Cyrillic `o` in that same sentence.

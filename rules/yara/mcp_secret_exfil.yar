@@ -16,14 +16,14 @@ rule SERAPH_MCP_Secret_Exfil
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.0.0"
+        version = "1.1.0"
         severity = "critical"
         description = "An MCP client config interpolates a well-known API token variable into a URL or a curl or wget invocation, or pipes printenv into a fetch utility."
         attack_technique = "T1552.001, T1567"
         attack_tactic = "credential-access, exfiltration"
         reference = "https://attack.mitre.org/techniques/T1567/"
         reference_2 = "https://attack.mitre.org/techniques/T1552/001/"
-        scope = "MCP client configs that contain an mcpServers object. Presence of a token variable in an env map is not enough."
+        scope = "MCP client configs that contain an mcpServers object. Presence of a token variable in an env map is not enough. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match."
         false_positives = "A local proxy command that forwards one named token to its own vendor host. Read the destination host before treating the match as theft."
         license = "Detection Rule License 1.1"
 
@@ -39,6 +39,7 @@ rule SERAPH_MCP_Secret_Exfil
     condition:
         (
             (filepath == "" and uint8(0) == 0x7B) or
-            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)$/)
+            (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
+                not filepath matches /\.(md|markdown)$/i)
         ) and ($mcp or $mcp_yaml or $mcp_toml) and any of ($curl, $wget, $url, $printenv)
 }

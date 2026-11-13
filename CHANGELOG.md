@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.2 — 2026-11-13
+
+A rescan of the same Mac found no false positives, and it found a miss. Instruction paths were compared case-sensitively, so `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, and `GEMINI.md` never entered the gate.
+
+- Every `filepath` regex is case-insensitive. Hook and MCP path gates included.
+- MCP rules also accept `.claude.json`, `*.json.bak`, and `*.json.backup*`. Markdown stays excluded. An unpinned `npx -y` package in `~/.claude/backups/.claude.json.backup.<timestamp>` matches.
+- README and VALIDATION.md now state the scanner contract: pass `filepath` as the path is stored. The `larc-seraph` CLI does that.
+
+The repository stays private. This changelog entry is not a public release.
+
 ## v0.1.1 — 2026-11-13
 
 Scope tuning after a real Mac scan of 70,470 files. `yr` and libyara agreed on every hit, and 264 of them were benign.

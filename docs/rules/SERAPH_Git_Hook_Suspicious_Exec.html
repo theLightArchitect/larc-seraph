@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1059/004/">T1059.004</a>, <a href="https://attack.mitre.org/techniques/T1546/">T1546</a></div>
   <div><span>Tactic</span>execution, persistence</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>Paths under .git/hooks/ or .husky/, excluding names that end in .sample. Set filepath. A hook that only runs a test suite is not a match.</div>
+  <div><span>Scope</span>Paths under .git/hooks/ or .husky/, any case, excluding names that end in .sample. Set filepath to the path as stored. A hook that only runs a test suite is not a match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A hook that posts a local SSH path to an internal inventory host the operator actually runs. Read the URL. There is no dedicated ATT&amp;CK sub-technique for Git hooks; T1546 is the parent.</li></ul>

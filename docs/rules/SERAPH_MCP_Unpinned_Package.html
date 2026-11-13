@@ -43,7 +43,7 @@
   <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1195/002/">T1195.002</a></div>
   <div><span>Tactic</span>initial-access</div>
   <div><span>License</span>Detection Rule License 1.1</div>
-  <div><span>Scope</span>JSON, TOML, or YAML MCP configs. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github.</div>
+  <div><span>Scope</span>JSON, TOML, or YAML MCP configs. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match.</div>
 </div>
 <h2>False positives</h2>
 <ul><li>A community MCP server installed the way its README shows, with npx -y and no version. The allowlist is short on purpose. Review the package name.</li></ul>
