@@ -8,10 +8,10 @@ file drifts. tools/build_rule_flavors.py then writes both flavors.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -286,15 +286,15 @@ rule SERAPH_Instruction_Unsafe_Directive {{
 
 
 def _fmt(text: str) -> str:
-    with tempfile.NamedTemporaryFile("w", suffix=".yar", delete=False, encoding="utf-8") as handle:
-        handle.write(text)
-        name = handle.name
-    completed = subprocess.run(["yr", "fmt", name], check=False)
+    root = (ROOT / "rules" / "src" / "yara").resolve()
+    target = DESTINATION.resolve()
+    if ".." in DESTINATION.parts or os.path.commonpath([str(root), str(target)]) != str(root):
+        raise SystemExit("refusing to format a rule outside rules/src/yara")
+    target.write_text(text, encoding="utf-8")
+    completed = subprocess.run(["yr", "fmt", os.fspath(target)], check=False)
     if completed.returncode not in (0, 1):
         raise SystemExit("yr fmt failed on the generated instruction rule")
-    formatted = Path(name).read_text(encoding="utf-8")
-    Path(name).unlink()
-    return formatted
+    return target.read_text(encoding="utf-8")
 
 
 def main() -> int:
