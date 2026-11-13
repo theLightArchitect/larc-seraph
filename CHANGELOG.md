@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.9 — 2026-11-13
+
+Project basics for a public detection pack. No detection logic changed.
+
+- CI can install the package again. Current setuptools rejects a `License ::` classifier next to a PEP 639 license expression, and that failed `pip install -e ".[test]"` on the GitHub-hosted runner.
+- The test workflow runs pytest, `yarac --fail-on-warnings`, a yara-x (`yr`) compile, `sigma check`, the benign-corpus scan, a rule-metadata check, and gitleaks. Action SHAs are pinned. The workflow token can read contents. The release workflow is the job that can write contents.
+- Pushing a `vX.Y.Z` tag builds a zip and a tarball (YARA, Sigma, converted queries, the false-positive allowlist, and the license files), writes `SHA256SUMS`, and attaches them to a GitHub Release whose notes are this section. This commit does not create the tag.
+- `SECURITY.md`, `CONTRIBUTING.md`, and the Contributor Covenant 2.1. Issue forms, a pull request checklist, Dependabot, and `CODEOWNERS`.
+
 ## v0.1.8 — 2026-11-13
 
 Cloning on macOS dropped one file from each `README.md` / `Readme.MD` pair, so those case checks never both ran.

@@ -1,0 +1,47 @@
+name: New rule request
+description: Ask for a detection that this pack does not have.
+title: "Rule: "
+labels:
+  - rule-request
+body:
+  - type: markdown
+    attributes:
+      value: |
+        larc-seraph covers AI-agent configs, instruction files, MCP servers, git hooks, and macOS LaunchAgents on a developer workstation. It does not cover general malware.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior to detect
+      description: What the agent, config, hook, or plist does. Describe it. Do not include a working exploit or a live payload.
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Suggested engine
+      options:
+        - YARA
+        - Sigma
+        - Either
+    validations:
+      required: true
+  - type: input
+    id: attack
+    attributes:
+      label: ATT&CK technique
+      placeholder: T1059.004
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Synthetic positive and negative sketch
+      description: A short inert example that should match, and a close benign example that should not. Mark it synthetic. Use example.invalid for hosts.
+    validations:
+      required: true
+  - type: textarea
+    id: gap
+    attributes:
+      label: Why the current rules miss this
+    validations:
+      required: false

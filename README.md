@@ -2,7 +2,14 @@
 
 # larc-seraph
 
+[![CI](https://github.com/theLightArchitect/larc-seraph/actions/workflows/test.yml/badge.svg)](https://github.com/theLightArchitect/larc-seraph/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/theLightArchitect/larc-seraph)](https://github.com/theLightArchitect/larc-seraph/releases)
+[![Code license](https://img.shields.io/badge/code-Apache--2.0-blue)](LICENSE)
+[![Rule license](https://img.shields.io/badge/rules-DRL%201.1-blue)](LICENSE.rules)
+
 Defensive detection content for AI-agent tooling on developer workstations, written by Kevin Francis Tan / Light Architects ([lightarchitects.ai](https://lightarchitects.ai)).
+
+The release badge stays empty until a maintainer pushes a `vX.Y.Z` tag. v0.1.9 prepares that workflow. It does not publish the release by itself.
 
 Rule IDs stay in the `SERAPH-YARA` and `SERAPH-SIGMA` series. The pack name is larc-seraph.
 
@@ -44,16 +51,57 @@ Sigma rules assume a normalized macOS field contract (`Image`, `CommandLine`, `P
 
 `SERAPH-YARA-016` flags an unpinned registry package inside a JSON, TOML, or YAML MCP config. `@modelcontextprotocol`, `@anthropic`, and `@github` are allowlisted. A numeric version pin is not a match. A Markdown README that only quotes the config is not a match.
 
-## Run the tests
+## Quick start
 
-Python 3.11 or newer.
+Python 3.11 or newer. A full `pytest` run also needs `yarac` 4.5.x and the yara-x `yr` CLI on `PATH`. Without them the fixture tests that only need `yara-python` still run, and the compile tests fail.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[test]"
+pytest
+larc-seraph path/to/mcp.json
+```
+
+The scanner prints matches. It does not block, quarantine, or send telemetry.
+
+How to run the metadata check, `sigma check`, the benign-corpus scan, and the doc generator is in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Consume the rules
+
+Pass `filepath` as the path is stored. Use forward slashes. Quote the yara-x define so the shell does not eat the quotes.
+
+```bash
+yara -d filepath=/abs/path rules/yara /abs/path
+yr scan --define 'filepath="/abs/path"' rules/yara /abs/path
+```
+
+```python
+rules.match(path, externals={"filepath": path})
+```
+
+`larc-seraph path/to/AGENTS.md` sets that external itself.
+
+Sigma rules match the normalized macOS field contract, not raw unified logs. Convert them with sigma-cli, or use the queries already in `rules/converted/`:
+
+```bash
+sigma convert -t lucene -p pipelines/ecs-macos.yml -od rules/converted/lucene -ot '{stem}.txt' rules/sigma
+sigma convert -t splunk -p pipelines/splunk-macos.yml -od rules/converted/splunk -ot '{stem}.txt' rules/sigma
+```
+
+Lucene output uses Elastic Common Schema names (`process.executable`, `process.command_line`, `file.path`). Splunk output uses the names in `pipelines/splunk-macos.yml` (`process_path`, `parent_process_path`). A pipeline is required. The default sigma field names are not this pack's contract.
+
+Tagged releases attach a zip and a tarball of the rules, the converted queries, `validation/fp-allowlist.txt`, and the license files, plus `SHA256SUMS`. Check the sums before you copy the rules into a product.
+
+## Run the tests
 
 ```bash
 pip install -e ".[test]"
 pytest
+python tools/check_rule_metadata.py
 ```
 
-`pytest` compiles the YARA pack, checks every positive and negative fixture, evaluates the Sigma rules through pySigma's condition tree, and runs `sigma check --fail-on-issues`. The ATT&CK tag check downloads MITRE's published STIX once and caches it.
+`pytest` compiles the YARA pack, checks every positive and negative fixture, evaluates the Sigma rules through pySigma's condition tree, and runs `sigma check --fail-on-issues`. The ATT&CK tag check downloads MITRE's published STIX once and caches it. `pytest` fails if `yarac` or `yr` is not installed.
 
 Regenerate the HTML site after a rule or write-up change:
 
@@ -77,18 +125,7 @@ The scanner prints matches and does not block, quarantine, or send telemetry. It
 
 Rules that care about a path read the external string `filepath`. An empty value means the scanner did not say where the bytes came from. Instruction rules and the git-hook rule then do not match. MCP rules still match a file whose first byte is `{`.
 
-Pass the path as it is stored. The regexes are case-insensitive. `AGENTS.md` and `Agents.md` are the same gate.
-
-```bash
-yara -d filepath=/abs/path rules/yara /abs/path
-yr scan --define 'filepath="/abs/path"' rules/yara /abs/path
-```
-
-```python
-rules.match(path, externals={"filepath": path})
-```
-
-`larc-seraph path/to/AGENTS.md` does this itself. Use forward slashes in the value. Quote the YARA-X define so the shell does not eat the quotes around the path.
+Pass the path as it is stored. The regexes are case-insensitive. `AGENTS.md` and `Agents.md` are the same gate. The commands are in [Consume the rules](#consume-the-rules). Use forward slashes in the value.
 
 Telemetry normalizers for eslogger JSON, Elastic Common Schema, and osquery rows live in `larc_seraph/translate.py`. pySigma pipelines in `pipelines/` emit Lucene and Splunk queries with those field names. Converted queries are in `rules/converted/`.
 
@@ -118,6 +155,40 @@ yr compile rules/yara -o /tmp/larc.yarc
 ```
 
 `pytest` also runs the evasion matrix, the telemetry round-trip, the conversion check, and the yara-x compile. `sigma check` is described in [VALIDATION.md](VALIDATION.md).
+
+## YARA-Forge
+
+Checked against [YARA-Forge](https://github.com/YARAHQ/yara-forge) `qa/rule_qa.py` and the metadata that pipeline normalizes (`description`, `author`, `date`, `modified`, `reference`, `id`). This is not a claim that the pack is in a forge release.
+
+What lines up:
+
+- The repository is public. Rules are Detection Rule License 1.1, which keeps author attribution on copies.
+- No private rules, and no `elf`, `cuckoo`, or `magic` import.
+- `yarac --fail-on-warnings` and `yr compile` are clean when the `filepath` external is defined. CI runs both.
+- Every YARA rule has the metadata fields above, plus `version` and ATT&CK in `attack_technique` and `attack_tactic`.
+
+What does not:
+
+- Nine of the eleven YARA rules read the external string `filepath`. Forge compiles with no externals. A rule that does not compile there is a critical failure and is dropped. Those nine rules stay out unless a forge build passes `-d filepath=""`. The two LaunchAgent plist rules do not use an external.
+- This pack does not set a forge `score` or a sample `hash`. Forge computes a score. These rules are not file-hash malware signatures, so there is no sample hash to put in meta.
+- Ids are `SERAPH-YARA-NNN`, not UUIDs. Forge derives a UUIDv5 during normalization.
+- This repository is not listed in `yara-forge-config.yml`. Nothing here is in a forge package until a forge maintainer adds it.
+
+yaraQA's string-performance score is not run in this CI. A clean `yarac --fail-on-warnings` is the compile bar this pack claims.
+
+## CI and releases
+
+Pull requests and pushes to `main` run [`.github/workflows/test.yml`](.github/workflows/test.yml): pytest, `yarac --fail-on-warnings`, `yr compile`, `sigma check`, the rule-metadata check, the benign-corpus scan, a docs drift check, gitleaks on the git history, and a `Signed-off-by` check on pull request commits. Actions are pinned by commit SHA. The workflow token can read repository contents.
+
+Pushing a tag `vX.Y.Z` runs those tests and then [`.github/workflows/release.yml`](.github/workflows/release.yml), which publishes the GitHub Release. The release job is the one token that can write contents. Tag the commit yourself after CI on `main` is green. The version in `pyproject.toml` has to match the tag, and `CHANGELOG.md` needs a section for it.
+
+The benign-corpus scan clones public trees at job time. A new hit fails the job. The allowlist is empty. A failed clone also fails the job.
+
+## Project docs
+
+- [SECURITY.md](SECURITY.md) for private vulnerability reports.
+- [CONTRIBUTING.md](CONTRIBUTING.md) for rule metadata, fixtures, local tests, and sign-off.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) is Contributor Covenant 2.1.
 
 ## License
 

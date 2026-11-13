@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -50,6 +51,17 @@ def test_pack_has_the_planned_rule_count():
     assert kinds == {"yara", "sigma"}
     assert sum(record.kind == "yara" for record in records) == 11
     assert sum(record.kind == "sigma" for record in records) == 6
+
+
+def test_metadata_script_passes():
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools" / "check_rule_metadata.py")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_yara_metadata_is_complete():
