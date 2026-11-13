@@ -21,22 +21,34 @@ rule SERAPH_Instruction_Unsafe_Directive
         author_url = "https://lightarchitects.ai"
         date = "2026-11-13"
         modified = "2026-11-13"
-        version = "1.4.0"
+        version = "1.5.0"
         severity = "high"
-        description = "An instruction file tells the agent to skip confirmation, or sends a credential to a host that is not that credential's vendor. Flag tables, env-var rows, official vendor API examples, a bypass scoped only to a low-risk call, and pairs split across fenced blocks do not match."
+        description = "An instruction file tells the agent to skip confirmation, including \"without asking\", or sends a credential to a host that is not that credential's vendor. Zero-width marks may sit between the words. Flag tables, env-var rows, a bypass-permissions on/off status label, official vendor API examples, a bypass scoped only to a low-risk call, and pairs split across fenced blocks do not match."
         attack_technique = "T1567, T1562.001"
         attack_tactic = "exfiltration, defense-evasion"
         reference = "https://attack.mitre.org/techniques/T1567/"
         reference_2 = "https://attack.mitre.org/techniques/T1562/001/"
         reference_3 = "https://atlas.mitre.org/techniques/AML.T0051"
         scope = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON tool descriptions, any case. Set filepath to the path as stored. A bypass must be an instruction, not a flag, env var, or Markdown table row. A token sent to its own vendor host does not match."
-        false_positives = "A real policy that tells the agent not to ask before a shell command, a delete, a secret, or a network send. Homoglyphs other than Cyrillic o still pass. More than eight phrase hits in one file are not all judged."
+        false_positives = "A real policy that tells the agent not to ask before a shell command, a delete, a secret, or a network send. Homoglyphs other than Cyrillic o still pass. A mark between every letter still passes. More than eight hits of one phrase in one file are not all judged."
         license = "Detection Rule License 1.1"
 
     strings:
-        // Confirmation phrases. auto-approve needs an imperative cue, and
-        // skip-confirmation cannot cross a table pipe or a hyphen.
-        $bypass = /(do(\xe2\x80\x8b)?[ \t]{0,8}not[ \t]{1,8}ask[ \t]{1,8}for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation|don(\xe2\x80\x8b)?.?t[ \t]{1,8}ask[ \t]{1,8}for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation|never[ \t]{1,8}ask[ \t]{1,8}(the[ \t]{1,8}(user|operator)[ \t]{1,8})?for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation|(^|\n)[^\n\-|]{0,80}skip[ \t]{1,8}(all[ \t]{1,8})?confirm(\xe2\x80\x8b)?ation[ \t]{1,8}prompts?|disable[ \t]{1,8}confirm(\xe2\x80\x8b)?ation|disable[ \t]{1,8}permission[ \t]{1,8}prompts|bypass[ \t]{1,8}permission|(^|\n)[^\n\-|]{0,60}(you must|do not ask|never ask|always)[ \t][^\n\-|]{0,40}auto-approve[ \t]{1,8}(all|every)[ \t]+tools?|do(\xe2\x80\x8b)?[ \t]{0,8}not[ \t]{1,8}prompt[ \t]{1,8}for[ \t]{1,8}confirm(\xe2\x80\x8b)?ation|no[ \t]{1,8}confirmation[ \t]{1,8}needed[ \t]{1,8}before[ \t]+a[ \t]+tool)/ nocase ascii
+        // Each phrase is its own string so a zero-width mark can sit between
+        // every word without making one regex too complex for libyara.
+        // Marks: U+200B U+200C U+200D (E2 80 8B-8D), U+2060 (E2 81 A0), U+FEFF (EF BB BF).
+        $b_do = /do(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{0,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?not(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ask(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation/ nocase ascii
+        $b_dont = /don(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?.?t(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ask(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation/ nocase ascii
+        $b_never = /never(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ask(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(the(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(user|operator)(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation/ nocase ascii
+        $b_skip = /(^|\n)[^\n\-|]{0,80}skip(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(all(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?prompts?/ nocase ascii
+        $b_disable = /disable(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation|disable(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?permission(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?prompts/ nocase ascii
+        $b_bypass = /bypass(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?permission/ nocase ascii
+        $b_auto = /(^|\n)[^\n\-|]{0,60}(you must|do not ask|never ask|always)(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[^\n\-|]{0,40}auto-approve(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(all|every)(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?tools?/ nocase ascii
+        $b_prompt = /do(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{0,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?not(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?prompt(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation/ nocase ascii
+        $b_noneed = /no(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?confirmation(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?needed(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?before(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?a(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?tool/ nocase ascii
+        $b_without = /without(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?asking((\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?the(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(user|operator))?(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?for(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?[ \t]{1,8}(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?(confirm(\xe2\x80[\x8b-\x8d]|\xe2\x81\xa0|\xef\xbb\xbf)?ation|permission)/ nocase ascii
+        $ui_onoff = /bypass[ \t]{1,8}permissions?[ \t]{1,8}(on|off)\b/ nocase ascii
+        $ui_tail = /status bar|\bmode\b/ nocase ascii
         $homo = { 64 D0 BE 20 6E D0 BE 74 20 61 73 6B 20 66 D0 BE 72 20 63 D0 BE 6E 66 69 72 6D 61 74 69 D0 BE 6E }
         $poison_flag = /--[A-Za-z0-9]/ ascii
         $poison_env = /_YES\b|_TOKEN\b|_KEY\b|_SECRET\b/ ascii
@@ -77,33 +89,610 @@ rule SERAPH_Instruction_Unsafe_Directive
         ) and
         (
             for any i in (1..8) : (
-                i <= #bypass and
+                i <= #b_do and
                 not for any k in (1..6) : (
                     k <= #poison_pipe and
-                    @poison_pipe[k] < @bypass[i] + !bypass[i] and
-                    @poison_pipe[k] + !poison_pipe[k] > @bypass[i]
+                    @poison_pipe[k] < @b_do[i] + !b_do[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_do[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_do[i] + !b_do[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_do[i]
                 ) and
                 not for any k in (1..6) : (
                     k <= #poison_flag and
                     (
-                        (@poison_flag[k] < @bypass[i] and @bypass[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @bypass[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
-                        (@bypass[i] < @poison_flag[k] and @poison_flag[k] - @bypass[i] < 160 and not for any n in (0..159) : (@bypass[i] + n < @poison_flag[k] and uint8(@bypass[i] + n) == 0x0A))
+                        (@poison_flag[k] < @b_do[i] and @b_do[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_do[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_do[i] < @poison_flag[k] and @poison_flag[k] - @b_do[i] < 160 and not for any n in (0..159) : (@b_do[i] + n < @poison_flag[k] and uint8(@b_do[i] + n) == 0x0A))
                     )
                 ) and
                 not for any k in (1..6) : (
                     k <= #poison_env and
                     (
-                        (@poison_env[k] < @bypass[i] and @bypass[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @bypass[i] and uint8(@poison_env[k] + n) == 0x0A)) or
-                        (@bypass[i] < @poison_env[k] and @poison_env[k] - @bypass[i] < 160 and not for any n in (0..159) : (@bypass[i] + n < @poison_env[k] and uint8(@bypass[i] + n) == 0x0A))
+                        (@poison_env[k] < @b_do[i] and @b_do[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_do[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_do[i] < @poison_env[k] and @poison_env[k] - @b_do[i] < 160 and not for any n in (0..159) : (@b_do[i] + n < @poison_env[k] and uint8(@b_do[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_do[i] >= n and
+                        (uint8(@b_do[i] - n) == 0x60 or uint8(@b_do[i] - n) == 0x22 or uint8(@b_do[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_do[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_do[i] + !b_do[i] + n < filesize and
+                            uint8(@b_do[i] + !b_do[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_do[i] + !b_do[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_do[i] and
+                            @ui_tail[k] - @b_do[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_do[i] + n < @ui_tail[k] and uint8(@b_do[i] + n) == 0x0A
+                            )
+                        )
                     )
                 ) and
                 not (
                     for any k in (1..4) : (
                         k <= #low and
-                        ((@low[k] < @bypass[i] and @bypass[i] - @low[k] < 240) or (@bypass[i] < @low[k] and @low[k] - @bypass[i] < 80))
+                        ((@low[k] < @b_do[i] and @b_do[i] - @low[k] < 240) or (@b_do[i] < @low[k] and @low[k] - @b_do[i] < 80))
                     ) and not for any k in (1..6) : (
                         k <= #high and
-                        ((@high[k] < @bypass[i] and @bypass[i] - @high[k] < 240) or (@bypass[i] < @high[k] and @high[k] - @bypass[i] < 100))
+                        ((@high[k] < @b_do[i] and @b_do[i] - @high[k] < 240) or (@b_do[i] < @high[k] and @high[k] - @b_do[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_dont and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_dont[i] + !b_dont[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_dont[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_dont[i] + !b_dont[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_dont[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_dont[i] and @b_dont[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_dont[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_dont[i] < @poison_flag[k] and @poison_flag[k] - @b_dont[i] < 160 and not for any n in (0..159) : (@b_dont[i] + n < @poison_flag[k] and uint8(@b_dont[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_dont[i] and @b_dont[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_dont[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_dont[i] < @poison_env[k] and @poison_env[k] - @b_dont[i] < 160 and not for any n in (0..159) : (@b_dont[i] + n < @poison_env[k] and uint8(@b_dont[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_dont[i] >= n and
+                        (uint8(@b_dont[i] - n) == 0x60 or uint8(@b_dont[i] - n) == 0x22 or uint8(@b_dont[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_dont[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_dont[i] + !b_dont[i] + n < filesize and
+                            uint8(@b_dont[i] + !b_dont[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_dont[i] + !b_dont[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_dont[i] and
+                            @ui_tail[k] - @b_dont[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_dont[i] + n < @ui_tail[k] and uint8(@b_dont[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_dont[i] and @b_dont[i] - @low[k] < 240) or (@b_dont[i] < @low[k] and @low[k] - @b_dont[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_dont[i] and @b_dont[i] - @high[k] < 240) or (@b_dont[i] < @high[k] and @high[k] - @b_dont[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_never and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_never[i] + !b_never[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_never[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_never[i] + !b_never[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_never[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_never[i] and @b_never[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_never[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_never[i] < @poison_flag[k] and @poison_flag[k] - @b_never[i] < 160 and not for any n in (0..159) : (@b_never[i] + n < @poison_flag[k] and uint8(@b_never[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_never[i] and @b_never[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_never[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_never[i] < @poison_env[k] and @poison_env[k] - @b_never[i] < 160 and not for any n in (0..159) : (@b_never[i] + n < @poison_env[k] and uint8(@b_never[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_never[i] >= n and
+                        (uint8(@b_never[i] - n) == 0x60 or uint8(@b_never[i] - n) == 0x22 or uint8(@b_never[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_never[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_never[i] + !b_never[i] + n < filesize and
+                            uint8(@b_never[i] + !b_never[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_never[i] + !b_never[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_never[i] and
+                            @ui_tail[k] - @b_never[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_never[i] + n < @ui_tail[k] and uint8(@b_never[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_never[i] and @b_never[i] - @low[k] < 240) or (@b_never[i] < @low[k] and @low[k] - @b_never[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_never[i] and @b_never[i] - @high[k] < 240) or (@b_never[i] < @high[k] and @high[k] - @b_never[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_skip and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_skip[i] + !b_skip[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_skip[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_skip[i] + !b_skip[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_skip[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_skip[i] and @b_skip[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_skip[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_skip[i] < @poison_flag[k] and @poison_flag[k] - @b_skip[i] < 160 and not for any n in (0..159) : (@b_skip[i] + n < @poison_flag[k] and uint8(@b_skip[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_skip[i] and @b_skip[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_skip[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_skip[i] < @poison_env[k] and @poison_env[k] - @b_skip[i] < 160 and not for any n in (0..159) : (@b_skip[i] + n < @poison_env[k] and uint8(@b_skip[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_skip[i] >= n and
+                        (uint8(@b_skip[i] - n) == 0x60 or uint8(@b_skip[i] - n) == 0x22 or uint8(@b_skip[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_skip[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_skip[i] + !b_skip[i] + n < filesize and
+                            uint8(@b_skip[i] + !b_skip[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_skip[i] + !b_skip[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_skip[i] and
+                            @ui_tail[k] - @b_skip[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_skip[i] + n < @ui_tail[k] and uint8(@b_skip[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_skip[i] and @b_skip[i] - @low[k] < 240) or (@b_skip[i] < @low[k] and @low[k] - @b_skip[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_skip[i] and @b_skip[i] - @high[k] < 240) or (@b_skip[i] < @high[k] and @high[k] - @b_skip[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_disable and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_disable[i] + !b_disable[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_disable[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_disable[i] + !b_disable[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_disable[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_disable[i] and @b_disable[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_disable[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_disable[i] < @poison_flag[k] and @poison_flag[k] - @b_disable[i] < 160 and not for any n in (0..159) : (@b_disable[i] + n < @poison_flag[k] and uint8(@b_disable[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_disable[i] and @b_disable[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_disable[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_disable[i] < @poison_env[k] and @poison_env[k] - @b_disable[i] < 160 and not for any n in (0..159) : (@b_disable[i] + n < @poison_env[k] and uint8(@b_disable[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_disable[i] >= n and
+                        (uint8(@b_disable[i] - n) == 0x60 or uint8(@b_disable[i] - n) == 0x22 or uint8(@b_disable[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_disable[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_disable[i] + !b_disable[i] + n < filesize and
+                            uint8(@b_disable[i] + !b_disable[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_disable[i] + !b_disable[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_disable[i] and
+                            @ui_tail[k] - @b_disable[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_disable[i] + n < @ui_tail[k] and uint8(@b_disable[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_disable[i] and @b_disable[i] - @low[k] < 240) or (@b_disable[i] < @low[k] and @low[k] - @b_disable[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_disable[i] and @b_disable[i] - @high[k] < 240) or (@b_disable[i] < @high[k] and @high[k] - @b_disable[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_bypass and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_bypass[i] + !b_bypass[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_bypass[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_bypass[i] + !b_bypass[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_bypass[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_bypass[i] and @b_bypass[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_bypass[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_bypass[i] < @poison_flag[k] and @poison_flag[k] - @b_bypass[i] < 160 and not for any n in (0..159) : (@b_bypass[i] + n < @poison_flag[k] and uint8(@b_bypass[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_bypass[i] and @b_bypass[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_bypass[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_bypass[i] < @poison_env[k] and @poison_env[k] - @b_bypass[i] < 160 and not for any n in (0..159) : (@b_bypass[i] + n < @poison_env[k] and uint8(@b_bypass[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_bypass[i] >= n and
+                        (uint8(@b_bypass[i] - n) == 0x60 or uint8(@b_bypass[i] - n) == 0x22 or uint8(@b_bypass[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_bypass[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_bypass[i] + !b_bypass[i] + n < filesize and
+                            uint8(@b_bypass[i] + !b_bypass[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_bypass[i] + !b_bypass[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_bypass[i] and
+                            @ui_tail[k] - @b_bypass[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_bypass[i] + n < @ui_tail[k] and uint8(@b_bypass[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_bypass[i] and @b_bypass[i] - @low[k] < 240) or (@b_bypass[i] < @low[k] and @low[k] - @b_bypass[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_bypass[i] and @b_bypass[i] - @high[k] < 240) or (@b_bypass[i] < @high[k] and @high[k] - @b_bypass[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_auto and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_auto[i] + !b_auto[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_auto[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_auto[i] + !b_auto[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_auto[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_auto[i] and @b_auto[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_auto[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_auto[i] < @poison_flag[k] and @poison_flag[k] - @b_auto[i] < 160 and not for any n in (0..159) : (@b_auto[i] + n < @poison_flag[k] and uint8(@b_auto[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_auto[i] and @b_auto[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_auto[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_auto[i] < @poison_env[k] and @poison_env[k] - @b_auto[i] < 160 and not for any n in (0..159) : (@b_auto[i] + n < @poison_env[k] and uint8(@b_auto[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_auto[i] >= n and
+                        (uint8(@b_auto[i] - n) == 0x60 or uint8(@b_auto[i] - n) == 0x22 or uint8(@b_auto[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_auto[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_auto[i] + !b_auto[i] + n < filesize and
+                            uint8(@b_auto[i] + !b_auto[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_auto[i] + !b_auto[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_auto[i] and
+                            @ui_tail[k] - @b_auto[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_auto[i] + n < @ui_tail[k] and uint8(@b_auto[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_auto[i] and @b_auto[i] - @low[k] < 240) or (@b_auto[i] < @low[k] and @low[k] - @b_auto[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_auto[i] and @b_auto[i] - @high[k] < 240) or (@b_auto[i] < @high[k] and @high[k] - @b_auto[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_prompt and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_prompt[i] + !b_prompt[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_prompt[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_prompt[i] + !b_prompt[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_prompt[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_prompt[i] and @b_prompt[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_prompt[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_prompt[i] < @poison_flag[k] and @poison_flag[k] - @b_prompt[i] < 160 and not for any n in (0..159) : (@b_prompt[i] + n < @poison_flag[k] and uint8(@b_prompt[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_prompt[i] and @b_prompt[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_prompt[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_prompt[i] < @poison_env[k] and @poison_env[k] - @b_prompt[i] < 160 and not for any n in (0..159) : (@b_prompt[i] + n < @poison_env[k] and uint8(@b_prompt[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_prompt[i] >= n and
+                        (uint8(@b_prompt[i] - n) == 0x60 or uint8(@b_prompt[i] - n) == 0x22 or uint8(@b_prompt[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_prompt[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_prompt[i] + !b_prompt[i] + n < filesize and
+                            uint8(@b_prompt[i] + !b_prompt[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_prompt[i] + !b_prompt[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_prompt[i] and
+                            @ui_tail[k] - @b_prompt[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_prompt[i] + n < @ui_tail[k] and uint8(@b_prompt[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_prompt[i] and @b_prompt[i] - @low[k] < 240) or (@b_prompt[i] < @low[k] and @low[k] - @b_prompt[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_prompt[i] and @b_prompt[i] - @high[k] < 240) or (@b_prompt[i] < @high[k] and @high[k] - @b_prompt[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_noneed and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_noneed[i] + !b_noneed[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_noneed[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_noneed[i] + !b_noneed[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_noneed[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_noneed[i] and @b_noneed[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_noneed[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_noneed[i] < @poison_flag[k] and @poison_flag[k] - @b_noneed[i] < 160 and not for any n in (0..159) : (@b_noneed[i] + n < @poison_flag[k] and uint8(@b_noneed[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_noneed[i] and @b_noneed[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_noneed[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_noneed[i] < @poison_env[k] and @poison_env[k] - @b_noneed[i] < 160 and not for any n in (0..159) : (@b_noneed[i] + n < @poison_env[k] and uint8(@b_noneed[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_noneed[i] >= n and
+                        (uint8(@b_noneed[i] - n) == 0x60 or uint8(@b_noneed[i] - n) == 0x22 or uint8(@b_noneed[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_noneed[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_noneed[i] + !b_noneed[i] + n < filesize and
+                            uint8(@b_noneed[i] + !b_noneed[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_noneed[i] + !b_noneed[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_noneed[i] and
+                            @ui_tail[k] - @b_noneed[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_noneed[i] + n < @ui_tail[k] and uint8(@b_noneed[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                not (
+                    for any k in (1..4) : (
+                        k <= #low and
+                        ((@low[k] < @b_noneed[i] and @b_noneed[i] - @low[k] < 240) or (@b_noneed[i] < @low[k] and @low[k] - @b_noneed[i] < 80))
+                    ) and not for any k in (1..6) : (
+                        k <= #high and
+                        ((@high[k] < @b_noneed[i] and @b_noneed[i] - @high[k] < 240) or (@b_noneed[i] < @high[k] and @high[k] - @b_noneed[i] < 100))
+                    )
+                )
+            ) or
+            for any i in (1..8) : (
+                i <= #b_without and
+                not for any k in (1..6) : (
+                    k <= #poison_pipe and
+                    @poison_pipe[k] < @b_without[i] + !b_without[i] and
+                    @poison_pipe[k] + !poison_pipe[k] > @b_without[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #ui_onoff and
+                    @ui_onoff[k] < @b_without[i] + !b_without[i] and
+                    @ui_onoff[k] + !ui_onoff[k] > @b_without[i]
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_flag and
+                    (
+                        (@poison_flag[k] < @b_without[i] and @b_without[i] - @poison_flag[k] < 180 and not for any n in (0..179) : (@poison_flag[k] + n < @b_without[i] and uint8(@poison_flag[k] + n) == 0x0A)) or
+                        (@b_without[i] < @poison_flag[k] and @poison_flag[k] - @b_without[i] < 160 and not for any n in (0..159) : (@b_without[i] + n < @poison_flag[k] and uint8(@b_without[i] + n) == 0x0A))
+                    )
+                ) and
+                not for any k in (1..6) : (
+                    k <= #poison_env and
+                    (
+                        (@poison_env[k] < @b_without[i] and @b_without[i] - @poison_env[k] < 180 and not for any n in (0..179) : (@poison_env[k] + n < @b_without[i] and uint8(@poison_env[k] + n) == 0x0A)) or
+                        (@b_without[i] < @poison_env[k] and @poison_env[k] - @b_without[i] < 160 and not for any n in (0..159) : (@b_without[i] + n < @poison_env[k] and uint8(@b_without[i] + n) == 0x0A))
+                    )
+                ) and
+                not (
+                    for any n in (1..80) : (
+                        @b_without[i] >= n and
+                        (uint8(@b_without[i] - n) == 0x60 or uint8(@b_without[i] - n) == 0x22 or uint8(@b_without[i] - n) == 0x27) and
+                        not for any m in (1..80) : (
+                            m < n and uint8(@b_without[i] - m) == 0x0A
+                        )
+                    ) and (
+                        for any n in (0..80) : (
+                            @b_without[i] + !b_without[i] + n < filesize and
+                            uint8(@b_without[i] + !b_without[i] + n) == 0x3D and
+                            not for any m in (0..80) : (
+                                m < n and uint8(@b_without[i] + !b_without[i] + m) == 0x0A
+                            )
+                        ) or
+                        for any k in (1..6) : (
+                            k <= #ui_tail and
+                            @ui_tail[k] > @b_without[i] and
+                            @ui_tail[k] - @b_without[i] < 120 and
+                            not for any n in (0..119) : (
+                                @b_without[i] + n < @ui_tail[k] and uint8(@b_without[i] + n) == 0x0A
+                            )
+                        )
+                    )
+                ) and
+                for any k in (1..6) : (
+                    k <= #high and
+                    (
+                        (@high[k] < @b_without[i] and @b_without[i] - @high[k] < 240) or
+                        (@b_without[i] < @high[k] and @high[k] - @b_without[i] < 120)
                     )
                 )
             ) or $homo or $line_file or $line_path or $inject_fwd or $inject_rev or

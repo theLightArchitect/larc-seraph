@@ -86,7 +86,7 @@ def test_libyara_compiles_without_warnings():
     if yarac is None:
         pytest.fail("yarac 4.5.x is not installed")
     result = subprocess.run(
-        [yarac, "--fail-on-warnings", "-d", "filepath=", *[str(path) for path in sorted((ROOT / "rules" / "yara").glob("*.yar"))], str(ROOT / ".cache-libyara.yac")],
+        [yarac, "--fail-on-warnings", "--strict-escape", "-d", "filepath=", *[str(path) for path in sorted((ROOT / "rules" / "yara").glob("*.yar"))], str(ROOT / ".cache-libyara.yac")],
         capture_output=True,
         text=True,
         check=False,
@@ -107,7 +107,7 @@ def test_yara_x_compiles_without_warnings():
     if yr is None:
         pytest.fail("yara-x yr CLI is not installed")
     result = subprocess.run(
-        [yr, "compile", "-d", 'filepath=""', str(ROOT / "rules" / "yara"), "-o", str(ROOT / ".cache-yara-x.yarc")],
+        [yr, "compile", "--define", 'filepath=""', str(ROOT / "rules" / "yara"), "-o", str(ROOT / ".cache-yara-x.yarc")],
         capture_output=True,
         text=True,
         check=False,

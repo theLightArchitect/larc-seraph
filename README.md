@@ -94,7 +94,7 @@ Telemetry normalizers for eslogger JSON, Elastic Common Schema, and osquery rows
 
 ## Known limitations
 
-These are the gaps that are still open after the v0.1.3 wording fix. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
+These are the gaps that are still open after the v0.1.4 wording fix. The methodology and the numbers are in [VALIDATION.md](VALIDATION.md).
 
 - A zero-width mark between every letter of a confirmation-bypass sentence. One mark inside the phrase is caught.
 - Homoglyphs other than Cyrillic `o` in that same sentence.
