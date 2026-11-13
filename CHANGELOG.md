@@ -2,7 +2,7 @@
 
 ## v0.1.9 — 2026-11-13
 
-Project basics for a public detection pack. No detection logic changed.
+Project basics for a public detection pack. The path-scoped rules keep the previous match behavior. The Forge copies are content-only, so a few cases differ. Those are listed below.
 
 - CI can install the package again. Current setuptools rejects a `License ::` classifier next to a PEP 639 license expression, and that failed `pip install -e ".[test]"` on the GitHub-hosted runner.
 - The test workflow runs pytest, `yarac --fail-on-warnings`, a yara-x (`yr`) compile, `sigma check`, the benign-corpus scan, a rule-metadata check, and gitleaks. Action SHAs are pinned. The workflow token can read contents. The release workflow is the job that can write contents.

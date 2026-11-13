@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import os
 import re
 import tarfile
@@ -76,17 +77,39 @@ def _archive_name(version: str, suffix: str) -> str:
     return f"larc-seraph-{version}{suffix}"
 
 
+_MEMBER = re.compile(r"^[A-Za-z0-9_./+-]+$")
+
+
 def _member_name(prefix: str, path: Path) -> str:
     relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
-    if Path(relative).is_absolute() or ".." in Path(relative).parts or "\\" in relative:
+    parts = relative.split("/")
+    if not parts or any(part in {"", ".", ".."} for part in parts):
         raise SystemExit(f"refusing archive member {relative}")
-    return f"{prefix}/{relative}"
+    if _MEMBER.fullmatch(relative) is None:
+        raise SystemExit(f"refusing archive member {relative}")
+    # Rebuild the name from the checked pieces so the archive entry is not the raw path.
+    cleaned = "/".join(parts)
+    return f"{prefix}/{cleaned}"
+
+
+def _contained_directory(raw: str) -> Path:
+    if not raw or "\x00" in raw:
+        raise SystemExit("dist path is empty")
+    candidate = Path(raw)
+    if ".." in candidate.parts:
+        raise SystemExit("dist path must not contain ..")
+    resolved = candidate.resolve() if candidate.is_absolute() else (ROOT / candidate).resolve()
+    root = ROOT.resolve()
+    if os.path.commonpath([str(root), str(resolved)]) != str(root):
+        raise SystemExit("dist must stay inside the repository")
+    return resolved
 
 
 def _write_zip(destination: Path, prefix: str, files: list[Path]) -> None:
     with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
-            info = zipfile.ZipInfo(_member_name(prefix, path))
+            member = _member_name(prefix, path)
+            info = zipfile.ZipInfo(member)
             info.date_time = FIXED_MTIME
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
@@ -96,15 +119,16 @@ def _write_zip(destination: Path, prefix: str, files: list[Path]) -> None:
 def _write_tar(destination: Path, prefix: str, files: list[Path]) -> None:
     with tarfile.open(destination, "w:gz", format=tarfile.GNU_FORMAT) as archive:
         for path in files:
-            info = archive.gettarinfo(path, arcname=_member_name(prefix, path))
+            payload = path.read_bytes()
+            info = tarfile.TarInfo(name=_member_name(prefix, path))
+            info.size = len(payload)
             info.mtime = FIXED_EPOCH
+            info.mode = 0o644
             info.uid = 0
             info.gid = 0
             info.uname = ""
             info.gname = ""
-            info.mode = 0o644
-            with path.open("rb") as handle:
-                archive.addfile(info, handle)
+            archive.addfile(info, io.BytesIO(payload))
 
 
 def sha256_file(path: Path) -> str:
@@ -142,7 +166,7 @@ def main() -> int:
     tag = args.tag or f"v{project_version()}"
     if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
         raise SystemExit(f"tag must look like v0.1.9, got {tag}")
-    build(tag, Path(args.dist) if Path(args.dist).is_absolute() else ROOT / args.dist)
+    build(tag, _contained_directory(args.dist))
     return 0
 
 

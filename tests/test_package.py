@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -11,7 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_release_archive_contains_rules_and_licenses(tmp_path: Path):
+def test_release_archive_contains_rules_and_licenses():
+    destination = ROOT / "dist" / "package-test"
+    shutil.rmtree(destination, ignore_errors=True)
     result = subprocess.run(
         [
             sys.executable,
@@ -19,7 +22,7 @@ def test_release_archive_contains_rules_and_licenses(tmp_path: Path):
             "--tag",
             "v0.1.9",
             "--dist",
-            str(tmp_path),
+            "dist/package-test",
         ],
         cwd=ROOT,
         capture_output=True,
@@ -27,12 +30,12 @@ def test_release_archive_contains_rules_and_licenses(tmp_path: Path):
         check=False,
     )
     assert result.returncode == 0, result.stderr
-    zip_path = tmp_path / "larc-seraph-0.1.9.zip"
-    tar_path = tmp_path / "larc-seraph-0.1.9.tar.gz"
-    sums = (tmp_path / "SHA256SUMS").read_text(encoding="utf-8")
-    notes = (tmp_path / "release-notes.md").read_text(encoding="utf-8")
+    zip_path = destination / "larc-seraph-0.1.9.zip"
+    tar_path = destination / "larc-seraph-0.1.9.tar.gz"
+    sums = (destination / "SHA256SUMS").read_text(encoding="utf-8")
+    notes = (destination / "release-notes.md").read_text(encoding="utf-8")
     assert notes.startswith("## v0.1.9")
-    assert "No detection logic changed." in notes
+    assert "two flavors" in notes
     for path in (zip_path, tar_path):
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         assert f"{digest}  {path.name}" in sums

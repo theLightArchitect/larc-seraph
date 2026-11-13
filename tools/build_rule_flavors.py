@@ -106,7 +106,6 @@ def _drop_filepath_comments(text: str) -> str:
 
 def _replace_scope(name: str, text: str) -> str:
     if name not in _SCOPES and name.startswith("mcp_"):
-        scope = None
 
         def repl(match: re.Match[str]) -> str:
             current = match.group(1)
