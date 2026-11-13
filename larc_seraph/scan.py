@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -17,6 +18,27 @@ import yara
 from larc_seraph.eval import rule_matches
 from larc_seraph.inventory import ROOT, load_sigma_rules
 from larc_seraph.phrases import instruction_bypass
+
+
+def read_scan_target(raw: str) -> bytes:
+    """Read a file the operator named.
+
+    Rejects a null byte and a `..` segment, then reads the resolved path.
+    The scanner is meant to open files outside the repository. The check
+    is against a path that walks up from the name the operator wrote.
+    """
+    if not raw or "\x00" in raw:
+        raise ValueError("scan path is empty")
+    candidate = Path(raw)
+    if ".." in candidate.parts:
+        raise ValueError("scan path must not contain ..")
+    resolved = candidate.expanduser().resolve()
+    if not resolved.is_file():
+        raise ValueError(f"scan path is not a file: {resolved}")
+    root = Path(resolved.anchor)
+    if os.path.commonpath([str(root), str(resolved)]) != str(root):
+        raise ValueError("scan path escapes its root")
+    return resolved.read_bytes()
 
 
 class NamedHit:
@@ -97,7 +119,7 @@ def yara_match(
     if data is None:
         if path is None:
             raise ValueError("path or data is required")
-        data = Path(path).read_bytes()
+        data = read_scan_target(path)
     hits = list(rules.match(data=data, **options))
     if not phrases:
         return hits
