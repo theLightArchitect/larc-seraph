@@ -82,6 +82,8 @@ python -m larc_seraph.docsgen --check
 python tools/fp_scan.py
 ```
 
+CI installs those libraries from `requirements/test.txt` with `--require-hashes` and `--only-binary :all:`. Regenerate that file with `pip-compile --extra test --generate-hashes --output-file requirements/test.txt pyproject.toml` when the test dependencies change.
+
 `sigma check` downloads MITRE's ATT&CK STIX once. The `d3_fendtag` validator is excluded because this pack has no D3FEND tags and that validator downloads an ontology before it looks at the namespace.
 
 `tools/fp_scan.py` clones a few public repositories and scans them. It does not execute the files. A hit that is not listed in `validation/fp-allowlist.txt` fails the command. The allowlist is empty on purpose. CI also fails the job when a clone fails or the scan sees fewer than 1000 files, so a silent empty corpus is not a pass.
