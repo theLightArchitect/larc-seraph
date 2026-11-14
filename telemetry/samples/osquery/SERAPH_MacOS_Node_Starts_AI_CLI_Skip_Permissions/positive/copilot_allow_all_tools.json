@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/positive/copilot_allow_all_tools.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "path": "/opt/homebrew/bin/copilot",
+    "cmdline": "copilot --allow-all-tools -p inventory",
+    "username": "dev",
+    "parent_path": "/opt/homebrew/bin/node"
+  }
+}

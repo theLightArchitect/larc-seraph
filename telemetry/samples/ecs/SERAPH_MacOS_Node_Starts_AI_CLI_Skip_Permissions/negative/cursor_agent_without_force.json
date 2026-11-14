@@ -1,0 +1,22 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions/negative/cursor_agent_without_force.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "process": {
+      "executable": "/Users/dev/.local/bin/cursor-agent",
+      "command_line": "cursor-agent -p inventory",
+      "parent": {
+        "executable": "/opt/homebrew/bin/node"
+      }
+    },
+    "user": {
+      "name": "dev"
+    }
+  }
+}

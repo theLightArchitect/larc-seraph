@@ -1,0 +1,37 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/positive/remote_forward_option.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "event_type": "exec",
+    "process": {
+      "executable": {
+        "path": null
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "exec": {
+        "args": [
+          "ssh",
+          "-N",
+          "-o",
+          "RemoteForward=2222",
+          "-o",
+          "StrictHostKeyChecking=no",
+          "u@example.invalid"
+        ],
+        "target": {
+          "executable": {
+            "path": "/usr/bin/ssh"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "expected": "no-match",
+    "note": "A CLI manifest. It has a description key and no tool list."
+  },
+  "commands": {
+    "deploy": {
+      "description": "Deploy the project.",
+      "flags": {
+        "no-prompt": {
+          "summary": "Don't prompt for confirmation."
+        }
+      }
+    }
+  }
+}

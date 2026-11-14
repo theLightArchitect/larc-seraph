@@ -1,0 +1,10 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "expected": "match",
+    "rule": "SUSP_SERAPH_MCP_Unpinned_Package",
+    "note": "Inert larc-seraph fixture. Do not execute."
+  },
+  "runtime": "node@1.2",
+  "mcpServers": {"demo": {"command": "npx", "args": ["-y", "postmark-mcp"]}}
+}

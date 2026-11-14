@@ -1,0 +1,12 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions"
+  },
+  "Image": "/Users/dev/.local/bin/cursor-agent",
+  "ParentImage": "/opt/homebrew/bin/node",
+  "CommandLine": "cursor-agent -p inventory",
+  "User": "dev"
+}

@@ -36,10 +36,51 @@ def _pattern(value: Any) -> tuple[str, int]:
     return re.escape(str(value)), flags
 
 
+def _has_top_level_alternation(pattern: str) -> bool:
+    depth = 0
+    in_class = False
+    index = 0
+    while index < len(pattern):
+        char = pattern[index]
+        if char == "\\":
+            index += 2
+            continue
+        if in_class:
+            in_class = char != "]"
+        elif char == "[":
+            in_class = True
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "|" and depth == 0:
+            return True
+        index += 1
+    return False
+
+
+def search_form(pattern: str) -> str:
+    """Drop a leading and a trailing `.*` from a regex that is run with `re.search`.
+
+    WHY: a search already finds the pattern anywhere, so `.*x.*` and `x` give the
+    same answer, but the leading `.*` makes a miss cost quadratic time in the
+    length of the field, and the field is attacker-controlled. A pattern with a
+    top-level `|` is left alone, because the strip is only exact for one branch.
+    """
+    if _has_top_level_alternation(pattern):
+        return pattern
+    stripped = pattern
+    if stripped.startswith(".*"):
+        stripped = stripped[2:]
+    if stripped.endswith(".*") and not stripped.endswith("\\.*"):
+        stripped = stripped[:-2]
+    return stripped or pattern
+
+
 def _value_matches(value: Any, haystack: str) -> bool:
     pattern, flags = _pattern(value)
     if isinstance(value, SigmaRegularExpression):
-        return re.search(pattern, haystack, flags=flags) is not None
+        return re.search(search_form(pattern), haystack, flags=flags) is not None
     return re.fullmatch(pattern, haystack, flags=flags) is not None
 
 

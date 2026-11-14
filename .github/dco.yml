@@ -1,0 +1,5 @@
+# DCO GitHub app: accept a follow-up commit that adds a sign-off, instead of a
+# history rewrite. tools/check_dco.sh reads the same two line formats.
+allowRemediationCommits:
+  individual: true
+  thirdParty: true

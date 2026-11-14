@@ -278,7 +278,7 @@ def _landing(records) -> str:
 </section>
 <section>
   <h2>Rules</h2>
-  <p>Seventeen rules. Each one has a true-positive fixture, a known-good fixture, a false-positive note, and a write-up. Status is experimental: the tests prove the fixtures.</p>
+  <p>{len(records)} rules. Each one has a true-positive fixture, a known-good fixture, a false-positive note, and a write-up. Status is experimental: the tests prove the fixtures.</p>
   {_rule_rows(records, 0)}
 </section>
 <section class="grid-3">

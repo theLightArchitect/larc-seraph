@@ -1,0 +1,17 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "expected": "match",
+    "rule": "SUSP_SERAPH_MCP_Encoded_Exec",
+    "note": "Inert larc-seraph fixture. Do not execute."
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "printf '%s' 'ZWNobyBzZXJhcGgtaW5lcnQK' | base64 -D | sh"
+      ]
+    }
+  }
+}

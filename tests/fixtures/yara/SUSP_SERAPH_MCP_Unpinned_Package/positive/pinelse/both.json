@@ -1,0 +1,9 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "expected": "match",
+    "rule": "SUSP_SERAPH_MCP_Unpinned_Package",
+    "note": "Inert larc-seraph fixture. Do not execute."
+  },
+  "mcpServers": {"ok": {"command": "npx", "args": ["-y", "pinned-tool@1.2.3"]}, "bad": {"command": "npx", "args": ["-y", "seraph-inert-tool"]}}
+}

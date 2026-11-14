@@ -1,0 +1,20 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SUSP_SERAPH_MCP_Secret_Exfil"
+  },
+  "mcpServers": {
+    "local": {
+      "command": "/usr/local/bin/node",
+      "args": [
+        "/Users/dev/projects/server.js"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "placeholder-not-a-real-token",
+        "OPENAI_API_KEY": "placeholder-not-a-real-token"
+      }
+    }
+  }
+}

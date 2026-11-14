@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LaunchAgent plist opens an SSH reverse tunnel with host-key checking off · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">larc-seraph</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-YARA-009 · yara · <span class="sev sev-critical">critical</span></p>
+<h1>LaunchAgent plist opens an SSH reverse tunnel with host-key checking off</h1>
+<p class="deck">Detects a launchd plist that runs ssh with a reverse forward, as -R or as -o RemoteForward, and host-key checking off: StrictHostKeyChecking no or off, or accept-new with the known-hosts file set to /dev/null. Separate argument strings or one command line.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1572/">T1572</a>, <a href="https://attack.mitre.org/techniques/T1021/004/">T1021.004</a>, <a href="https://attack.mitre.org/techniques/T1543/001/">T1543.001</a></div>
+  <div><span>Tactic</span>command-and-control, lateral-movement, persistence</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>LaunchAgent and LaunchDaemon plists. A live ssh process is covered by the companion Sigma rule.</div>
+</div>
+<h2>False positives</h2>
+<ul><li>An administrator who deliberately disables host-key checking on a reverse tunnel and encodes that choice in a plist. accept-new and yes do not match.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1572/">https://attack.mitre.org/techniques/T1572/</a></li><li><a href="https://attack.mitre.org/techniques/T1021/004/">https://attack.mitre.org/techniques/T1021/004/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p>A reverse forward makes a remote host reach back into this machine. Turning host-key checking off means the client will accept a changed or unknown key. Together, in a launchd job, that is a path in that does not depend on the operator being present and does not depend on the remote key staying the one that was trusted last time.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The plist has to name ssh and a reverse forward, as <code>-R</code> or as <code>-o RemoteForward</code>, and a disabled host-key check, either as separate argument strings or as one command line. The check counts as disabled when StrictHostKeyChecking is no or off, or when it is <code>accept-new</code> and UserKnownHostsFile is <code>/dev/null</code>, since every host is then new. <code>accept-new</code> alone and the default checking mode do not match. A disabled check without a reverse forward does not match. The companion Sigma rule watches the running process, including when the parent is launchd rather than an editor.</p>
+<h2 id="limitations">Limitations</h2>
+<p>An administrator who encodes this exact choice in a plist will match. The option can also be hidden in a config file that ssh reads by default, which this rule does not open. ATT&amp;CK T1572 and T1021.004 describe the tunnel and the protocol. T1543.001 describes the persistence wrapper.</p>
+<h2 id="triage">Triage</h2>
+<p>This is a path in. Confirm with the operator whether they disabled host-key checking on purpose. If not, unload the job and review authorized_keys.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_SSH_Reverse_Tunnel/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

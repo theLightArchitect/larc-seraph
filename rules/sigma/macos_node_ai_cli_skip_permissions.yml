@@ -1,0 +1,93 @@
+# SERAPH-SIGMA-018
+# Copyright 2026 Kevin Francis Tan / Light Architects
+# Licensed under the Detection Rule License 1.1. See LICENSE.rules.
+title: macOS node or npm started an AI CLI with a skip-permission flag
+name: SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions
+id: e09274cd-20af-442f-b61e-784182327a97
+status: experimental
+description: >
+  Detects a JavaScript runtime or package manager starting claude, gemini, q,
+  codex, copilot, or cursor-agent with a flag that turns permission prompts off. The August 2025 Nx
+  s1ngularity payload did this for claude, gemini, and q. gemini and codex are
+  node scripts, so the executed image is node and the CLI is the script path in
+  the command line. An interactive shell parent does not match. Field names are
+  the larc-seraph normalized macOS contract.
+references:
+  - https://attack.mitre.org/techniques/T1059/
+  - https://attack.mitre.org/techniques/T1195/002/
+  - https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/
+  - https://www.wiz.io/blog/s1ngularity-supply-chain-attack
+  - https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware
+author: Kevin Francis Tan / Light Architects
+date: 2026-11-13
+modified: 2026-11-13
+license: Detection Rule License 1.1
+scope:
+  - macOS process creation events normalized to the larc-seraph field contract
+tags:
+  - attack.execution
+  - attack.initial-access
+  - attack.t1059
+  - attack.t1195.002
+logsource:
+  product: macos
+  category: process_creation
+  definition: larc-seraph normalized ESF exec event. ParentImage is the runtime that spawned the CLI. The CLI is named by Image, or by the script path in CommandLine.
+detection:
+  selection_parent:
+    ParentImage|endswith:
+      - '/node'
+      - '/nodejs'
+      - '/npm'
+      - '/npx'
+      - '/pnpm'
+      - '/yarn'
+      - '/bun'
+      - '/deno'
+      - '/bin/sh'
+  selection_cli_image:
+    Image|endswith:
+      - '/claude'
+      - '/gemini'
+      - '/q'
+      - '/codex'
+      - '/copilot'
+  selection_cli_versioned:
+    Image|contains: '/claude/versions/'
+  selection_cli_script:
+    CommandLine|contains:
+      - '/claude '
+      - '/gemini '
+      - '/codex '
+      - '/claude-code/cli.js'
+  selection_flag:
+    CommandLine|contains:
+      - '--dangerously-skip-permissions'
+      - '--permission-mode bypassPermissions'
+      - '--permission-mode=bypassPermissions'
+      - '--yolo'
+      - '--approval-mode yolo'
+      - '--approval-mode=yolo'
+      - '--dangerously-bypass-approvals-and-sandbox'
+      - '--trust-all-tools'
+      - '--allow-all-tools'
+  selection_gemini_short:
+    CommandLine|contains|all:
+      - 'gemini '
+      - ' -y'
+  selection_q_short:
+    - CommandLine|contains:
+        - 'q chat -a '
+        - 'q chat --no-interactive -a '
+    - CommandLine|endswith:
+        - 'q chat -a'
+        - 'q chat --no-interactive -a'
+  selection_cursor_agent_force:
+    Image|endswith: '/cursor-agent'
+    CommandLine|contains: '--force'
+  condition: selection_parent and ((1 of selection_cli_* and (selection_flag or selection_gemini_short or selection_q_short)) or selection_cursor_agent_force)
+falsepositives:
+  - A developer who launches one of these CLIs from a node, npm, bun, or deno script with the flag on purpose. Read the command line.
+  - A /bin/sh script that starts the CLI with the flag. /bin/sh is listed because child_process.exec puts it between node and the CLI.
+  - The same flag from Terminal, iTerm, zsh, or bash does not match.
+level: high

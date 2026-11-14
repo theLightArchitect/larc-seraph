@@ -2,42 +2,143 @@ name: test
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  secrets:
+    # ubuntu-latest is 26.04. YARA 4.5.4 is built from source here and was
+    # verified on the 24.04 image.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: gitleaks
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --proto =https --proto-redir =https --tlsv1.2 \
+            -o /tmp/gitleaks_8.30.1_linux_x64.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks_8.30.1_linux_x64.tar.gz" | sha256sum -c
+          tar -xzf /tmp/gitleaks_8.30.1_linux_x64.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks git --config .gitleaks.toml --redact --no-banner --verbose .
+
+      - name: Forbidden credential strings
+        run: bash tools/check_forbidden_strings.sh
+
+      - name: DCO sign-off
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          bash tools/check_dco.sh "origin/${{ github.base_ref }}"
+
+  test:
+    # Same runner as the secrets job. The libyara 4.5.4 build was verified there.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+
       - name: Install pack and test tools
-        run: pip install -e ".[test]"
-      - name: Install yara-x
         run: |
-          curl -fL -o /tmp/yara-x.tgz https://github.com/VirusTotal/yara-x/releases/download/v1.23.0/yara-x-v1.23.0-x86_64-unknown-linux-gnu.tar.gz
+          python -m pip install --require-hashes --only-binary :all: -r requirements/test.txt
+
+      - name: Rule metadata consistency
+        run: python tools/check_rule_metadata.py
+
+      - name: Install yara-x 1.23.0
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --proto =https --proto-redir =https --tlsv1.2 \
+            -o /tmp/yara-x.tgz \
+            https://github.com/VirusTotal/yara-x/releases/download/v1.23.0/yara-x-v1.23.0-x86_64-unknown-linux-gnu.tar.gz
           sudo tar -xzf /tmp/yara-x.tgz -C /usr/local/bin
+          sudo chmod 0755 /usr/local/bin/yr
           yr --version
+
       - name: Build libyara 4.5.4 yarac
         run: |
+          set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq autoconf automake libtool pkg-config flex bison
-          curl -fL -o /tmp/yara-src.tar.gz https://github.com/VirusTotal/yara/archive/refs/tags/v4.5.4.tar.gz
+          curl --fail --silent --show-error --location --proto =https --proto-redir =https --tlsv1.2 \
+            -o /tmp/yara-src.tar.gz \
+            https://github.com/VirusTotal/yara/archive/refs/tags/v4.5.4.tar.gz
           tar -xzf /tmp/yara-src.tar.gz -C /tmp
           cd /tmp/yara-4.5.4
           ./bootstrap.sh
           ./configure --disable-shared --enable-static --disable-magic --disable-cuckoo --disable-dotnet --prefix=/tmp/yara-install
           make -j"$(nproc)"
           make install
+          echo "/tmp/yara-install/bin" >> "${GITHUB_PATH}"
           /tmp/yara-install/bin/yarac --version
-      - name: Fixture, metadata, conversion, evasion, and yara-x
+
+      - name: pytest
         run: pytest
+
+      - name: Compile Forge YARA with no externals
+        run: |
+          set -euo pipefail
+          if grep -R -n -w filepath rules/yara; then
+            echo "Forge rules must not reference filepath" >&2
+            exit 1
+          fi
+          python tools/build_phrase_rules.py --check
+          python tools/build_rule_flavors.py --check
+          yr fmt --check rules/yara rules/path-scoped rules/src/yara
+          yarac --fail-on-warnings --strict-escape rules/yara/*.yar /tmp/larc-seraph-forge.yac
+          yr compile rules/yara -o /tmp/larc-seraph-forge.yarc
+          yarac --fail-on-warnings --strict-escape -d filepath= rules/path-scoped/*.yar /tmp/larc-seraph-path.yac
+          rm -f /tmp/larc-seraph-forge.yac /tmp/larc-seraph-forge.yarc /tmp/larc-seraph-path.yac
+
       - name: Sigma rule validation
         # d3_fendtag downloads an ontology before checking the tag namespace.
         # This pack has no D3FEND tags. ATT&CK tag checks still run.
         run: sigma check --fail-on-issues --exclude d3_fendtag rules/sigma
-      - name: Benign corpus scan
-        run: python tools/fp_scan.py
+
       - name: Docs match the rule sources
         run: python -m larc_seraph.docsgen --check
+
+      - name: Benign corpus false-positive scan
+        run: |
+          set -euo pipefail
+          python tools/fp_scan.py
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path("validation/fp-results.json").read_text(encoding="utf-8"))
+          failed = [note for note in payload["fetch_notes"] if "failed" in note]
+          if failed or payload["files_scanned"] < 1000 or payload["unexpected"] or payload["unexpected_path"]:
+              print(json.dumps({
+                  "files_scanned": payload["files_scanned"],
+                  "failed": failed,
+                  "unexpected": payload["unexpected"][:20],
+              }, indent=2))
+              sys.exit(1)
+          print(f"benign corpus ok: {payload['files_scanned']} files, no unexpected hits")
+          PY

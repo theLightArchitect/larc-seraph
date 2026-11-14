@@ -1,0 +1,23 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Modifies_Shell_RC/positive/bash_login.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "process": {
+      "executable": "/Applications/Cursor.app/Contents/MacOS/Cursor",
+      "command_line": null,
+      "parent": {}
+    },
+    "user": {
+      "name": "dev"
+    },
+    "file": {
+      "path": "/Users/dev/.bash_login"
+    }
+  }
+}

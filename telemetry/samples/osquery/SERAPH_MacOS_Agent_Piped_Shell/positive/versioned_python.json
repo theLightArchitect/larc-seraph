@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/positive/versioned_python.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "path": "/opt/homebrew/bin/python3.12",
+    "cmdline": "python3.12 -c import base64;exec(base64.b64decode('cGFzcw=='))",
+    "username": "dev",
+    "parent_path": "/Applications/Cursor.app/Contents/MacOS/Cursor"
+  }
+}

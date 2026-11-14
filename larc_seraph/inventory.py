@@ -11,6 +11,8 @@ from sigma.rule import SigmaRule
 
 ROOT = Path(__file__).resolve().parents[1]
 YARA_DIR = ROOT / "rules" / "yara"
+PATH_YARA_DIR = ROOT / "rules" / "path-scoped"
+SRC_YARA_DIR = ROOT / "rules" / "src" / "yara"
 SIGMA_DIR = ROOT / "rules" / "sigma"
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 CONTENT_DIR = ROOT / "docs" / "content"
@@ -25,6 +27,8 @@ YARA_META_KEYS = (
     "modified",
     "version",
     "severity",
+    "status",
+    "score",
     "description",
     "attack_technique",
     "attack_tactic",
@@ -34,7 +38,7 @@ YARA_META_KEYS = (
     "license",
 )
 
-_META_LINE = re.compile(r'^\s+([A-Za-z0-9_]+)\s*=\s*"((?:\\.|[^"\\])*)"\s*$')
+_META_LINE = re.compile(r'^\s+([A-Za-z0-9_]+)\s*=\s*(?:"((?:\\.|[^"\\])*)"|(\d+))\s*$')
 _RULE_NAME = re.compile(r"^rule\s+([A-Za-z0-9_]+)\s*\{", re.M)
 
 
@@ -70,8 +74,20 @@ def parse_yara_meta(text: str) -> tuple[str, dict[str, str]]:
     meta: dict[str, str] = {}
     for line in text[meta_start:strings_at].splitlines():
         matched = _META_LINE.match(line)
-        if matched:
-            meta[matched.group(1)] = bytes(matched.group(2), "utf-8").decode("unicode_escape")
+        if not matched:
+            continue
+        key = matched.group(1)
+        if matched.group(3) is not None:
+            value = matched.group(3)
+        else:
+            value = bytes(matched.group(2), "utf-8").decode("unicode_escape")
+        if key == "reference":
+            # YARA allows a repeated key. The first one is meta["reference"].
+            meta.setdefault("references", "")
+            meta["references"] = (meta["references"] + "\n" + value).strip()
+            meta.setdefault("reference", value)
+            continue
+        meta[key] = value
     return name, meta
 
 
@@ -94,9 +110,7 @@ def load_yara_records() -> list[RuleRecord]:
                 date=meta["date"],
                 attack=meta["attack_technique"],
                 tactic=meta["attack_tactic"],
-                references=tuple(
-                    meta[key] for key in sorted(meta) if key == "reference" or key.startswith("reference_")
-                ),
+                references=tuple(meta.get("references", meta["reference"]).split("\n")),
                 false_positives=(meta["false_positives"],),
                 scope=meta["scope"],
                 license=meta["license"],
@@ -123,7 +137,7 @@ SIGMA_IDS = {
     "SERAPH_MacOS_Interpreter_Drops_Launch_Plist": "SERAPH-SIGMA-013",
     "SERAPH_MacOS_SSH_Reverse_Lax_HostKey": "SERAPH-SIGMA-014",
     "SERAPH_MacOS_Agent_Piped_Shell": "SERAPH-SIGMA-015",
-    "SERAPH_MacOS_Terminal_Piped_Shell": "SERAPH-SIGMA-016",
+    "SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions": "SERAPH-SIGMA-018",
 }
 
 

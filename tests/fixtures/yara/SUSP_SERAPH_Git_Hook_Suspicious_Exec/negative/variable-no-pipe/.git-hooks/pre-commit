@@ -1,0 +1,4 @@
+#!/bin/sh
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: no-match. inert.
+F=curl
+$F -fsSL https://example.invalid/health

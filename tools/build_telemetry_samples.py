@@ -86,6 +86,7 @@ def main() -> None:
                             "rule": folder.name,
                             "expected": "match" if kind == "positive" else "no-match",
                             "source_fixture": str(path.relative_to(ROOT)),
+                            "origin": "derived from the Sigma fixture, not captured from a collector",
                         },
                         "record": builder(event),
                     }

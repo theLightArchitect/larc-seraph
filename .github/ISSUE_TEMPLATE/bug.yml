@@ -1,0 +1,43 @@
+name: Bug
+description: The scanner, tests, docs, or CI broke. Not a wrong match and not a vulnerability.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a false-positive or false-negative report for a wrong match.
+        Use GitHub security advisories for a vulnerability. Do not paste credentials.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pack version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Python 3.12, yarac 4.5.4, yr 1.23.0, macOS or Linux
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Command and output
+      description: The command you ran and the error, with secrets removed.
+    validations:
+      required: false

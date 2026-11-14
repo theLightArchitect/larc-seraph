@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-SIGMA-013 · sigma · <span class="sev sev-medium">medium</span></p>
 <h1>macOS interpreter wrote a LaunchAgent or LaunchDaemon plist</h1>
-<p class="deck">A shell, Python, Node, osascript, or curl wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the larc-seraph normalized macOS contract.</p>
+<p class="deck">A shell, Python, Node, Bun, Deno, Perl, Ruby, osascript, curl, tee, defaults, PlistBuddy, or cfprefsd wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The companion YARA rule inspects whether the plist itself is a rogue job. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -48,14 +48,16 @@
 <h2>False positives</h2>
 <ul><li>Installers and Homebrew casks that drop a LaunchAgent from a shell script.</li><li>An operator scripting their own login job. Correlate with SERAPH-YARA-008 or SERAPH-YARA-009 before escalating.</li></ul>
 <h2>References</h2>
-<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li></ul>
+<ul><li><a href="https://attack.mitre.org/techniques/T1543/001/">https://attack.mitre.org/techniques/T1543/001/</a></li><li><a href="https://attack.mitre.org/techniques/T1543/004/">https://attack.mitre.org/techniques/T1543/004/</a></li><li><a href="https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users">https://www.broadcom.com/support/security-center/protection-bulletin/amos-atomic-macos-stealer-malware-deployed-in-latest-clickfix-campaign-targeting-macos-users</a></li></ul>
 <article class="prose">
 <h2 id="threat">Threat</h2>
 <p>Creating the plist is the moment a login or boot job appears on disk. The content rules say whether the job is a shell in a user-writable path or an SSH tunnel. This rule says an interpreter wrote a plist under LaunchAgents or LaunchDaemons, which is the event you can see even when the file was deleted before a scanner reached it.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The path has to contain one of the two launchd directories and end in <code>.plist</code>. The writer has to be a shell, Python, Node, osascript, or curl. <code>cp</code> dropping a plist does not match. A shell writing a README does not match. <code>/bin/sh</code> is matched as a suffix that does not also match <code>ssh</code>, which is a classic endswith footgun.</p>
+<p>The path has to contain one of the two launchd directories and end in <code>.plist</code>. The writer has to be a shell, Python (including a versioned binary such as <code>python3.12</code>), Node, Bun, Deno, Perl, Ruby, osascript, or curl. <code>cp</code> dropping a plist does not match. A shell writing a README does not match. <code>/bin/sh</code> is matched as a suffix that does not also match <code>ssh</code>, which is a classic endswith footgun.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Severity is medium because installers and Homebrew casks drop LaunchAgents from shell scripts all day. Correlate with the plist content rules before you escalate. A writer that is a compiled helper, not an interpreter, does not match. The rule cannot see the plist body. That is the YARA rule&#x27;s job.</p>
+<h2 id="added-in-the-hardening-round">Added in the hardening round</h2>
+<p><code>tee</code>, <code>defaults</code>, <code>PlistBuddy</code>, and <code>cfprefsd</code> now count as writers, because each can create or edit a launchd plist and a persistence job does not need an interpreter. <code>cp</code> and <code>mv</code> stay out: installers and dotfile managers use them constantly, and the pack keeps <code>cp</code> as a negative fixture. Both are asserted misses in <code>validation/evasion-matrix.yml</code>.</p>
 <h2 id="triage">Triage</h2>
 <p>This event has no plist body. Pair it with the YARA launchd rules before escalating. Installers do this often.</p>
 </article>

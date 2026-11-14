@@ -1,0 +1,4 @@
+#!/bin/sh
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: no-match. inert.
+curl -sS -o schema.json https://example.invalid/schema.json && bash ./scripts/validate.sh schema.json
+wget -q -O /tmp/list.txt https://example.invalid/list; sh /usr/local/bin/check-list /tmp/list.txt

@@ -6,9 +6,11 @@ name: SERAPH_MacOS_Agent_Piped_Shell
 id: 578d5554-1f3b-4dcb-b14b-2c943b3097f1
 status: experimental
 description: >
-  A known local AI-agent host spawned a shell or Python whose command line
-  pipes curl, wget, or base64 into a shell, or calls exec or eval on a
-  base64 decode. A plain download does not match. Field names are the larc-seraph
+  A known local AI-agent host spawned a shell, osascript, or Python whose command line
+  pipes curl, wget, or base64 into a shell or a bare python3, runs a fetch
+  through a shell command substitution, runs a temp-dir file right after
+  fetching it, or calls exec or eval on a base64 decode. A plain download
+  does not match. Field names are the larc-seraph
   normalized macOS contract.
 references:
   - https://attack.mitre.org/techniques/T1059/004/
@@ -36,19 +38,31 @@ detection:
       - '/codex'
       - '/.npm/_npx/'
       - '/Code Helper'
-  selection_shell:
+  selection_parent_extra:
+    - ParentImage|contains: '/Windsurf'
+    - ParentImage|endswith:
+        - '/opencode'
+        - '/aider'
+        - '/goose'
+  selection_shell_name:
     Image|endswith:
       - '/bash'
       - '/bin/sh'
       - '/zsh'
       - '/python'
       - '/python3'
+      - '/dash'
+      - '/osascript'
+  selection_shell_versioned:
+    Image|contains: '/python3.'
   selection_loader:
     CommandLine|contains:
       - 'curl '
       - 'wget '
       - 'fetch '
       - 'base64 '
+  selection_loader_tab:
+    CommandLine|re: ".*(curl|wget|fetch|base64)\t.*"
   selection_url:
     CommandLine|contains: 'urlopen('
   selection_pipe:
@@ -57,13 +71,57 @@ detection:
       - '| bash'
       - '|bash'
       - '|sh'
+      - '| zsh'
+      - '|zsh'
+      - '| dash'
+      - '| /bin/'
+      - '|/bin/'
+      - '| sudo '
+      - '|& '
+      - '|  sh'
+      - '|  bash'
+      - '|  zsh'
+      - '|  dash'
+  selection_pipe_python:
+    CommandLine|endswith:
+      - '| python3'
+      - '|python3'
+      - '| python'
+      - '|python'
+      - '| python3 -'
+      - '|python3 -'
+      - '| python3"'
+      - "| python3'"
+      - '| python3 -"'
+      - "| python3 -'"
+  selection_subst:
+    CommandLine|contains:
+      - ' -c "$(curl '
+      - ' -c "$(wget '
+      - " -c '$(curl "
+      - " -c '$(wget "
+      - 'eval "$(curl '
+      - 'eval "$(wget '
+      - 'sh <(curl '
+      - 'sh <(wget '
+      - 'source <(curl '
+      - 'source <(wget '
+  # A shell, by bare name or by path, with an optional sudo, exec, env or nohup in front and
+  # optional flags, then a file under a temp directory. A variable name cannot hold an equals
+  # sign, so every token has one parse. No token can hold ; & or |, which a shell reads as a
+  # separator, and a quoted value may hold blanks but not those characters, so an attempt that starts at a separator stops at the next one and the total
+  # time stays linear. The repetitions have no cap: a cap would let padding with one more
+  # assignment hide the shell. The shell name starts its token, so a
+  # name that merely ends in sh (git push /tmp/mirror.git, publish /tmp/x) is not a shell.
+  selection_temp_run:
+    CommandLine|re: '(&&|;|\|\|)[ \t]*((sudo|exec|env|nohup|command)[ \t]+((?=([^ \t=;&|''"\\]|\\[^=]|''[^'';&|=]*''|"[^";&|=]*")*(=|\\=|''[^'';&|]*=[^'';&|]*''|"[^";&|]*=[^";&|]*"))([^ \t;&|''"\\]|\\.|''[^'';&|]*''|"[^";&|]*")+[ \t]+)*)*([^ \t;&|]*/)?(ba|z|da|k)?sh([ \t]+-[^ \t;&|]*)*[ \t]+/(private/)?(var/)?tmp/'
   selection_py_decode:
     CommandLine|contains: 'b64decode'
   selection_py_exec:
     CommandLine|contains:
       - 'exec('
       - 'eval('
-  condition: selection_parent and selection_shell and ((selection_loader and selection_pipe) or (selection_py_decode and selection_py_exec) or (selection_url and selection_py_exec))
+  condition: (selection_parent or selection_parent_extra) and 1 of selection_shell_* and (((selection_loader or selection_loader_tab) and (selection_pipe or selection_pipe_python or selection_temp_run)) or selection_subst or (selection_py_decode and selection_py_exec) or (selection_url and selection_py_exec))
 falsepositives:
   - An operator who asked an agent to run a one-off install line that pipes a fetch into a shell. Read the URL.
   - The same command from Terminal or launchd is out of scope for this rule. Content rules cover the config and the plist.

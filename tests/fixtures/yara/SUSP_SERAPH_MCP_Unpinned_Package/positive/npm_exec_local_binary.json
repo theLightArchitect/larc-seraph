@@ -1,0 +1,19 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Documents a known false positive: npm exec reads a bare name as a package, as npx does.",
+    "expected": "match",
+    "rule": "SUSP_SERAPH_MCP_Unpinned_Package"
+  },
+  "mcpServers": {
+    "s": {
+      "command": "npm",
+      "args": [
+        "exec",
+        "--",
+        "tsc",
+        "--noEmit"
+      ]
+    }
+  }
+}

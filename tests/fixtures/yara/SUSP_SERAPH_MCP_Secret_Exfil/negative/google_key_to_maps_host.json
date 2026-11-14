@@ -1,0 +1,17 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SUSP_SERAPH_MCP_Secret_Exfil"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "curl -s \"https://maps.googleapis.com/maps/api/geocode/json?address=x&key=$GOOGLE_API_KEY\""
+      ]
+    }
+  }
+}

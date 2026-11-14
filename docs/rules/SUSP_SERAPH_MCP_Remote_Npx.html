@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP config runs npx or uvx from a remote or floating tag · larc-seraph</title>
+  <meta name="description" content="larc-seraph is Light Architects detection content for AI-agent tooling on developer workstations.">
+  <meta name="author" content="Kevin Francis Tan">
+  <meta name="theme-color" content="#070F1A">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="../index.html">
+        <img src="../assets/favicon.svg" alt="">
+        <span>
+          <span class="brand-name">larc-seraph</span>
+          <small>Light Architects</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Documentation">
+        <a href="../index.html">Overview</a>
+        <a href="../threat-model.html">Threat model</a>
+        <a href="../rules/index.html" aria-current="page">Rules</a>
+      </nav>
+    </div>
+  </header>
+  <main id="content">
+    <div class="wrap">
+
+<p class="eyebrow">SERAPH-YARA-004 · yara · <span class="sev sev-high">high</span></p>
+<h1>MCP config runs npx or uvx from a remote or floating tag</h1>
+<p class="deck">Detects an MCP client config that invokes npx, uvx, bunx, npm exec, pnpm dlx, yarn dlx, uv tool run, pipx run, or deno run against a URL, a github: specifier, a git+ specifier, or a moving dist-tag such as @latest, @next, or @*. It also matches a GitHub user/repo shorthand as the first package, a container image on a floating tag, and a registry override given without a scheme. A path-like string after a flag that takes a value, such as npm --prefix packages/server or pnpm --filter, is a value and not a package. Content-only rule: it compiles with no externals.</p>
+<div class="meta-grid">
+  <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
+  <div><span>Date</span>2026-11-13</div>
+  <div><span>ATT&amp;CK</span><a href="https://attack.mitre.org/techniques/T1195/002/">T1195.002</a></div>
+  <div><span>Tactic</span>initial-access</div>
+  <div><span>License</span>Detection Rule License 1.1</div>
+  <div><span>Scope</span>MCP client configs: an mcpServers object, Codex mcp_servers tables, a VS Code servers object beside a command key, or Zed context_servers. File types are JSON, JSONC, TOML, and YAML, any case, including .claude.json, *.json.bak, and *.json.backup*. Markdown does not match. The Forge rule has no path. It needs a JSON object at the start of the file (after an optional BOM or blank space), a top-level mcpServers: key, or an mcp_servers table. A JSONC file that opens with a comment, and Markdown, do not match.</div>
+</div>
+<h2>False positives</h2>
+<ul><li>An intentional @latest pin during a review, and any registry package whose name happens to sit within 180 characters of a URL in the same server entry. The stock npx -y scoped package with no tag is not a match.</li></ul>
+<h2>References</h2>
+<ul><li><a href="https://attack.mitre.org/techniques/T1195/002/">https://attack.mitre.org/techniques/T1195/002/</a></li><li><a href="https://modelcontextprotocol.io/specification/2025-06-18">https://modelcontextprotocol.io/specification/2025-06-18</a></li><li><a href="https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/">https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/</a></li></ul>
+<article class="prose">
+<h2 id="threat">Threat</h2>
+<p><code>npx</code> and <code>uvx</code> will fetch code at start time. A registry package with a version is a choice you can pin. A URL, a <code>github:</code> or <code>gitlab:</code> specifier, a <code>git+</code> specifier, or a moving dist-tag such as <code>@latest</code> or <code>@next</code> is a choice that moves whenever the remote moves.</p>
+<h2 id="why-this-rule">Why this rule</h2>
+<p>The rule requires the MCP server map and one of those specifiers within a short window of <code>npx</code>, <code>uvx</code>, or <code>npm exec</code>. The official filesystem server invoked as a scoped package with no tag is a negative fixture. So is a package whose name contains the word github but not the <code>github:</code> specifier, and so is a version pin such as <code>@0.6.0</code>. The runners also include <code>uv tool run</code>, <code>pipx run</code>, and <code>deno run</code>. A first package argument of the form <code>user/repo</code> is read by npm as a GitHub repository. A <code>docker</code> image on <code>:latest</code> or a similar floating tag matches, and a numeric tag does not. A registry override such as <code>npm_config_registry=//host</code> is matched because it carries no scheme.</p>
+<h2 id="limitations">Limitations</h2>
+<p><code>@latest</code> is sometimes what an operator typed on purpose during a review. That branch is noisier than the URL branch, and the severity is still high because the shapes share one rule. Unpinned registry names with no tag are not matched. That omission is deliberate: it is the published quickstart, and a rule that flags it would train people to ignore the pack. A GitHub repository whose name contains a dot is not matched in the shorthand form. A private registry given with a scheme is a legitimate setup and is not matched. Track unpinned names with a lockfile policy, not with this signature. The GitHub shorthand is read only straight after the runner or after a flag from a closed list of flags that take no value (-y, --yes, --, --prefer-offline and similar). A shorthand placed after a flag that takes a value, such as --userconfig, will miss.</p>
+<h2 id="triage">Triage</h2>
+<p>The package specifier is the decision. A quoted URL, a github: specifier, or @latest means the code can change. Pin it or remove it.</p>
+</article>
+<p class="note">Fixtures live under <code>tests/fixtures/yara/SUSP_SERAPH_MCP_Remote_Npx/</code>. Positives match this rule and no other larc-seraph rule. Negatives match none.</p>
+
+    </div>
+  </main>
+  <footer class="site">
+    <div class="wrap">
+      <p><strong>Kevin Francis Tan</strong> · Light Architects · <a href="https://lightarchitects.ai">lightarchitects.ai</a></p>
+      <p>Rules under the Detection Rule License 1.1. Code, harness, and these pages under Apache-2.0. A match is a lead, not a verdict. Nothing in this pack is a payload.</p>
+    </div>
+  </footer>
+</body>
+</html>

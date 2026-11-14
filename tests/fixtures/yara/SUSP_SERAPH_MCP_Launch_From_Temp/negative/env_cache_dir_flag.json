@@ -1,0 +1,20 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SUSP_SERAPH_MCP_Launch_From_Temp"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "env",
+      "args": [
+        "PYTHONUNBUFFERED=1",
+        "python3",
+        "server.py",
+        "--cache-dir",
+        "/tmp/mcp-cache/"
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/positive/node_parent_bash.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "process": {
+      "executable": "/bin/bash",
+      "command_line": null,
+      "parent": {
+        "executable": "/opt/homebrew/bin/node"
+      }
+    },
+    "user": {
+      "name": "dev"
+    },
+    "file": {
+      "path": "/Users/dev/.ssh/authorized_keys"
+    }
+  }
+}

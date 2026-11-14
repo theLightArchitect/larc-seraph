@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys"
+  },
+  "Image": "/opt/homebrew/bin/node",
+  "ParentImage": "/opt/homebrew/bin/node",
+  "TargetFilename": "/Users/dev/projects/demo/README.md",
+  "User": "dev",
+  "CommandLine": ""
+}

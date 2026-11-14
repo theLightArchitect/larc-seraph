@@ -1,0 +1,22 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "ecs",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/negative/git_push_to_temp_remote.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "process": {
+      "executable": "/bin/zsh",
+      "command_line": "zsh -c git fetch origin && git push /tmp/mirror.git main",
+      "parent": {
+        "executable": "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin)"
+      }
+    },
+    "user": {
+      "name": "dev"
+    }
+  }
+}

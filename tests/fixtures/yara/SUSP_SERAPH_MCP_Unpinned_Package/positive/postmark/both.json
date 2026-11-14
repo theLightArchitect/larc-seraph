@@ -1,0 +1,12 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "expected": "match",
+    "rule": "SUSP_SERAPH_MCP_Unpinned_Package",
+    "note": "Inert larc-seraph fixture. Do not execute."
+  },
+  "mcpServers": {
+    "fs": {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem"]},
+    "mail": {"command": "npx", "args": ["-y", "postmark-mcp"]}
+  }
+}

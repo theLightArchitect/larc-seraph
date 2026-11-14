@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Agent_Modifies_Shell_RC"
+  },
+  "Image": "/Applications/Windsurf.app/Contents/Frameworks/Windsurf Helper (Plugin).app/Contents/MacOS/Windsurf Helper (Plugin)",
+  "ParentImage": "/Applications/Windsurf.app/Contents/Frameworks/Windsurf Helper (Plugin).app/Contents/MacOS/Windsurf Helper (Plugin)",
+  "TargetFilename": "/Users/dev/.zshrc",
+  "User": "dev",
+  "CommandLine": ""
+}

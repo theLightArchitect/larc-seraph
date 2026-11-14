@@ -1,0 +1,6 @@
+#!/bin/sh
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: no-match. inert.
+# profile docs: https://docs.aws.amazon.com/cli/
+# .aws region notes
+export AWS_CONFIG_FILE=~/.aws/config
+curl -fsS https://example.invalid/health >/dev/null || echo health check failed

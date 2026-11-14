@@ -12,6 +12,10 @@ The file path has to end in `authorized_keys` or `authorized_keys2`. The image o
 
 The rule is only as current as the host list. A follow-on write by a shell whose parent is launchd, after a LaunchAgent has already been installed, does not match this rule. That case belongs with the plist rules. A dotfile tool whose path happens to contain one of the substrings will match. The field names are the larc-seraph contract. A collector that does not supply `ParentImage` can still match on `Image` alone, and will miss the case where only the parent is the agent.
 
+## Added in the hardening round
+
+The rule also covers `~/.ssh/authorized_keys.d/` files, Windsurf, and the opencode, aider, and goose binaries. A node image or a node parent counts as an agent host for this target only, because Gemini CLI and similar agents run as node scripts and writing authorized_keys from node is not ordinary developer activity. Three shapes stay open. A writer whose grandparent is the agent is invisible, because one event carries no grandparent. A write through a symlink reports the target path, not the authorized_keys name. A write to `~/.ssh/config` is left out because agents edit it as routine work. Each one is an asserted miss in `validation/evasion-matrix.yml`.
+
 ## Triage
 
 Diff the keys file. If the operator asked for a bootstrap key, record that. If not, remove the new line and rotate access.

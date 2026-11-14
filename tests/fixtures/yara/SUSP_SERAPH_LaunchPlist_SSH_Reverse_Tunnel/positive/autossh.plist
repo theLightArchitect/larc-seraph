@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- larc-seraph synthetic fixture. classification: synthetic-benign. inert. -->
+<plist version="1.0">
+<dict>
+<key>Label</key><string>invalid.example.seraph</string>
+<key>ProgramArguments</key>
+<array><string>/opt/homebrew/bin/autossh</string><string>-M</string><string>0</string><string>-N</string><string>-R</string><string>2222:localhost:22</string><string>-o</string><string>StrictHostKeyChecking=no</string><string>u@example.invalid</string></array>
+<key>RunAtLoad</key><true/>
+</dict>
+</plist>

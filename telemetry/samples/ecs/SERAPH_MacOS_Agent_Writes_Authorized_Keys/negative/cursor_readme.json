@@ -4,7 +4,8 @@
     "schema": "ecs",
     "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys",
     "expected": "no-match",
-    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/negative/cursor_readme.json"
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Writes_Authorized_Keys/negative/cursor_readme.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
   },
   "record": {
     "process": {

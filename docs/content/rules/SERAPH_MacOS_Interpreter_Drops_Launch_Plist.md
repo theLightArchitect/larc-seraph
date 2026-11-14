@@ -6,11 +6,15 @@ Creating the plist is the moment a login or boot job appears on disk. The conten
 
 ## Why this rule
 
-The path has to contain one of the two launchd directories and end in `.plist`. The writer has to be a shell, Python, Node, osascript, or curl. `cp` dropping a plist does not match. A shell writing a README does not match. `/bin/sh` is matched as a suffix that does not also match `ssh`, which is a classic endswith footgun.
+The path has to contain one of the two launchd directories and end in `.plist`. The writer has to be a shell, Python (including a versioned binary such as `python3.12`), Node, Bun, Deno, Perl, Ruby, osascript, or curl. `cp` dropping a plist does not match. A shell writing a README does not match. `/bin/sh` is matched as a suffix that does not also match `ssh`, which is a classic endswith footgun.
 
 ## Limitations
 
 Severity is medium because installers and Homebrew casks drop LaunchAgents from shell scripts all day. Correlate with the plist content rules before you escalate. A writer that is a compiled helper, not an interpreter, does not match. The rule cannot see the plist body. That is the YARA rule's job.
+
+## Added in the hardening round
+
+`tee`, `defaults`, `PlistBuddy`, and `cfprefsd` now count as writers, because each can create or edit a launchd plist and a persistence job does not need an interpreter. `cp` and `mv` stay out: installers and dotfile managers use them constantly, and the pack keeps `cp` as a negative fixture. Both are asserted misses in `validation/evasion-matrix.yml`.
 
 ## Triage
 

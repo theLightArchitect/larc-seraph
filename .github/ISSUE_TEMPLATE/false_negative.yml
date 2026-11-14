@@ -1,0 +1,48 @@
+name: False negative
+description: A rule missed something you expected it to match, or no rule covers a behavior in scope.
+title: "FN: "
+labels:
+  - false-negative
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the known misses in VALIDATION.md and the README before opening this.
+        Redact secrets and real paths. A miss is a detection-quality report, not a vulnerability.
+  - type: input
+    id: rule
+    attributes:
+      label: Rule name or id
+      description: Use "none" if no current rule should have matched and you think one is missing.
+      placeholder: SERAPH_MacOS_Agent_Piped_Shell
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options:
+        - YARA
+        - Sigma
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pack version or commit
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Redacted sample that should have matched
+      description: Synthetic or redacted. For Sigma, use the normalized field names (Image, CommandLine, ParentImage, TargetFilename, User) if you have them.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true

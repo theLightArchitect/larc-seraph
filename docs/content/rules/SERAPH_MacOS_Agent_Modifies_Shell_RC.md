@@ -12,6 +12,10 @@ The target has to be one of the usual user startup files, and the image or paren
 
 Project-level rc files and unusual startup names are not in the list. The legitimate "add this alias" request will match, and the note on the rule says so. Do not page on this rule alone. Read the diff.
 
+## Added in the hardening round
+
+The rule also covers `~/.zshrc.local`, the XDG zsh startup files under `~/.config/zsh/`, `*.zsh` files under `~/.oh-my-zsh/custom/`, Windsurf, and the opencode, aider, and goose binaries. A shell whose parent is the agent is not seen, because one event carries no grandparent. `~/.gitconfig` is left out on purpose: agents run `git config` as routine work. Both are asserted misses in `validation/evasion-matrix.yml`.
+
 ## Triage
 
 Read the diff. An alias the operator requested is the medium-severity false positive. A command they did not ask for is the lead.

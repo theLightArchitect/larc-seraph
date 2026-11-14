@@ -1,0 +1,9 @@
+title = "larc-seraph"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "SERAPH rule ids are catalog identifiers. generic-api-key matches SERAPH-SIGMA-014 because the rule name ends in Key."
+regexTarget = "secret"
+regexes = ['''^SERAPH-(?:SIGMA|YARA)-\d{3}$''']

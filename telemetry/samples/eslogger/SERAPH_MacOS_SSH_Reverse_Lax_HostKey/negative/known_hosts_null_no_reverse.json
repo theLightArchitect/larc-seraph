@@ -1,0 +1,36 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "eslogger",
+    "rule": "SERAPH_MacOS_SSH_Reverse_Lax_HostKey",
+    "expected": "no-match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_SSH_Reverse_Lax_HostKey/negative/known_hosts_null_no_reverse.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "event_type": "exec",
+    "process": {
+      "executable": {
+        "path": "/sbin/launchd"
+      },
+      "user_name": "dev"
+    },
+    "event": {
+      "exec": {
+        "args": [
+          "ssh",
+          "-o",
+          "StrictHostKeyChecking=accept-new",
+          "-o",
+          "UserKnownHostsFile=/dev/null",
+          "u@example.invalid"
+        ],
+        "target": {
+          "executable": {
+            "path": "/usr/bin/ssh"
+          }
+        }
+      }
+    }
+  }
+}

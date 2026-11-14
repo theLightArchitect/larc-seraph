@@ -1,3 +1,8 @@
-# No accepted hits. A match in the benign corpus fails tools/fp_scan.py.
-# The v0.1.0 allowlist entries were Markdown docs and a unit test. File-type
-# scope now keeps those out, so they are no longer exceptions.
+# Accepted hits in the benign corpus. Any other match fails tools/fp_scan.py.
+# Format: <rule name> <path under validation/cache>
+#
+# gemini-cli ships a skill that pipes a third-party repository's install script
+# into a shell. The rule is right to point at that line. It is recorded here as
+# an accepted corpus hit and is not exempted in the rule. The Forge rule needs an
+# in-file instruction marker and stays silent on this file.
+SUSP_SERAPH_Instruction_Unsafe_Directive_Path git/gemini-cli/.gemini/skills/agent-tui/SKILL.md

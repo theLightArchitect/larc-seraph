@@ -1,1 +1,4 @@
-process_path="*/ssh" process="* -R *" process IN ("*StrictHostKeyChecking=no*", "*StrictHostKeyChecking no*")
+
+| rex field=process "(?<processMatch>.*	-[NfT]*R.*)"
+| eval processCondition=if(isnotnull(processMatch), "true", "false")
+| search process_path IN ("*/ssh", "*/autossh") process IN ("* -R*", "* -NR*", "* -fNR*", "* -NfR*", "* -TNR*", "*RemoteForward*") OR processCondition="true" process IN ("*StrictHostKeyChecking=no*", "*StrictHostKeyChecking no*", "*StrictHostKeyChecking=off*", "*StrictHostKeyChecking off*") OR (process IN ("*StrictHostKeyChecking=accept-new*", "*StrictHostKeyChecking accept-new*") process IN ("*UserKnownHostsFile=/dev/null*", "*UserKnownHostsFile /dev/null*"))

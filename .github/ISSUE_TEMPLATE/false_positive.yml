@@ -1,0 +1,48 @@
+name: False positive
+description: A rule matched something it should not have matched.
+title: "FP: "
+labels:
+  - false-positive
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Redact secrets, hostnames, and home-directory names before you paste anything.
+        A false positive is a public detection-quality report, not a vulnerability.
+  - type: input
+    id: rule
+    attributes:
+      label: Rule name or id
+      placeholder: SUSP_SERAPH_MCP_Unpinned_Package or SERAPH-YARA-016
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options:
+        - YARA
+        - Sigma
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pack version or commit
+      placeholder: v0.1.9 or a full commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Redacted sample
+      description: The smallest file or normalized event that matched, with tokens and real paths removed.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this is benign
+      description: What the file or event was doing, and why a reviewer should not treat the match as suspicious.
+    validations:
+      required: true

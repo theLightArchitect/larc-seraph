@@ -1,0 +1,17 @@
+# Instruction file contains Unicode tags or bidi overrides
+
+## Threat
+
+Agent instruction files are read by a model and, usually, glanced at by a person. Unicode tag characters (U+E0000 through U+E007F) are invisible in ordinary rendering and can carry a second sentence. Bidi overrides (U+202A, U+202B, U+202D, U+202E) reorder the characters a person sees relative to the characters the parser reads. Both are established ways to hide text. The Trojan Source paper documents the bidi case. MITRE ATLAS AML.T0051 is the prompt-injection class this supports. ATT&CK T1027 is the closest enterprise technique, and it is only an approximation.
+
+## Why this rule
+
+The rule matches the UTF-8 ranges for the tag block and the four bidi override bytes. Every tag character counts, however many flag emoji come before it. Only the England, Scotland, and Wales flag sequences are exempt. It also matches the bidi isolates U+2066 to U+2068 and a run of four variation selectors from the supplement. It also matches a run of eight zero-width space, non-joiner, or joiner characters, which is how bits are smuggled. It does not match a single zero-width character, word joiner, or a single variation selector. Those show up in ordinary text. Tag characters and bidi overrides almost never do. The path-scoped rule still requires an instruction path (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, `.cursorrules`, `.cursor/rules/`, `.windsurfrules`, `.windsurf/rules/`, `.clinerules`, `.claude/commands/*.md`, `.claude/agents/*.md`, `.github/instructions/*.md`, `copilot-instructions.md`) or a JSON tool description. The Forge copy does not, because a real `CLAUDE.md` or `.cursor/rules/style.mdc` often never writes its own name. That copy is wider: a changelog that embeds a bidi override matches Forge and stays silent for the path-scoped rule.
+
+## Limitations
+
+A write-up that embeds the raw controls on purpose will match. larc-seraph's own pages name the code points and do not embed them. A motivated author can hide instructions with homoglyphs or with wording alone, and this rule will not see that. The path-scoped rule does not read a contributor guide or a README, so payload in one of those is open on that copy. The rule reads UTF-8: a UTF-16 file is open, and a file larger than 5 MB is not scanned. The Forge copy skips a file whose first kilobyte holds eight or more control bytes, so a file padded that way is not scanned by it. The path-scoped copy has no such check. Path-scope the scan to instruction filenames if you do not want it running across arbitrary files.
+
+## Triage
+
+Open the file in a hex view. If the hidden bytes are a quote in a security note, the false-positive note applies. If they are not, treat the file as untrusted instructions and remove it from the agent path.
