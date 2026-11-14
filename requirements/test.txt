@@ -568,9 +568,9 @@ requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via pysigma
-sigma-cli==3.1.0 \
-    --hash=sha256:378d94d5194448e8282571d3c6e2ffd8e6d231f0de5096e69c179ed6c5979df7 \
-    --hash=sha256:e87e4f241b309e84f67fb38aa768ddd6d911f90e061c885c0aa16a6dcb7fbad7
+sigma-cli==4.0.0 \
+    --hash=sha256:0656315d4727796b8a1556bfc274c11352ed306fa6d52ffcd85b25c47cac4ce6 \
+    --hash=sha256:161a84ea5fabd649701cedd5e49fd16f2debecbac43c56917d6180f32ac15d8d
     # via larc-seraph (pyproject.toml)
 types-pyyaml==6.0.12.20261113 \
     --hash=sha256:0828be2580fd94151182364f4d0158e4de62fdbeeb8d4296f7f7d2b6c22bb640 \
