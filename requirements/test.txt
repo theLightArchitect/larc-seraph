@@ -467,9 +467,9 @@ pyparsing==3.3.3 \
     --hash=sha256:928ae7e20211f3b6f3915a72f06a0cfd29ab9d24279dd6346b6b1a7146397d36 \
     --hash=sha256:ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4
     # via pysigma
-pysigma==1.5.1 \
-    --hash=sha256:1e6e080bde31db6039eb5d87d43322bf416534f30048091c65038e88225b8200 \
-    --hash=sha256:5f27ea435bc53480b43f9e385104c6df3d473715321d662a52a1fc283ab0b8db
+pysigma==2.1.0 \
+    --hash=sha256:3495dcfff8aaefc81f9249a6ebdb3ef823ca84bfa32fa0a8f0ef0421049cced4 \
+    --hash=sha256:b800923786ace5bc90bd35f488d81b7a2b86e04856f213f5de52c05f876901d1
     # via
     #   larc-seraph (pyproject.toml)
     #   pysigma-backend-elasticsearch
