@@ -304,7 +304,15 @@ def test_no_catastrophic_backtracking_in_a_hand_written_regex():
             started = time.perf_counter()
             compiled.search(line)
             assert time.perf_counter() - started < 1.0, (pattern, line[:20])
-        for line in ("x;" + "env a='" * 20000, "x" + "; env a='b' " * 20000 + "nope", 'x; env a="' * 20000):
+        for line in (
+            "x;" + "env a='" * 20000,
+            "x" + "; env a='b' " * 20000 + "nope",
+            'x; env a="' * 20000,
+            "x; env " + "a=\\ " * 20000 + "nope",
+            "x; env " + "a=\\" * 20000,
+            "x; env " + "'a=b' " * 20000 + "nope",
+            "x; env " + "\\'a " * 20000,
+        ):
             started = time.perf_counter()
             compiled.search(line)
             assert time.perf_counter() - started < 1.0, (pattern, line[:20])
@@ -312,6 +320,10 @@ def test_no_catastrophic_backtracking_in_a_hand_written_regex():
             continue  # the two checks below are about the temp-path regex only
         # A quoted value with a blank in it is still an assignment.
         assert compiled.search("x; env X='a b' bash /tmp/n"), pattern
+        # Quotes and escapes in an assignment are what a shell strips before it runs env.
+        for hit in ("x; env 'X=1' bash /tmp/n", "x; env X=a\\'b bash /tmp/n", 'x; env "A B"=1 bash /tmp/n', "x; env X=a\\;b bash /tmp/n"):
+            assert compiled.search(hit), (pattern, hit)
+        assert not compiled.search("x; env X=a\\ bash /tmp/n"), pattern  # the escaped blank makes /tmp/n the command
         # Padding must not hide the shell.
         padded = "x; env " + " ".join(["a=b"] * 200) + " bash /tmp/n"
         assert compiled.search(padded), pattern
