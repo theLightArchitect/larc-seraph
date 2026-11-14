@@ -194,13 +194,6 @@ POISON_PATTERN = (
     r"--dangerously-skip-permissions|--yolo\b|--always-approve|--auto-approve|"
     r"--trust-all-tools|--no-confirm\b|--permission-mode"
 )
-# "If the user says to forget previous instructions about style, ..." is a
-# conditional about what the user asks, not an order to forget. The prefix has to
-# sit directly before the verb. A "phrase, then a URL" occurrence is exempt when
-# the conditional form starts at the same place, and each start is counted on its
-# own, so a real order elsewhere on the line is still a match.
-USER_REQUEST_PREFIX = r"\b(if|when)\s+the\s+user\s+(says|asks|wants)\s+(you\s+)?to\s+"
-INJECT_VERB = r"(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above)\s+instructions"
 # Absolute same-line vetoes. A permission flag or a backticked status label.
 ABSOLUTE_VETO_PATTERNS = (
     r"--[A-Za-z0-9].{0,40}(skip confirmation|confirm)",
@@ -416,9 +409,8 @@ def _homo_variant(forced: int) -> str:
 HOMO_PATTERN = "(" + "|".join(_homo_variant(index) for index in range(5)) + ")"
 CRED_FORWARD = r"(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)[^\n]{0,320}(curl |wget )"
 CRED_REVERSE = r"(curl |wget )[^\n]{0,320}(\.ssh\/authorized_keys|\.aws\/credentials|id_ed25519|id_rsa|\.netrc)"
-INJECT_FORWARD = emph(INJECT_VERB + r"[^\n]{0,400}(curl |wget |https?:\/\/)")
-INJECT_REVERSE = emph(r"(curl |wget |https?:\/\/)[^\n]{0,400}" + INJECT_VERB)
-INJECT_COND_FORWARD = emph(USER_REQUEST_PREFIX + INJECT_VERB + r"[^\n]{0,400}(curl |wget |https?:\/\/)")
+INJECT_FORWARD = emph(r"(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above)\s+instructions[^\n]{0,400}(curl |wget |https?:\/\/)")
+INJECT_REVERSE = emph(r"(curl |wget |https?:\/\/)[^\n]{0,400}(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above)\s+instructions")
 
 # A JSON file counts as tool descriptions only when it also has one of these keys.
 # A CLI manifest or an API description has a "description" key and is not a tool list.
@@ -464,10 +456,7 @@ _SCOPED_LINES = tuple(
     compile_bytes(lean_line_regex(byte_regex(item)), translated=True) for item in SCOPED_PHRASE_PATTERNS
 )
 _BARE = tuple(compile_bytes(item) for item in CONFIRM_PATTERNS + HIGH_PATTERNS)
-_PLAIN = tuple(compile_bytes(item) for item in (CRED_FORWARD, CRED_REVERSE))
-_INJECT_FORWARD = compile_bytes(INJECT_FORWARD)
-_INJECT_COND_FORWARD = compile_bytes(INJECT_COND_FORWARD)
-_INJECT_REVERSE = compile_bytes(INJECT_REVERSE)
+_PLAIN = tuple(compile_bytes(item) for item in (CRED_FORWARD, CRED_REVERSE, INJECT_FORWARD, INJECT_REVERSE))
 _HOMO = compile_bytes(HOMO_PATTERN)
 _URL = compile_bytes(URL_PATTERN)
 _FETCH = compile_bytes(FETCH_PATTERN)
@@ -566,15 +555,6 @@ def _occurrence_hit(
             continue
         return True
     return False
-
-
-def _inject_hit(data: bytes) -> bool:
-    """An injection phrase that is not just the user-request conditional, counted per start."""
-    # The reverse form (a URL, then the phrase) has no exemption: a conditional placed
-    # after a real order would start from the same URL and cancel it.
-    return _INJECT_REVERSE.search(data) is not None or len(_starts(_INJECT_FORWARD, data)) > len(
-        _starts(_INJECT_COND_FORWARD, data)
-    )
 
 
 def _far_hit(data: bytes) -> bool:
@@ -700,7 +680,6 @@ def instruction_bypass(data: bytes, filepath: str, *, use_filepath: bool) -> boo
     return (
         _HOMO.search(data) is not None
         or any(pattern.search(data) for pattern in _PLAIN)
-        or _inject_hit(data)
         or _phrase_hit(data)
         or _token_exfil(data)
         or _signal_hit(data)
