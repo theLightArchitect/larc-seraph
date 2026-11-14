@@ -25,6 +25,7 @@ from larc_seraph.phrases import (  # noqa: E402
     NEGATED_CLI_FLAG_PATTERN,
     URL_PATTERN,
     byte_regex,
+    lean_line_regex,
     line_regex,
     CLI_FLAG_PATTERN,
     CONFIRM_PATTERNS,
@@ -32,10 +33,16 @@ from larc_seraph.phrases import (  # noqa: E402
     CRED_REVERSE,
     HIGH_PATTERNS,
     HIGH_WORD_PATTERN,
-    HOMO_HEX,
+    HOMO_PATTERN,
     INSTALLER_BODY_PATTERN,
     LINE_REACH,
     NEGATED_FETCH_PATTERN,
+    NEGATED_SUBST_PATTERN,
+    PARAPHRASE_BARE_PATTERNS,
+    SCOPED_PHRASE_PATTERNS,
+    PARAPHRASE_VETO_PATTERNS,
+    SUBST_INSTALLER_PATTERN,
+    SUBST_PATTERN,
     OUTER_BOUND,
     TOOL_KEY_PATTERN,
     INJECT_FORWARD,
@@ -77,20 +84,31 @@ def _span(name: str) -> str:
 
 
 def _around(name: str, reach: int) -> str:
-    return f"(math.max(0, @{name}[i] - {reach})..@{name}[i] + {reach})"
+    return f"(@{name}[i] - {reach}..@{name}[i] + {reach})"
 
 
 def _occurrence(name: str, *, needs_high: bool) -> str:
     span = _span(name)
+    # The paraphrase vetoes belong to the "without asking" and paraphrase lists only.
+    veto = f"($bad in {span} or $badp in {span})" if needs_high else f"$bad in {span}"
     text = f"""for any i in (1..{_OUTER}): (
         i <= #{name} and
-        not $bad in {span} and
+        not {veto} and
         not ($soft in {span} and not $high in {span})"""
     if needs_high:
         text += f""" and
         $high in {span}"""
     # More occurrences than the loop judges count as a match.
     return text + f"\n      ) or\n      #{name} > {_OUTER}"
+
+
+def _occurrence_scoped(name: str) -> str:
+    span = _span(name)
+    return f"""for any i in (1..{_OUTER}): (
+        i <= #{name} and
+        not ($bad in {span} or $badp in {span})
+      ) or
+      #{name} > {_OUTER}"""
 
 
 def _token_block(name: str, vendor: str | None) -> str:
@@ -118,7 +136,7 @@ def _near(left: str, right: str) -> str:
 def render() -> str:
     strings: list[str] = [
         '    $desc             = "\\"description\\"" ascii',
-        f"    $homo             = {HOMO_HEX}",
+        f"    $homo             = /{to_yara(HOMO_PATTERN)}/ nocase ascii",
         f"    $file_then_fetch  = /{to_yara(CRED_FORWARD)}/ nocase ascii",
         f"    $fetch_then_file  = /{to_yara(CRED_REVERSE)}/ nocase ascii",
         f"    $inject_fwd       = /{to_yara(INJECT_FORWARD)}/ nocase ascii",
@@ -127,6 +145,9 @@ def render() -> str:
         f"    $soft             = /({to_yara(POISON_PATTERN)})|({to_yara(LOW_PATTERN)})/ nocase ascii",
         "    $bad              = /"
         + "|".join(to_yara(item) for item in ABSOLUTE_VETO_PATTERNS)
+        + "/ nocase ascii",
+        "    $badp             = /"
+        + "|".join(to_yara(item) for item in PARAPHRASE_VETO_PATTERNS)
         + "/ nocase ascii",
         f"    $url              = /{to_yara(URL_PATTERN)}/ nocase ascii",
         f"    $fetch            = /{to_yara(FETCH_PATTERN)}/ nocase ascii",
@@ -137,10 +158,16 @@ def render() -> str:
         confirm_names.append(name)
         strings.append(f"    ${name} = {_line(to_yara(pattern))}")
     high_names: list[str] = []
-    for index, pattern in enumerate(HIGH_PATTERNS, start=1):
+    for index, pattern in enumerate(HIGH_PATTERNS + PARAPHRASE_BARE_PATTERNS, start=1):
         name = f"h{index}"
         high_names.append(name)
         strings.append(f"    ${name} = {_line(to_yara(pattern))}")
+    # The high-risk word sits in the sentence of the phrase, so the string holds both.
+    scoped_names: list[str] = []
+    for index, pattern in enumerate(SCOPED_PHRASE_PATTERNS, start=1):
+        name = f"hs{index}"
+        scoped_names.append(name)
+        strings.append(f"    ${name} = /{lean_line_regex(to_yara(pattern))}/ nocase ascii")
     token_names: list[tuple[str, str | None]] = []
     for host in dict.fromkeys(VENDOR_HOST.values()):
         slug = host.split(".")[0]
@@ -173,6 +200,9 @@ def render() -> str:
     strings.append(f"    $pipe             = /{to_yara(PIPE_PATTERN)}/ nocase ascii")
     strings.append(f"    $installer_body   = /{to_yara(INSTALLER_BODY_PATTERN)}/ nocase ascii")
     strings.append(f"    $neg_fetch        = /{to_yara(NEGATED_FETCH_PATTERN)}/ nocase ascii")
+    strings.append(f"    $subst            = /{to_yara(SUBST_PATTERN)}/ nocase ascii")
+    strings.append(f"    $subst_installer  = /{to_yara(SUBST_INSTALLER_PATTERN)}/ nocase ascii")
+    strings.append(f"    $neg_subst        = /{to_yara(NEGATED_SUBST_PATTERN)}/ nocase ascii")
     strings.append(f"    $cliflag          = /{to_yara(CLI_FLAG_PATTERN)}/ nocase ascii")
     strings.append(f"    $neg_cliflag      = /{to_yara(NEGATED_CLI_FLAG_PATTERN)}/ nocase ascii")
     bare_names: list[str] = []
@@ -185,6 +215,7 @@ def render() -> str:
         _occurrence(name, needs_high=False) for name in confirm_names
     ]
     parts.extend(_occurrence(name, needs_high=True) for name in high_names)
+    parts.extend(_occurrence_scoped(name) for name in scoped_names)
     # A bypass phrase with no newline in the LINE_REACH + 2 bytes before it is
     # further into its line than the line strings above can reach. It matches outright.
     parts.extend(
@@ -204,6 +235,19 @@ def render() -> str:
     parts.append("(" + " or ".join(_near("detail", name) for name in conceal + recipients) + ")")
     parts.append("(" + " or ".join(_near(f"side{index}", "sensitive") for index in (1, 2)) + ")")
     parts.append(_near("exfil", "encode"))
+    parts.append(
+        # A fetch run through command substitution is judged on its own. A listed
+        # installer line exempts the substitution that starts where it starts, and a
+        # "do not run" sentence exempts the one that ends where it ends.
+        f"""for any i in (1..{_OUTER}): (
+        i <= #subst and
+        not $subst_installer at @subst[i] and
+        not for any j in (1..{_OUTER}): (
+          j <= #neg_subst and @neg_subst[j] + !neg_subst[j] == @subst[i] + !subst[i]
+        )
+      ) or
+      #subst > {_OUTER}"""
+    )
     parts.append(
         # A prohibition ("never run with --yolo") negates exactly the flag sentence
         # that follows it, one for one, so more flag sentences than negated ones is a hit.
@@ -247,8 +291,6 @@ def render() -> str:
    Do not edit this file by hand.
 */
 
-import "math"
-
 rule SUSP_SERAPH_Instruction_Unsafe_Directive {{
   meta:
     id               = "SERAPH-YARA-007"
@@ -259,11 +301,11 @@ rule SUSP_SERAPH_Instruction_Unsafe_Directive {{
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.11.0"
+    version          = "1.13.0"
     severity         = "high"
     status           = "experimental"
     score            = 70
-    description      = "Detects a confirmation-bypass sentence, a Cyrillic homoglyph of that sentence, a credential path next to curl or wget, ignore-previous-instructions next to a fetch, or a listed API token next to a fetch and a URL whose host is not that token's vendor. A pipe into a shell matches unless the whole command is one listed first-party installer line. The sentence list is generated from larc_seraph.phrases. A Markdown heading, a table row, a backticked status label, a known permission flag, or a prohibition such as never bypass permissions does not match. A read-only action does not match unless a high-risk action is on the same line."
+    description      = "Detects a confirmation-bypass sentence, a Cyrillic homoglyph of that sentence, a credential path next to curl or wget, ignore-previous-instructions next to a fetch, or a listed API token next to a fetch and a URL whose host is not that token's vendor. A pipe into a shell matches unless the whole command is one listed first-party installer line. The sentence list is generated from larc_seraph.phrases. A Markdown heading, a table row, a backticked status label, a known permission flag, or a prohibition such as never bypass permissions does not match. A read-only action does not match unless a high-risk action is on the same line. A paraphrase that names its own scope (approval is not required for read-only git commands) is judged with its own sentence, and a prohibition worded may not, cannot, is not allowed to, or under no circumstances does not match."
     attack_technique = "T1567, T1562.001"
     attack_tactic    = "exfiltration, defense-evasion"
     reference        = "https://attack.mitre.org/techniques/T1567/"
@@ -281,7 +323,7 @@ rule SUSP_SERAPH_Instruction_Unsafe_Directive {{
     reference     = "https://simonwillison.net/2023/Apr/14/new-prompt-injection-attack-on-chatgpt-web-version-markdown-imag/"
     reference     = "https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/"
     reference     = "https://www.wiz.io/blog/s1ngularity-supply-chain-attack"
-    scope            = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, SKILL.md, copilot-instructions.md, and JSON tool descriptions (a description key beside tools, inputSchema, mcpServers, or context_servers), any case. Set filepath to the path as stored. The phrases are the same list the CLI evaluates."
+    scope            = "AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/*, .windsurfrules, .windsurf/rules/*, .clinerules, .claude/commands/*.md, .claude/agents/*.md, .github/instructions/*.md, SKILL.md, copilot-instructions.md, and JSON tool descriptions (a description key beside tools, inputSchema, mcpServers, or context_servers), any case. Set filepath to the path as stored. The phrases are the same list the CLI evaluates."
     false_positives  = "A team that writes the same sentence as a real policy. A credential file and a fetch on one example line. A vendor install line that pipes into a shell and is not on the short installer list. Homoglyphs other than Cyrillic o are not in the list."
     license          = "Detection Rule License 1.1"
 
@@ -292,7 +334,7 @@ rule SUSP_SERAPH_Instruction_Unsafe_Directive {{
     filesize > 0 and filesize < 5000000 and
     {BINARY_GUARD_YARA} and
     (
-      filepath matches /(\\/(agents|claude|gemini)\\.md$)|(\\/\\.cursorrules$)|(\\/skill\\.md$)|(\\/copilot-instructions\\.md$)|(\\/\\.cursor\\/rules\\/)|(\\.mdc$)/i or
+      filepath matches /(\\/(agents|claude|gemini)\\.md$)|(\\/\\.cursorrules$)|(\\/skill\\.md$)|(\\/copilot-instructions\\.md$)|(\\/\\.cursor\\/rules\\/)|(\\.mdc$)|(\\/\\.windsurfrules$)|(\\/\\.windsurf\\/rules\\/)|(\\/\\.clinerules($|\\/))|(\\/\\.claude\\/(commands|agents)\\/[^\\/]+\\.md$)|(\\/\\.github\\/instructions\\/[^\\/]+\\.md$)/i or
       (filepath matches /\\.(json|jsonc)$/i and $desc and $toolkey)
     ) and (
       $homo or $file_then_fetch or $fetch_then_file or $inject_fwd or $inject_rev or

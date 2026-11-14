@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- SERAPH synthetic fixture. classification: synthetic-benign. expected: match. inert. do not load with launchctl. -->
+<dict>
+  <key>Label</key>
+  <string>com.example.seraph.synthetic</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/ssh</string>
+    <string>-N</string>
+    <string>-o</string>
+    <string>RemoteForward=2222 127.0.0.1:22</string>
+    <string>-o</string>
+    <string>StrictHostKeyChecking=no</string>
+    <string>tunnel@example.invalid</string>
+  </array>
+</dict>
+</plist>

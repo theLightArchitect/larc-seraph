@@ -7,8 +7,6 @@
 
 */
 
-import "math"
-
 rule SUSP_SERAPH_Instruction_Hidden_Unicode {
   meta:
     id               = "SERAPH-YARA-006"
@@ -19,7 +17,7 @@ rule SUSP_SERAPH_Instruction_Hidden_Unicode {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.7.0"
+    version          = "1.8.0"
     severity         = "high"
     status           = "experimental"
     score            = 50
@@ -57,12 +55,15 @@ rule SUSP_SERAPH_Instruction_Hidden_Unicode {
     // ordinary. A run is how bytes are smuggled.
     $vs_run = { F3 A0 (84 | 85 | 86 | 87) ?? F3 A0 (84 | 85 | 86 | 87) ?? }
     $vs_bmp = { EF B8 8? EF B8 8? EF B8 8? }
+    // Eight zero-width space, non-joiner, or joiner characters in a row. One of
+    // them is common. A run is how bits are smuggled.
+    $zw_run = { E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) E2 80 (8B | 8C | 8D) }
 
   condition:
     filesize > 0 and filesize < 5000000 and
-    not for 8 i in (0..math.min(1023, filesize - 1)): (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27)) and
+    not for 8 i in (0..1023): (i < filesize and (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27))) and
     (
-      any of ($lre, $rle, $lro, $rlo, $lri, $rli, $fsi) or $vs_run or $vs_bmp or
+      any of ($lre, $rle, $lro, $rlo, $lri, $rli, $fsi) or $vs_run or $vs_bmp or $zw_run or
       // Each exempt flag holds exactly six tag characters. More tags than that
       // means at least one tag sits outside a listed flag. No loop, so no bound.
       #tag > 6 * #flag

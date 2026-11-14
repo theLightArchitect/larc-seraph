@@ -6,8 +6,8 @@ name: SERAPH_MacOS_Interpreter_Drops_Launch_Plist
 id: d02261e0-72ff-4943-b615-535f3c525e8f
 status: experimental
 description: >
-  A shell, Python, Node, Bun, Deno, Perl, Ruby, osascript, or curl wrote a plist under LaunchAgents
-  or LaunchDaemons. This is the file-drop half of a persistence lead. The
+  A shell, Python, Node, Bun, Deno, Perl, Ruby, osascript, curl, tee, defaults, PlistBuddy,
+  or cfprefsd wrote a plist under LaunchAgents or LaunchDaemons. This is the file-drop half of a persistence lead. The
   companion YARA rule inspects whether the plist itself is a rogue job.
   Field names are the larc-seraph normalized macOS contract.
 references:
@@ -50,6 +50,10 @@ detection:
       - '/ruby'
       - '/bun'
       - '/deno'
+      - '/tee'
+      - '/defaults'
+      - '/PlistBuddy'
+      - '/cfprefsd'
   selection_writer_versioned:
     Image|contains: '/python3.'
   condition: selection_dir and selection_ext and 1 of selection_writer_*

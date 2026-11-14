@@ -16,11 +16,11 @@ rule SUSP_SERAPH_MCP_Unpinned_Package {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.5.0"
+    version          = "1.6.0"
     severity         = "medium"
     status           = "experimental"
     score            = 55
-    description      = "Detects an MCP client config that starts npx, uvx, or bunx with a package that has no numeric version and is not an allowlisted first-party scope. Remote URLs and explicit @latest tags are SERAPH-YARA-004. A pin or an allowlisted package elsewhere in the file does not clear a second unpinned package. Content-only rule: it compiles with no externals."
+    description      = "Detects an MCP client config that starts npx, uvx, bunx, npm exec, pnpm dlx, yarn dlx, or uv tool run with a package that has no numeric version and is not an allowlisted first-party scope. Remote URLs and explicit @latest tags are SERAPH-YARA-004. A pin or an allowlisted package elsewhere in the file does not clear a second unpinned package. Content-only rule: it compiles with no externals."
     attack_technique = "T1195.002"
     attack_tactic    = "initial-access"
     reference        = "https://attack.mitre.org/techniques/T1195/002/"
@@ -46,10 +46,10 @@ rule SUSP_SERAPH_MCP_Unpinned_Package {
     $cmd_toml        = /(^|\n)[ \t]*command[ \t]*=[ \t]*['"](npx|uvx|bunx)['"]/ nocase ascii
     // -y / --yes then the package, or the package then the flag. Either quote. Any case.
     // Anchored on the args array so a pin or an allowlisted name elsewhere cannot veto the file.
-    $flag_bare       = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"](--yes|-y)['"][ \t\r\n]*,[ \t\r\n]*['"][A-Za-z][A-Za-z0-9._-]{1,}['"]/ nocase ascii
+    $flag_bare       = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"](--yes|-y)['"][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}['"][A-Za-z][A-Za-z0-9._-]{1,}['"]/ nocase ascii
     $bare_flag       = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"][A-Za-z][A-Za-z0-9._-]{1,}['"][ \t\r\n]*,[ \t\r\n]*['"](--yes|-y)['"]/ nocase ascii
-    $flag_scoped     = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"](--yes|-y)['"][ \t\r\n]*,[ \t\r\n]*['"]@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+['"]/ nocase ascii
-    $flag_scoped_ok  = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"](--yes|-y)['"][ \t\r\n]*,[ \t\r\n]*['"]@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+['"]/ nocase ascii
+    $flag_scoped     = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"](--yes|-y)['"][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}['"]@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+['"]/ nocase ascii
+    $flag_scoped_ok  = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"](--yes|-y)['"][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}['"]@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+['"]/ nocase ascii
     $scoped_flag     = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"]@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+['"][ \t\r\n]*,[ \t\r\n]*['"](--yes|-y)['"]/ nocase ascii
     $scoped_flag_ok  = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}['"]@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+['"][ \t\r\n]*,[ \t\r\n]*['"](--yes|-y)['"]/ nocase ascii
     $one             = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,200}['"]-y[ \t]+(@[A-Za-z0-9._-]+\/)?[A-Za-z][A-Za-z0-9._-]*['"]/ nocase ascii
@@ -62,6 +62,26 @@ rule SUSP_SERAPH_MCP_Unpinned_Package {
     $yaml_scoped     = /command:[ \t]*['"]?(npx|uvx|bunx)\b[^\n]*\n[^\n]*\n[^\n]*\n[ \t]*-[ \t]*@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+/ nocase ascii
     $yaml_scoped_ok  = /command:[ \t]*['"]?(npx|uvx|bunx)\b[^\n]*\n[^\n]*\n[^\n]*\n[ \t]*-[ \t]*@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+/ nocase ascii
 
+    // Runners that are not the command itself. Each reads the package from an args array.
+    $dlx_bare        = /["'](pnpm|yarn|npm)["'][^}]{0,200}["']args["'][ \t]*[:=][ \t]*\[[ \t\r\n]*["'](dlx|exec)["'][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}["'][A-Za-z][A-Za-z0-9._-]{1,}["']/ nocase ascii
+    $dlx_scoped      = /["'](pnpm|yarn|npm)["'][^}]{0,200}["']args["'][ \t]*[:=][ \t]*\[[ \t\r\n]*["'](dlx|exec)["'][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}["']@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+["']/ nocase ascii
+    $dlx_scoped_ok   = /["'](pnpm|yarn|npm)["'][^}]{0,200}["']args["'][ \t]*[:=][ \t]*\[[ \t\r\n]*["'](dlx|exec)["'][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}["']@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+["']/ nocase ascii
+    $uv_bare         = /["'](uv)["'][^}]{0,200}["']args["'][ \t]*[:=][ \t]*\[[ \t\r\n]*["']tool["'][ \t\r\n]*,[ \t\r\n]*["']run["'][ \t\r\n]*,[ \t\r\n]*(['"]-{1,2}([A-Za-z][A-Za-z-]*)?['"][ \t\r\n]*,[ \t\r\n]*){0,4}["'][A-Za-z][A-Za-z0-9._-]{1,}["']/ nocase ascii
+    // Windows starts npx through cmd /c.
+    $win_runner      = /["'](cmd|cmd\.exe)["'][^}]{0,100}["']\/c["'][ \t\r\n]*,[ \t\r\n]*["'](npx|bunx|uvx)(\.cmd)?["']/ nocase ascii
+    // npx -y pkg inside one shell string. -y marks a remote install, so npx tsc is not matched.
+    $sh_npx          = /(["' \t;&|(`]|^)(npx|bunx|uvx)[ \t]+(-y|--yes)[ \t]+(-{1,2}[A-Za-z][A-Za-z-]*[ \t]+){0,3}[A-Za-z][A-Za-z0-9._-]{1,}(["'\\ \t;&|)]|$)/ nocase ascii
+    $sh_scoped       = /(["' \t;&|(`]|^)(npx|bunx|uvx)[ \t]+(-y|--yes)[ \t]+(-{1,2}[A-Za-z][A-Za-z-]*[ \t]+){0,3}@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+(["'\\ \t;&|)]|$)/ nocase ascii
+    $sh_scoped_ok    = /(["' \t;&|(`]|^)(npx|bunx|uvx)[ \t]+(-y|--yes)[ \t]+(-{1,2}[A-Za-z][A-Za-z-]*[ \t]+){0,3}@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+(["'\\ \t;&|)]|$)/ nocase ascii
+    // --package=name names the package. A pin on it is a numeric version.
+    $pkgeq           = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}["'](--package|-p)=[A-Za-z][A-Za-z0-9._-]{1,}["']/ nocase ascii
+    $pkgeq_scoped    = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}["'](--package|-p)=@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+["']/ nocase ascii
+    $pkgeq_scoped_ok = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}["'](--package|-p)=@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+["']/ nocase ascii
+    // A range is not a pin.
+    $range           = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}["'][A-Za-z][A-Za-z0-9._-]{1,}@[\^~><][^"'\n]{0,30}["']/ nocase ascii
+    $range_scoped    = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}["']@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+@[\^~><][^"'\n]{0,30}["']/ nocase ascii
+    $range_scoped_ok = /args['"]?[ \t]*[:=][ \t]*\[[^\]]{0,300}["']@(modelcontextprotocol|anthropic-ai|github)\/[A-Za-z0-9._-]+@[\^~><][^"'\n]{0,30}["']/ nocase ascii
+
   condition:
     (
       not for 8 i in (0..1023): (uint8(i) < 9 or (uint8(i) > 13 and uint8(i) < 32 and uint8(i) != 27)) and (for any i in (0..4095): (
@@ -71,14 +91,22 @@ rule SUSP_SERAPH_MCP_Unpinned_Package {
             uint8(j) == 0xEF or uint8(j) == 0xBB or uint8(j) == 0xBF
           )
         ) or $start_yaml or $start_toml)
-    ) and ($mcp_json or $mcp_yaml or $mcp_toml or $mcp_toml_table or $mcp_vscode or $mcp_zed) and ($cmd_json or $cmd_yaml or $cmd_toml) and (
-      $flag_bare or $bare_flag or $one or $first_bare or $first_bare_nl or $yaml_pack or
-      // The same pattern with an allowlisted scope on the package token. More scoped
-      // packages than allowlisted ones means one of them is not allowlisted. A scope
-      // name elsewhere in the args, such as a registry URL, does not count.
-      #flag_scoped > #flag_scoped_ok or
-      #scoped_flag > #scoped_flag_ok or
-      #first_scoped > #first_scoped_ok or
-      #yaml_scoped > #yaml_scoped_ok
+    ) and ($mcp_json or $mcp_yaml or $mcp_toml or $mcp_toml_table or $mcp_vscode or $mcp_zed) and (
+      (($cmd_json or $cmd_yaml or $cmd_toml or $win_runner) and (
+          $flag_bare or $bare_flag or $one or $first_bare or $first_bare_nl or $yaml_pack or
+          $pkgeq or $range or
+          // The same pattern with an allowlisted scope on the package token. More scoped
+          // packages than allowlisted ones means one of them is not allowlisted. A scope
+          // name elsewhere in the args, such as a registry URL, does not count.
+          #flag_scoped > #flag_scoped_ok or
+          #scoped_flag > #scoped_flag_ok or
+          #first_scoped > #first_scoped_ok or
+          #yaml_scoped > #yaml_scoped_ok or
+          #pkgeq_scoped > #pkgeq_scoped_ok or
+          #range_scoped > #range_scoped_ok
+        )) or
+      $dlx_bare or $uv_bare or $sh_npx or
+      #dlx_scoped > #dlx_scoped_ok or
+      #sh_scoped > #sh_scoped_ok
     )
 }

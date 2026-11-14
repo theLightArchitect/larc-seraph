@@ -40,7 +40,7 @@ _INSTRUCTION_BLOCK = re.compile(
     r"\)",
     re.S,
 )
-_BINARY_GUARD = re.compile(r"[ \t]*not for 8 i in \(0\.\.math\.min\(1023, filesize - 1\)\):[^\n]*\) and\n")
+_BINARY_GUARD = re.compile(r"[ \t]*not for 8 i in \(0\.\.1023\):[^\n]*\) and\n")
 _GIT_SAMPLE = re.compile(r"[ \t]*not filepath matches /\\\.sample\$/i and\n")
 _GIT_PATH = re.compile(
     r"(?:[ \t]*//[^\n]*core\.hooksPath[^\n]*\n)?"
@@ -290,9 +290,7 @@ def path_text(text: str) -> str:
     )
     # The path is the evidence that this is an instruction file, so the binary
     # guard is dropped. A leading MZ or a few control bytes cannot switch the rule off.
-    updated, dropped = _BINARY_GUARD.subn("", updated, count=1)
-    if dropped and "math." not in updated:
-        updated = updated.replace('import "math"\n\n', "", 1)
+    updated, _dropped = _BINARY_GUARD.subn("", updated, count=1)
     return updated
 
 

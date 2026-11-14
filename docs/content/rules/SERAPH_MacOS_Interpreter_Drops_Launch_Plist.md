@@ -12,6 +12,10 @@ The path has to contain one of the two launchd directories and end in `.plist`. 
 
 Severity is medium because installers and Homebrew casks drop LaunchAgents from shell scripts all day. Correlate with the plist content rules before you escalate. A writer that is a compiled helper, not an interpreter, does not match. The rule cannot see the plist body. That is the YARA rule's job.
 
+## Added in the hardening round
+
+`tee`, `defaults`, `PlistBuddy`, and `cfprefsd` now count as writers, because each can create or edit a launchd plist and a persistence job does not need an interpreter. `cp` and `mv` stay out: installers and dotfile managers use them constantly, and the pack keeps `cp` as a negative fixture. Both are asserted misses in `validation/evasion-matrix.yml`.
+
 ## Triage
 
 This event has no plist body. Pair it with the YARA launchd rules before escalating. Installers do this often.

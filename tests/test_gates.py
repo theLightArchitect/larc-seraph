@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import time
@@ -12,7 +13,7 @@ import pytest
 import yaml
 import yara
 
-from larc_seraph.eval import rule_matches
+from larc_seraph.eval import rule_matches, search_form
 from larc_seraph.inventory import ROOT, load_sigma_rules
 from larc_seraph.scan import compile_yara, yara_match
 from larc_seraph.translate import NORMALIZERS
@@ -243,3 +244,110 @@ def test_eslogger_create_and_rename_use_the_endpoint_security_shape():
         }
     )
     assert renamed["TargetFilename"] == "/Users/dev/.ssh/authorized_keys"
+
+
+def test_extra_agent_markers_stay_in_sync():
+    """The hardening round added hosts beside the shared list the older test pins."""
+    sigma_dir = ROOT / "rules" / "sigma"
+
+    def load(name: str) -> dict:
+        return yaml.safe_load((sigma_dir / name).read_text(encoding="utf-8"))["detection"]
+
+    expected = [
+        {"Image|contains": "/Windsurf"},
+        {"Image|endswith": ["/opencode", "/aider", "/goose"]},
+    ]
+    parent_expected = [
+        {"ParentImage|contains": "/Windsurf"},
+        {"ParentImage|endswith": ["/opencode", "/aider", "/goose"]},
+    ]
+    for name in ("macos_agent_writes_authorized_keys.yml", "macos_agent_modifies_shell_rc.yml"):
+        detection = load(name)
+        assert detection["selection_agent_extra_image"] == expected, name
+        assert detection["selection_agent_extra_parent"] == parent_expected, name
+    assert load("macos_agent_piped_shell.yml")["selection_parent_extra"] == parent_expected
+
+
+def test_no_catastrophic_backtracking_in_a_hand_written_regex():
+    """A crafted command line or sentence must not make a backtracking engine slow.
+
+    Both inputs took exponential time with an earlier pattern: about five times
+    longer per extra assignment in the Sigma temp-run regex, about twice as long
+    per repeat of "e.g.e" with the sentence unit that also matched abbreviations.
+    The bounds are generous. They fail by orders of magnitude, not by noise.
+    """
+    import re
+    import time
+
+    from larc_seraph.phrases import instruction_bypass
+
+    sigma_rules = {rule.name: rule for rule, _path in load_sigma_rules()}
+    document = yaml.safe_load((ROOT / "rules" / "sigma" / "macos_agent_piped_shell.yml").read_text(encoding="utf-8"))
+    regexes = [
+        value
+        for selection in document["detection"].values()
+        if isinstance(selection, dict)
+        for key, value in selection.items()
+        if key.endswith("|re") and isinstance(value, str)
+    ]
+    assert regexes, "expected at least one regex in the rule"
+    assert "SERAPH_MacOS_Agent_Piped_Shell" in sigma_rules
+    for pattern in regexes:
+        compiled = re.compile(search_form(pattern), re.IGNORECASE)
+        for count in (40, 200, 20000):
+            line = "x; env " + " ".join(["a=b=c=d=e=f"] * count) + " nope"
+            started = time.perf_counter()
+            compiled.search(line)
+            assert time.perf_counter() - started < 1.0, (pattern, count)
+        # Every separator starts a new attempt, so an attempt must stop at the next one.
+        for line in ("x;" + "env a=;" * 20000 + " nope", "x" + "; env a=b" * 20000 + " nope", "x" + "&& sudo env A=1 " * 20000 + "nope"):
+            started = time.perf_counter()
+            compiled.search(line)
+            assert time.perf_counter() - started < 1.0, (pattern, line[:20])
+        for line in ("x;" + "env a='" * 20000, "x" + "; env a='b' " * 20000 + "nope", 'x; env a="' * 20000):
+            started = time.perf_counter()
+            compiled.search(line)
+            assert time.perf_counter() - started < 1.0, (pattern, line[:20])
+        if "tmp/" not in pattern:
+            continue  # the two checks below are about the temp-path regex only
+        # A quoted value with a blank in it is still an assignment.
+        assert compiled.search("x; env X='a b' bash /tmp/n"), pattern
+        # Padding must not hide the shell.
+        padded = "x; env " + " ".join(["a=b"] * 200) + " bash /tmp/n"
+        assert compiled.search(padded), pattern
+
+    header = b"Agent instructions.\n\n"
+    for body in (b"e.g.e" * 40, b"i.e.i" * 40, b".x" * 80, b"e.g." * 40, b"e.g. " * 40, b"e.g.\t" * 40, b"i.e. e.g.e " * 20):
+        started = time.perf_counter()
+        instruction_bypass(header + b"Approval is not required " + body + b"\n", "/x/AGENTS.md", use_filepath=True)
+        assert time.perf_counter() - started < 1.0, body[:12]
+
+
+def test_the_repeated_sentence_unit_stays_small():
+    """A repeated group with more branches made libyara stop on a 4 MB executable.
+
+    With e.g. and i.e. as branches of SENTENCE_UNIT (four branches, repeated up to
+    160 times, behind a 1000 byte line prefix) libyara reported "too many fibers" on
+    two large binaries and the scan of those files did not finish. The unit has two
+    branches. Abbreviations have their own patterns without a repeated alternation.
+    """
+    from larc_seraph.phrases import ABBREVIATION, SENTENCE_UNIT
+
+    assert SENTENCE_UNIT.count("|") == 1, SENTENCE_UNIT
+    assert "e\\.g" not in SENTENCE_UNIT and "i\\.e" not in SENTENCE_UNIT
+    assert ABBREVIATION
+
+
+def test_search_form_gives_the_same_answer_as_the_written_regex() -> None:
+    cases = [
+        (r".*(curl|wget|fetch|base64)\t.*", ["curl\t-s", "x curl\ty", "curl -s", "base64\t", "", "\ncurl\t"]),
+        (r"a.*", ["a", "ba", "b", ""]),
+        (r".*a|b", ["a", "b", "c"]),
+        (r"\.*x", ["x", "..x", "y"]),
+    ]
+    for pattern, texts in cases:
+        for text in texts:
+            written = re.search(pattern, text, re.IGNORECASE) is not None
+            assert (re.search(search_form(pattern), text, re.IGNORECASE) is not None) == written, (pattern, text)
+    assert search_form(r".*(curl|wget)\t.*") == r"(curl|wget)\t"
+

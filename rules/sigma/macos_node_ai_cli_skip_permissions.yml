@@ -6,8 +6,8 @@ name: SERAPH_MacOS_Node_Starts_AI_CLI_Skip_Permissions
 id: e09274cd-20af-442f-b61e-784182327a97
 status: experimental
 description: >
-  Detects a JavaScript runtime or package manager starting claude, gemini, q, or
-  codex with a flag that turns permission prompts off. The August 2025 Nx
+  Detects a JavaScript runtime or package manager starting claude, gemini, q,
+  codex, copilot, or cursor-agent with a flag that turns permission prompts off. The August 2025 Nx
   s1ngularity payload did this for claude, gemini, and q. gemini and codex are
   node scripts, so the executed image is node and the CLI is the script path in
   the command line. An interactive shell parent does not match. Field names are
@@ -51,6 +51,7 @@ detection:
       - '/gemini'
       - '/q'
       - '/codex'
+      - '/copilot'
   selection_cli_versioned:
     Image|contains: '/claude/versions/'
   selection_cli_script:
@@ -69,11 +70,22 @@ detection:
       - '--approval-mode=yolo'
       - '--dangerously-bypass-approvals-and-sandbox'
       - '--trust-all-tools'
+      - '--allow-all-tools'
   selection_gemini_short:
     CommandLine|contains|all:
       - 'gemini '
       - ' -y'
-  condition: selection_parent and 1 of selection_cli_* and (selection_flag or selection_gemini_short)
+  selection_q_short:
+    - CommandLine|contains:
+        - 'q chat -a '
+        - 'q chat --no-interactive -a '
+    - CommandLine|endswith:
+        - 'q chat -a'
+        - 'q chat --no-interactive -a'
+  selection_cursor_agent_force:
+    Image|endswith: '/cursor-agent'
+    CommandLine|contains: '--force'
+  condition: selection_parent and ((1 of selection_cli_* and (selection_flag or selection_gemini_short or selection_q_short)) or selection_cursor_agent_force)
 falsepositives:
   - A developer who launches one of these CLIs from a node, npm, bun, or deno script with the flag on purpose. Read the command line.
   - A /bin/sh script that starts the CLI with the flag. /bin/sh is listed because child_process.exec puts it between node and the CLI.

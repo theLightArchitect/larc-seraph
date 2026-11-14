@@ -16,11 +16,11 @@ rule SUSP_SERAPH_MCP_Secret_Exfil_Path {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.5.0"
+    version          = "1.6.0"
     severity         = "critical"
     status           = "experimental"
     score            = 75
-    description      = "Detects an MCP client config that sends a well-known API token to a host that is not that token's vendor, or pipes printenv or env into a fetch utility or nc. A token used against its own vendor API does not match. A lookalike host such as github.com.attacker.example is not the vendor. Path-scoped variant. It requires the filepath external and is not for YARA-Forge."
+    description      = "Detects an MCP client config that sends a well-known API token to a host that is not that token's vendor, pipes or substitutes printenv or env into a fetch utility or nc, sends a credential file through a fetch utility, or reads a token from process.env inside a fetch call. A token used against its own vendor API does not match. A lookalike host such as github.com.attacker.example is not the vendor. Path-scoped variant. It requires the filepath external and is not for YARA-Forge."
     attack_technique = "T1552.001, T1567"
     attack_tactic    = "credential-access, exfiltration"
     reference        = "https://attack.mitre.org/techniques/T1567/"
@@ -44,9 +44,17 @@ rule SUSP_SERAPH_MCP_Secret_Exfil_Path {
     // BOM and blank space (a leading comment is not accepted, because source files start that way), a top-level mcpServers: key, or an mcp_servers table.
     $yaml_top   = /(^|\n)mcpServers[ \t]*:/ ascii
     $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
-    $curl       = /curl [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b(\\"|[^\n"]){0,220}/ nocase ascii
-    $wget       = /wget [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b(\\"|[^\n"]){0,220}/ nocase ascii
-    $url        = /https?:\/\/[^\s"']{0,180}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY)\b/ nocase ascii
+    $curl       = /curl [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b(\\"|[^\n"]){0,220}/ nocase ascii
+    $wget       = /wget [^\n]{0,200}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b(\\"|[^\n"]){0,220}/ nocase ascii
+    $url        = /https?:\/\/[^\s"']{0,180}\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b/ nocase ascii
+    // The token is copied to another variable first, and the fetch comes later in the same string or the next argument.
+    $acurl      = /[A-Za-z_][A-Za-z0-9_]*=\\?["']?\$\{?(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b.{0,120}(curl|wget) [^\n]{0,200}/s nocase ascii
+    // Node reads the token from process.env inside a fetch call.
+    $nfetch     = /(fetch|axios[.A-Za-z]*|got|https?\.(get|request))[ \t]*\([^\n]{0,200}process\.env(\.|\[\\?["'])(ANTHROPIC_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|CURSOR_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b[^\n]{0,100}/ nocase ascii
+    // The whole environment, or a credential file, goes to a fetch utility.
+    $sub_env    = /(curl|wget)[ \t][^\n]{0,200}(\$\(|`)[ \t]*(printenv|env)[ \t]*(\||\)|`)/ nocase ascii
+    $cred_pipe  = /(cat|base64|tar|gzip)[ \t]+[^\n|]{0,80}(\.aws\/credentials|\.ssh\/id_[a-z0-9]+|\.npmrc|\.netrc|\.git-credentials|\.docker\/config\.json|\.config\/gh\/hosts\.yml|\.kube\/config)[^\n|]{0,40}\|[^\n]{0,60}(curl|wget|nc)[ \t]/ nocase ascii
+    $cred_post  = /(curl|wget)[^\n]{0,200}(@|\$\(cat[ \t]+|(-T|--upload-file)[ \t]+)[^ \t"'\n]{0,40}(\.aws\/credentials|\.ssh\/id_[a-z0-9]+|\.npmrc|\.netrc|\.git-credentials|\.docker\/config\.json|\.config\/gh\/hosts\.yml|\.kube\/config)/ nocase ascii
     $printenv   = /\b(printenv|env)[ \t]*\|[^\n]{0,60}(curl |wget |nc )/ nocase ascii
     // An escaped quote followed by the quote that closes the JSON string also ends the host.
     // A vendor host has to end where the URL's authority ends, so
@@ -54,11 +62,11 @@ rule SUSP_SERAPH_MCP_Secret_Exfil_Path {
     // AWS secrets have no vendor host here: a SigV4 secret is never sent, and
     // anyone can own a bucket under amazonaws.com.
     // Vendor URL first, then that vendor's token, on one line.
-    $off_a      = /https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN)\b|https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?OPENAI_API_KEY\b|https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?ANTHROPIC_API_KEY\b|https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?NPM_TOKEN\b|https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?CURSOR_API_KEY\b/ nocase ascii
+    $off_a      = /https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN)\b|https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(OPENAI_API_KEY)\b|https?:\/\/([A-Za-z0-9-]+\.)*(anthropic\.com|claude\.ai|claude\.com)(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b|https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(NPM_TOKEN)\b|https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(CURSOR_API_KEY)\b|https?:\/\/([A-Za-z0-9-]+\.)*(generativelanguage\.googleapis\.com|ai\.google\.dev)(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))[^\n]{0,220}\$\{?(GEMINI_API_KEY|GOOGLE_API_KEY)\b/ nocase ascii
     // That vendor's token first, then the vendor URL, on one line.
-    $off_b      = /\$\{?(GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?OPENAI_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?ANTHROPIC_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*anthropic\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?NPM_TOKEN\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?CURSOR_API_KEY\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
+    $off_b      = /\$\{?(GITHUB_PERSONAL_ACCESS_TOKEN|GITHUB_TOKEN|GH_TOKEN)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*github\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?(OPENAI_API_KEY)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*openai\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*(anthropic\.com|claude\.ai|claude\.com)(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?(NPM_TOKEN)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*npmjs\.org(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?(CURSOR_API_KEY)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*cursor\.com(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))|\$\{?(GEMINI_API_KEY|GOOGLE_API_KEY)\b[^\n]{0,220}https?:\/\/([A-Za-z0-9-]+\.)*(generativelanguage\.googleapis\.com|ai\.google\.dev)(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
     $anyurl     = /https?:\/\/[^ \t\r\n"'\/?#\\]{1,255}/ nocase ascii
-    $ven_any    = /https?:\/\/([A-Za-z0-9-]+\.)*(github\.com|openai\.com|anthropic\.com|npmjs\.org|cursor\.com)(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
+    $ven_any    = /https?:\/\/([A-Za-z0-9-]+\.)*(github\.com|openai\.com|(anthropic\.com|claude\.ai|claude\.com)|npmjs\.org|cursor\.com|(generativelanguage\.googleapis\.com|ai\.google\.dev))(\/|\?|#|[ \t\r\n]|$|\\""|\\?["')>`]([ \t\r\n,;\]}]|$))/ nocase ascii
 
   condition:
     (
@@ -72,7 +80,7 @@ rule SUSP_SERAPH_MCP_Secret_Exfil_Path {
       (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
         not filepath matches /\.(md|markdown)$/i)
     ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and (
-      $printenv or
+      $printenv or $sub_env or $cred_pipe or $cred_post or
       for any i in (1..256): (
         i <= #curl and (
           // Official only when the vendor URL, or the token that precedes it, is inside this fetch.
@@ -90,6 +98,16 @@ rule SUSP_SERAPH_MCP_Secret_Exfil_Path {
           // before or after the token wins over a vendor URL anywhere in it.
           #anyurl in (@wget[i]..@wget[i] + !wget[i] - 1) > #ven_any in (@wget[i]..@wget[i] + !wget[i] - 1)
         )
+      ) or
+      for any i in (1..256): (
+        i <= #acurl and (
+          not ($off_a in (@acurl[i]..@acurl[i] + !acurl[i] - 1) or $off_b in (@acurl[i]..@acurl[i] + !acurl[i] - 1)) or
+          #anyurl in (@acurl[i]..@acurl[i] + !acurl[i] - 1) > #ven_any in (@acurl[i]..@acurl[i] + !acurl[i] - 1)
+        )
+      ) or
+      // process.env in a fetch call is a leak when the URLs in the call are not all the vendor's.
+      for any i in (1..256): (
+        i <= #nfetch and #anyurl in (@nfetch[i]..@nfetch[i] + !nfetch[i] - 1) > #ven_any in (@nfetch[i]..@nfetch[i] + !nfetch[i] - 1)
       ) or
       // A token inside a URL is official only when that URL is the vendor's own.
       for any i in (1..256): (

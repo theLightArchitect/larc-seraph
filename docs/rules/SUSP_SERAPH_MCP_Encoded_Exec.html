@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-003 · yara · <span class="sev sev-high">high</span></p>
 <h1>MCP config decodes a payload into a shell or eval</h1>
-<p class="deck">Detects an MCP client config that pipes a base64 decode into a shell, or pairs a base64 decode call with eval or exec. Content-only rule: it compiles with no externals.</p>
+<p class="deck">Detects an MCP client config that pipes a base64 decode into a shell or a bare interpreter, runs a decode through command substitution, decodes to a file that a shell runs in the same string, or pairs a base64 decode call with eval or exec. After a chmod the run has to be an executable mode followed by a path or a shell on a path, so a decoded key file made private and then a program started by name is not a match. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -53,9 +53,9 @@
 <h2 id="threat">Threat</h2>
 <p>Encoding is a way to keep a command out of a casual read of a JSON file. The interesting event is not the presence of a long token. Tokens are normal. The interesting event is a decode step whose output is handed to a shell, or a decode call placed inside <code>eval</code> or <code>exec</code>.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The rule requires the MCP server map and one of those two shapes. A long opaque string in an environment value, with no decode flag and no eval, is a negative fixture on purpose. The synthetic decode used in the fixtures is the ASCII sentence <code>echo seraph-inert</code>, so a reviewer can reverse it and see that the sample is inert.</p>
+<p>The rule requires the MCP server map and one of those two shapes. A long opaque string in an environment value, with no decode flag and no eval, is a negative fixture on purpose. The synthetic decode used in the fixtures is the ASCII sentence <code>echo seraph-inert</code>, so a reviewer can reverse it and see that the sample is inert. A decode piped into a bare interpreter, a decode inside a command substitution that a shell runs, and a decode written to a file that is run in the same string all match. Python&#x27;s <code>a2b_base64</code> counts as a decoder.</p>
 <h2 id="limitations">Limitations</h2>
-<p>A custom decoder, or a decode that writes a file instead of executing, does not match. A legitimate tool whose command line really does decode-and-exec will match and needs a human. The rule will not flag a blob that is never decoded in the file.</p>
+<p>A custom decoder, a decode written to a file that a separate process runs, or a decoder name assembled from pieces other than the <code>getattr</code> form does not match. A legitimate tool whose command line really does decode-and-exec will match and needs a human. The rule will not flag a blob that is never decoded in the file. A decode to a file, a chmod and then an interpreter started by name (exec node run.js) will miss, because telling the decoded file from another script needs a backreference.</p>
 <h2 id="triage">Triage</h2>
 <p>Decode the blob in a scratch buffer. The pack&#x27;s own fixtures decode to an echo sentence. If the decoded text is a command the operator did not ask for, remove the entry.</p>
 </article>

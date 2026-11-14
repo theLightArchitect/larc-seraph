@@ -1,8 +1,8 @@
 {
   "files_scanned": 15627,
-  "seconds": 19.384,
-  "forge_seconds": 13.69,
-  "path_seconds": 5.694,
+  "seconds": 25.257,
+  "forge_seconds": 16.783,
+  "path_seconds": 8.474,
   "hit_counts": {},
   "path_hit_counts": {
     "SUSP_SERAPH_Instruction_Unsafe_Directive_Path": 1
@@ -23,5 +23,6 @@
     "pip download requests pyyaml"
   ],
   "unexpected": [],
-  "unexpected_path": []
+  "unexpected_path": [],
+  "scan_errors": []
 }

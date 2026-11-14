@@ -10,7 +10,7 @@ The parent has to be a JavaScript runtime or package manager: `node`, `npm`, `np
 
 ## Limitations
 
-A developer who really wants a node script to launch Claude with prompts disabled will match, and so will a `/bin/sh` script that does it. The script-path and versioned-image shapes come from the installed CLIs, not from a captured event. `q chat -a`, `copilot --allow-all-tools`, and `cursor-agent --force` are not in the rule. The rule cannot see a flag that was passed through an environment variable or a response file. `Image` ending in `/q` is the Amazon Q CLI name from the incident. A different binary with that exact filename would match too.
+A developer who really wants a node script to launch Claude with prompts disabled will match, and so will a `/bin/sh` script that does it. The script-path and versioned-image shapes come from the installed CLIs, not from a captured event. `q chat -a` (the short form of the trust flag, reported in the Amazon Q CLI pull request that added the startup warning), `copilot --allow-all-tools`, and `cursor-agent --force` are in the rule. `--force` is matched only when the image is `cursor-agent`. The rule cannot see a flag that was passed through an environment variable or a response file. `Image` ending in `/q` is the Amazon Q CLI name from the incident. A different binary with that exact filename would match too.
 
 ## Triage
 

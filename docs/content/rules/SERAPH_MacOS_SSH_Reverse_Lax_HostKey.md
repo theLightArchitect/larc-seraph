@@ -12,6 +12,10 @@ This is the running form of the plist rule. A reverse forward plus host-key chec
 
 Operators do disable host-key checking on purpose. The false-positive note says that, and the severity stays high because the combination is still rare. Options stored in the user's ssh config, rather than on the command line, are invisible here. A reverse forward that uses `-R` glued to the next token, with no spaces, can miss the spaced-flag check.
 
+## Added in the hardening round
+
+`StrictHostKeyChecking=accept-new` combined with `UserKnownHostsFile=/dev/null` now matches, because nothing is ever remembered. `accept-new` alone still does not. A tab between flags is read the same as a space. Options held in a `-F` config file stay invisible, and that is an asserted miss in `validation/evasion-matrix.yml`.
+
 ## Triage
 
 Confirm the parent. launchd means a persistent job. An interactive shell may be an operator running a tunnel on purpose.

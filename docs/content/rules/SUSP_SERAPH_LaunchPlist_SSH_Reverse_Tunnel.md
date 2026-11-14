@@ -6,7 +6,7 @@ A reverse forward makes a remote host reach back into this machine. Turning host
 
 ## Why this rule
 
-The plist has to name ssh and a reverse-forward flag and the disabled host-key option, either as separate argument strings or as one command line. `accept-new` and the default checking mode do not match. A disabled check without a reverse forward does not match. The companion Sigma rule watches the running process, including when the parent is launchd rather than an editor.
+The plist has to name ssh and a reverse forward, as `-R` or as `-o RemoteForward`, and a disabled host-key check, either as separate argument strings or as one command line. The check counts as disabled when StrictHostKeyChecking is no or off, or when it is `accept-new` and UserKnownHostsFile is `/dev/null`, since every host is then new. `accept-new` alone and the default checking mode do not match. A disabled check without a reverse forward does not match. The companion Sigma rule watches the running process, including when the parent is launchd rather than an editor.
 
 ## Limitations
 

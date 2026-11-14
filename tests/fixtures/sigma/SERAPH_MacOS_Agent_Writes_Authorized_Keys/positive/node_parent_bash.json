@@ -1,0 +1,13 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SERAPH_MacOS_Agent_Writes_Authorized_Keys"
+  },
+  "Image": "/bin/bash",
+  "ParentImage": "/opt/homebrew/bin/node",
+  "TargetFilename": "/Users/dev/.ssh/authorized_keys",
+  "User": "dev",
+  "CommandLine": ""
+}

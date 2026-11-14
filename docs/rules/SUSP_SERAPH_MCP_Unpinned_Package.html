@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-016 · yara · <span class="sev sev-medium">medium</span></p>
 <h1>MCP config runs an unpinned npx or uvx package</h1>
-<p class="deck">Detects an MCP client config that starts npx, uvx, or bunx with a package that has no numeric version and is not an allowlisted first-party scope. Remote URLs and explicit @latest tags are SERAPH-YARA-004. A pin or an allowlisted package elsewhere in the file does not clear a second unpinned package. Content-only rule: it compiles with no externals.</p>
+<p class="deck">Detects an MCP client config that starts npx, uvx, bunx, npm exec, pnpm dlx, yarn dlx, or uv tool run with a package that has no numeric version and is not an allowlisted first-party scope. Remote URLs and explicit @latest tags are SERAPH-YARA-004. A pin or an allowlisted package elsewhere in the file does not clear a second unpinned package. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -53,9 +53,9 @@
 <h2 id="threat">Threat</h2>
 <p><code>npx</code> and <code>uvx</code> will fetch a package at start time when the config does not pin a version. SERAPH-YARA-004 covers URLs, <code>github:</code> specifiers, and <code>@latest</code>. This rule covers the quieter case: a registry name with no version at all.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The command has to be npx, uvx, or bunx inside an MCP server map. A bare name, or a scoped name, matches when that package token has no numeric version. <code>@modelcontextprotocol</code>, <code>@anthropic-ai</code>, and <code>@github</code> are allowlisted on the matched entry, not for the whole file. A community scope such as <code>@example/tool</code> matches. A <code>name@1.2.3</code> pin, or a stray <code>node@1.2</code> elsewhere in the file, does not clear a second unpinned package.</p>
+<p>The command has to be npx, uvx, or bunx inside an MCP server map. A bare name, or a scoped name, matches when that package token has no numeric version. <code>@modelcontextprotocol</code>, <code>@anthropic-ai</code>, and <code>@github</code> are allowlisted on the matched entry, not for the whole file. A community scope such as <code>@example/tool</code> matches. A <code>name@1.2.3</code> pin, or a stray <code>node@1.2</code> elsewhere in the file, does not clear a second unpinned package. Other flags between <code>-y</code> and the package do not hide it, the runner may sit behind <code>cmd /c</code> or inside a <code>sh -c</code> string that uses <code>-y</code>, and <code>pnpm dlx</code>, <code>npm exec</code>, and <code>uv tool run</code> count as runners. A <code>--package=name</code> argument without a version matches. A range such as <code>@^1</code> is not a pin.</p>
 <h2 id="limitations">Limitations</h2>
-<p>The allowlist is a choice, not a proof of integrity. A package on an allowlisted scope can still be the wrong package. A pin has to be on the package token itself. Upstream READMEs that show <code>uvx mcp-server-time</code> match, and that hit is recorded in the benign-corpus report.</p>
+<p>The allowlist is a choice, not a proof of integrity. A package on an allowlisted scope can still be the wrong package. A pin has to be on the package token itself. A dist-tag such as <code>@next</code> is SERAPH-YARA-004 and a numeric pin is never matched here, even the registry&#x27;s security placeholder version. A shell string without <code>-y</code> is not matched, so a local <code>npx tsc</code> stays quiet. Upstream READMEs that show <code>uvx mcp-server-time</code> match, and that hit is recorded in the benign-corpus report.</p>
 <h2 id="triage">Triage</h2>
 <p>This is a hygiene lead, not a compromise by itself. Pin the package or confirm it is on the allowlist. Upstream READMEs that show an unpinned uvx command will match.</p>
 </article>

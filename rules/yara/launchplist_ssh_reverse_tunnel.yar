@@ -16,11 +16,11 @@ rule SUSP_SERAPH_LaunchPlist_SSH_Reverse_Tunnel {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.1.0"
+    version          = "1.2.0"
     severity         = "critical"
     status           = "experimental"
     score            = 75
-    description      = "Detects a launchd plist that runs ssh with a reverse forward and StrictHostKeyChecking set to no or off, either as separate argument strings or as one command line."
+    description      = "Detects a launchd plist that runs ssh with a reverse forward, as -R or as -o RemoteForward, and host-key checking off: StrictHostKeyChecking no or off, or accept-new with the known-hosts file set to /dev/null. Separate argument strings or one command line."
     attack_technique = "T1572, T1021.004, T1543.001"
     attack_tactic    = "command-and-control, lateral-movement, persistence"
     reference        = "https://attack.mitre.org/techniques/T1572/"
@@ -35,11 +35,16 @@ rule SUSP_SERAPH_LaunchPlist_SSH_Reverse_Tunnel {
     $ssh     = /<string>[^<]{0,80}\/(auto)?ssh<\/string>/ ascii
     // -R alone, in a cluster such as -NR, or glued to its value.
     $rev     = /<string>-[A-Za-z]{0,5}R([0-9:\[][^<]{0,80})?<\/string>/ ascii
+    // The same forward set through -o, as its own string or glued to the value. ssh reads option names in any case.
+    $rev_opt = /<string>(-o[ \t]*)?RemoteForward[= ][^<]{0,80}<\/string>/ nocase ascii
     // OpenSSH reads off as no.
     $lax     = /<string>[^<]{0,60}StrictHostKeyChecking[= ](no|off)[^<]*<\/string>/ nocase ascii
-    $oneline = /ssh[^<\n]{0,160}[ \t]-[A-Za-z]{0,5}R[ \t0-9:\[][^<\n]{0,200}StrictHostKeyChecking[= ](no|off)/ nocase ascii
+    // accept-new trusts any first-seen host. With the known-hosts file sent to /dev/null, every host is first-seen.
+    $accept  = /<string>[^<]{0,60}StrictHostKeyChecking[= ]accept-new[^<]*<\/string>/ nocase ascii
+    $nohosts = /<string>[^<]{0,60}UserKnownHostsFile[= ]\/dev\/null[^<]*<\/string>/ nocase ascii
+    $oneline = /ssh[^<\n]{0,160}([ \t]-[A-Za-z]{0,5}R[ \t0-9:\[]|[ \t]-o[ \t]*RemoteForward[= ])[^<\n]{0,200}StrictHostKeyChecking[= ](no|off)/ nocase ascii
 
   condition:
     // A property list opens with its plist element. A transcript that quotes one does not.
-    $plist in (0..1024) and (($ssh and $rev and $lax) or $oneline)
+    $plist in (0..1024) and (($ssh and ($rev or $rev_opt) and ($lax or ($accept and $nohosts))) or $oneline)
 }

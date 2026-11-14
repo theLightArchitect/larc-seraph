@@ -56,6 +56,8 @@
 <p>The target has to be one of the usual user startup files, and the image or parent has to be an agent host from the shared list. Vim editing <code>.zshrc</code> from Terminal is a negative. An agent writing a project README is a negative. An npx-cached node binary writing <code>.bashrc</code> is a positive, because that path is how an unpinned MCP server shows up on disk.</p>
 <h2 id="limitations">Limitations</h2>
 <p>Project-level rc files and unusual startup names are not in the list. The legitimate &quot;add this alias&quot; request will match, and the note on the rule says so. Do not page on this rule alone. Read the diff.</p>
+<h2 id="added-in-the-hardening-round">Added in the hardening round</h2>
+<p>The rule also covers <code>~/.zshrc.local</code>, the XDG zsh startup files under <code>~/.config/zsh/</code>, <code>*.zsh</code> files under <code>~/.oh-my-zsh/custom/</code>, Windsurf, and the opencode, aider, and goose binaries. A shell whose parent is the agent is not seen, because one event carries no grandparent. <code>~/.gitconfig</code> is left out on purpose: agents run <code>git config</code> as routine work. Both are asserted misses in <code>validation/evasion-matrix.yml</code>.</p>
 <h2 id="triage">Triage</h2>
 <p>Read the diff. An alias the operator requested is the medium-severity false positive. A command they did not ask for is the lead.</p>
 </article>

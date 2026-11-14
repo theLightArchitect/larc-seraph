@@ -16,11 +16,11 @@ rule SUSP_SERAPH_MCP_Launch_From_Temp {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.4.0"
+    version          = "1.6.0"
     severity         = "high"
     status           = "experimental"
     score            = 60
-    description      = "Detects an MCP client config that sets a server command to a temp, cache, or shared-memory path, or points a shell at a script in one of those paths. Content-only rule: it compiles with no externals."
+    description      = "Detects an MCP client config that sets a server command to a temp, cache, shared-memory, or world-writable shared path, or points a shell or env launcher at a script in one of those paths. JSON escapes of the slash and dot segments in the path do not hide it. A temp path that ends in a slash, or follows a flag that takes a value such as --cache-dir, is a directory to use and not a script. Content-only rule: it compiles with no externals."
     attack_technique = "T1059.004"
     attack_tactic    = "execution"
     reference        = "https://attack.mitre.org/techniques/T1059/004/"
@@ -46,12 +46,19 @@ rule SUSP_SERAPH_MCP_Launch_From_Temp {
     $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
 
     // The key may be quoted (JSON) or bare (TOML, YAML). The value may be quoted or bare.
-    $cmd_tmp   = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/private\/var\/folders\/|\/var\/tmp\/|\/private\/var\/tmp\/|\/dev\/shm\/)[^"'\n]{0,180}/ ascii
+    $cmd_tmp   = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/|\\\/|\\u002[fF])+(\.(\/|\\\/|\\u002[fF])+)*(tmp|private(\/|\\\/|\\u002[fF])tmp|var(\/|\\\/|\\u002[fF])folders|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])folders|var(\/|\\\/|\\u002[fF])tmp|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])tmp|dev(\/|\\\/|\\u002[fF])shm|Users(\/|\\\/|\\u002[fF])Shared)(\/|\\\/|\\u002[fF])[^"'\n]{0,180}/ ascii
+    // Zed's older nested form, and a TOML inline table: command = { path = "..." }.
+    $cmd_path  = /(["' \t\n{,]|^)command["']?\s*[:=]\s*\{\s*["']?path["']?\s*[:=]\s*["']?(\/|\\\/|\\u002[fF])+(\.(\/|\\\/|\\u002[fF])+)*(tmp|private(\/|\\\/|\\u002[fF])tmp|var(\/|\\\/|\\u002[fF])folders|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])folders|var(\/|\\\/|\\u002[fF])tmp|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])tmp|dev(\/|\\\/|\\u002[fF])shm|Users(\/|\\\/|\\u002[fF])Shared)(\/|\\\/|\\u002[fF])[^"'\n]{0,180}/ ascii
     $cmd_cache = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?[^"'\n]{0,180}\/Library\/Caches\/[^"'\n]{0,120}/ ascii
 
-    $shell     = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/bin\/bash|\/bin\/sh|\/bin\/zsh|\/usr\/bin\/python3?|\/usr\/bin\/osascript)(["']|[ \t\r]*\n)/ ascii
+    // A shell or env launcher, by absolute path or by bare name. Bare python and osascript are not
+    // listed, because a data directory under /tmp is common beside them.
+    $shell     = /(["' \t\n{,]|^)command["']?\s*[:=]\s*["']?(\/bin\/(bash|sh|zsh)|\/usr\/bin\/(python3?|osascript|env)|bash|sh|zsh|dash|env)(["']|[ \t\r]*\n)/ ascii
     // A quoted string, or a YAML list item.
-    $arg_tmp   = /(["']|\n[ \t]*-[ \t]+)(\/tmp\/|\/private\/tmp\/|\/var\/folders\/|\/private\/var\/folders\/|\/var\/tmp\/|\/private\/var\/tmp\/|\/dev\/shm\/)[^"'\n]{0,180}/ ascii
+    // A script run by a command word inside one shell string counts as well: exec /tmp/x.
+    $arg_tmp   = /((["']|\n[ \t]*-[ \t]+)|(["';&|(][ \t]*(exec|source|\.|(ba|z|da)?sh|python3?|node)[ \t]+(-[A-Za-z]+[ \t]+)*))(\/|\\\/|\\u002[fF])+(\.(\/|\\\/|\\u002[fF])+)*(tmp|private(\/|\\\/|\\u002[fF])tmp|var(\/|\\\/|\\u002[fF])folders|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])folders|var(\/|\\\/|\\u002[fF])tmp|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])tmp|dev(\/|\\\/|\\u002[fF])shm|Users(\/|\\\/|\\u002[fF])Shared)(\/|\\\/|\\u002[fF])[^"'\n]{0,179}[^"'\n\/]/ ascii
+    // A flag that takes a value, then a temp path: --cache-dir /tmp/x names a directory to use, not a script to run. -c is left out, because sh -c /tmp/x runs it.
+    $flag_tmp  = /["']-{1,2}(c[A-Za-z0-9-]+|[abd-zA-Z][A-Za-z0-9-]*)["'][ \t\r\n]*,[ \t\r\n]*["'](\/|\\\/|\\u002[fF])+(\.(\/|\\\/|\\u002[fF])+)*(tmp|private(\/|\\\/|\\u002[fF])tmp|var(\/|\\\/|\\u002[fF])folders|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])folders|var(\/|\\\/|\\u002[fF])tmp|private(\/|\\\/|\\u002[fF])var(\/|\\\/|\\u002[fF])tmp|dev(\/|\\\/|\\u002[fF])shm|Users(\/|\\\/|\\u002[fF])Shared)(\/|\\\/|\\u002[fF])[^"'\n]{0,179}[^"'\n\/]/ ascii
     $arg_cache = /(["']|\n[ \t]*-[ \t]+)[^"'\n]{0,80}\/Library\/Caches\/[^"'\n]{0,160}/ ascii
 
   condition:
@@ -65,9 +72,10 @@ rule SUSP_SERAPH_MCP_Launch_From_Temp {
         ) or $yaml_top or $toml_top)
     ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and (
       $cmd_tmp or
+      $cmd_path or
       $cmd_cache or
       (
-        $shell and $arg_tmp and
+        $shell and #arg_tmp > #flag_tmp and
         (
           (@arg_tmp > @shell and @arg_tmp - @shell < 1500) or
           (@shell > @arg_tmp and @shell - @arg_tmp < 200)

@@ -16,11 +16,11 @@ rule SUSP_SERAPH_MCP_Remote_Npx_Path {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.4.0"
+    version          = "1.6.0"
     severity         = "high"
     status           = "experimental"
     score            = 65
-    description      = "Detects an MCP client config that invokes npx, uvx, or npm exec against a URL, a github: specifier, a git+ specifier, or a moving dist-tag such as @latest or @next. bunx, pnpm dlx, and yarn dlx count as runners. Path-scoped variant. It requires the filepath external and is not for YARA-Forge."
+    description      = "Detects an MCP client config that invokes npx, uvx, bunx, npm exec, pnpm dlx, yarn dlx, uv tool run, pipx run, or deno run against a URL, a github: specifier, a git+ specifier, or a moving dist-tag such as @latest, @next, or @*. It also matches a GitHub user/repo shorthand as the first package, a container image on a floating tag, and a registry override given without a scheme. A path-like string after a flag that takes a value, such as npm --prefix packages/server or pnpm --filter, is a value and not a package. Path-scoped variant. It requires the filepath external and is not for YARA-Forge."
     attack_technique = "T1195.002"
     attack_tactic    = "initial-access"
     reference        = "https://attack.mitre.org/techniques/T1195/002/"
@@ -45,8 +45,15 @@ rule SUSP_SERAPH_MCP_Remote_Npx_Path {
     // BOM and blank space (a leading comment is not accepted, because source files start that way), a top-level mcpServers: key, or an mcp_servers table.
     $yaml_top   = /(^|\n)mcpServers[ \t]*:/ ascii
     $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
-    $remote     = /((npx)|(uvx)|(bunx)|(npm[ \t]+exec)|(pnpm.{0,20}dlx)|(yarn.{0,20}dlx)).{0,160}(github:|gitlab:|bitbucket:|git\+|git@[A-Za-z0-9.-]{1,80}:|git:\/\/|ssh:\/\/|gist\.github\.com|"https?:\/\/|'https?:\/\/)/s nocase ascii
-    $latest     = /((npx)|(uvx)|(bunx)|(npm[ \t]+exec)|(pnpm.{0,20}dlx)|(yarn.{0,20}dlx)).{0,180}@(latest|next|beta|canary|dev|nightly)\b/s nocase ascii
+    // The runners are npx, uvx, bunx, npm exec, pnpm dlx, yarn dlx, uv tool run, pipx run, and deno run.
+    $remote     = /((npx)|(uvx)|(bunx)|(npm[ \t]+exec)|(["']npm["'].{0,80}["']exec["'])|(pnpm.{0,80}dlx)|(yarn.{0,80}dlx)|(uv[ \t]+tool[ \t]+run)|(["']uv["'].{0,80}["']tool["'][ \t\r\n,]+["']run["'])|(pipx[ \t]+run)|(["']pipx["'].{0,80}["']run["'])|(deno[ \t]+run)|(["']deno["'].{0,80}["']run["'])).{0,160}(github:|gitlab:|bitbucket:|git\+|git@[A-Za-z0-9.-]{1,80}:|git:\/\/|ssh:\/\/|gist\.github\.com|"https?:\/\/|'https?:\/\/)/s nocase ascii
+    $latest     = /((npx)|(uvx)|(bunx)|(npm[ \t]+exec)|(["']npm["'].{0,80}["']exec["'])|(pnpm.{0,80}dlx)|(yarn.{0,80}dlx)|(uv[ \t]+tool[ \t]+run)|(["']uv["'].{0,80}["']tool["'][ \t\r\n,]+["']run["'])|(pipx[ \t]+run)|(["']pipx["'].{0,80}["']run["'])|(deno[ \t]+run)|(["']deno["'].{0,80}["']run["'])).{0,180}(@(latest|next|beta|canary|dev|nightly)\b|@\*["' \t\r\n,)])/s nocase ascii
+    // npm reads user/repo as a GitHub repository when it is the first package argument. A flag that takes a value (--prefix, --filter, --cwd) is not in the list, so a path after it is a value.
+    $shorthand  = /(["'](npx|bunx)["'][^}]{0,100}["']args["'][ \t]*[:=][ \t]*\[[ \t\r\n]*|["'](pnpm|yarn|npm)["'][^}]{0,100}["']args["'][ \t]*[:=][ \t]*\[[ \t\r\n]*["'](dlx|exec)["'][ \t\r\n]*,[ \t\r\n]*)(["'](-y|--yes|-q|--quiet|--silent|--no-install|--force|-f|--prefer-offline|--|--[A-Za-z-]{1,30}=[^"'\n]{0,100})["'][ \t\r\n]*,[ \t\r\n]*){0,5}["'][A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_-]{1,100}(#[^"'\n]{0,60})?["']/ nocase ascii
+    // A container image on a floating tag.
+    $docker_tag = /["']docker["'].{0,200}["'][A-Za-z0-9][A-Za-z0-9._\/-]{0,150}:(latest|edge|nightly|dev|main|master)["']/s nocase ascii
+    // A registry given without a scheme, so it follows whatever scheme the client uses.
+    $reg_rel    = /(npm_config_registry|--registry)["']?[ \t\r\n=,:]*\\?["']?\/\/[A-Za-z0-9]/ nocase ascii
 
   condition:
     (
@@ -59,5 +66,5 @@ rule SUSP_SERAPH_MCP_Remote_Npx_Path {
           ) or $yaml_top or $toml_top)) or
       (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
         not filepath matches /\.(md|markdown)$/i)
-    ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and ($remote or $latest)
+    ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and ($remote or $latest or $shorthand or $docker_tag or $reg_rel)
 }

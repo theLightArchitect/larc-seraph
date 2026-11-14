@@ -1,0 +1,12 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SERAPH_MacOS_Interpreter_Drops_Launch_Plist"
+  },
+  "Image": "/usr/bin/defaults",
+  "TargetFilename": "/Users/dev/Library/Preferences/com.example.seraph.plist",
+  "User": "dev",
+  "CommandLine": ""
+}

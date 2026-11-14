@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- SERAPH synthetic fixture. classification: synthetic-benign. expected: match. inert. do not load with launchctl. -->
+<dict>
+  <key>Label</key>
+  <string>com.example.seraph.synthetic</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProgramArguments</key>
+  <array>
+    <string>&#x2f;bin&#x2F;bash</string>
+    <string>/Users/dev/Library/Caches/seraph-inert.sh</string>
+  </array>
+</dict>
+</plist>

@@ -133,8 +133,9 @@ def test_every_rule_has_labelled_fixtures(yara_rules, sigma_by_name):
         assert positives, record.name
         assert negatives, record.name
         for path in positives + negatives:
-            text = path.read_text(encoding="utf-8")
-            assert "synthetic-benign" in text, path
+            # A binary plist is not UTF-8 and a UTF-16 plist spells the label with NULs, so look at bytes.
+            data = path.read_bytes()
+            assert b"synthetic-benign" in data or "synthetic-benign".encode("utf-16-le") in data, path
 
 
 # Payload outside a hook directory. The path-scoped rule stays silent.
@@ -261,6 +262,10 @@ def test_sigma_known_good_matches_nothing(sigma_by_name):
 
 def test_non_unicode_fixtures_are_ascii():
     allowed = {
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_Writable_Interpreter/positive/binary.plist",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_Writable_Interpreter/negative/binary_system.plist",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_Writable_Interpreter/positive/utf16.plist",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_Writable_Interpreter/negative/utf16_system.plist",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/tags/AGENTS.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/bidi/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/pillar/CLAUDE.md",
@@ -298,6 +303,15 @@ def test_non_unicode_fixtures_are_ascii():
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Unsafe_Directive/negative/zw-inside-word/SKILL.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Unsafe_Directive/positive/zw/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Unsafe_Directive/positive/zw-gaps/SKILL.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Unsafe_Directive/positive/homo-one/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/windsurfrules/.windsurfrules",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/clinerules/.clinerules",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/windsurf-dir/.windsurf/rules/style.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/claude-command/.claude/commands/ship.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/claude-agent/.claude/agents/review.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/copilot-scoped/.github/instructions/style.instructions.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/zw-run/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/negative/zw-ordinary/AGENTS.md",
     }
     for path in (ROOT / "tests" / "fixtures").rglob("*"):
         if not path.is_file() or path in allowed:

@@ -1,0 +1,17 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "no-match",
+    "rule": "SUSP_SERAPH_MCP_Encoded_Exec"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "echo \"$KEY_B64\" | base64 -d > /tmp/service-key.json && chmod 600 /tmp/service-key.json && exec node server.js"
+      ]
+    }
+  }
+}

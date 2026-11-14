@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-001 · yara · <span class="sev sev-high">high</span></p>
 <h1>MCP config launches a server from a temp or cache path</h1>
-<p class="deck">Detects an MCP client config that sets a server command to a temp, cache, or shared-memory path, or points a shell at a script in one of those paths. Content-only rule: it compiles with no externals.</p>
+<p class="deck">Detects an MCP client config that sets a server command to a temp, cache, shared-memory, or world-writable shared path, or points a shell or env launcher at a script in one of those paths. JSON escapes of the slash and dot segments in the path do not hide it. A temp path that ends in a slash, or follows a flag that takes a value such as --cache-dir, is a directory to use and not a script. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -53,9 +53,9 @@
 <h2 id="threat">Threat</h2>
 <p>An MCP client starts whatever command the config names. A durable install lives on a stable path. A command that points into a temp directory, a per-user cache, or shared memory is usually a file the operator did not install, or a script dropped there for one session and then kept.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The rule requires the MCP server map, then either a command value whose path sits in that set, or a shell command whose argument string does. A filesystem server that is allowed to read a project directory does not match. A bare temp directory with no further path segment does not match either, because that shape is sometimes a legitimate directory grant.</p>
+<p>The rule requires the MCP server map, then either a command value whose path sits in that set, or a shell command whose argument string does. A filesystem server that is allowed to read a project directory does not match. A bare temp directory with no further path segment does not match either, because that shape is sometimes a legitimate directory grant. A bare shell or env name counts as the launcher as well as an absolute one, a script run by a command word inside one shell string counts, and so does Zed&#x27;s nested command path. <code>/Users/Shared</code> is on the path list because every local user can write there. A <code>.</code> segment or a JSON-escaped slash in the path does not hide it.</p>
 <h2 id="limitations">Limitations</h2>
-<p>A cache-installed CLI can be a real developer choice. Treat the match as a review of who put the file there. Homebrew prefixes are intentionally absent, so a shell in <code>/usr/local</code> or <code>/opt/homebrew</code> is a gap. The rule does not know whether the file at the path is still present.</p>
+<p>A cache-installed CLI can be a real developer choice. Treat the match as a review of who put the file there. Homebrew prefixes are intentionally absent, so a shell in <code>/usr/local</code> or <code>/opt/homebrew</code> is a gap. The rule does not know whether the file at the path is still present. A bare python or osascript name is not a launcher here, because a data directory under <code>/tmp</code> is common beside it. A temp path right after a flag that takes a value (bash --rcfile /tmp/x.sh) is read as data and will miss, as is a path that ends in a slash. The -c flag is not on that list, because sh -c /tmp/x runs the file.</p>
 <h2 id="triage">Triage</h2>
 <p>Read the command path. If the file is a scratch script the operator just wrote, note it and move on. If the path is unexpected, stop that MCP server and inspect who wrote the config.</p>
 </article>

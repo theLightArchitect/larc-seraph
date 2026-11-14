@@ -134,8 +134,15 @@ def yara_match(
 def scan_yara(targets: list[Path]) -> int:
     rules = compile_yara()
     matched = 0
+    errors = 0
     for target in targets:
-        hits = yara_match(rules, path=str(target))
+        try:
+            hits = yara_match(rules, path=str(target))
+        except (yara.Error, ValueError) as exc:
+            # A scan that stops is not a clean file. Say so, and fail the run.
+            errors += 1
+            print(f"error  {target}: {exc}")
+            continue
         if not hits:
             print(f"clean  {target}")
             continue
@@ -143,6 +150,9 @@ def scan_yara(targets: list[Path]) -> int:
         names = ", ".join(sorted(hit.rule for hit in hits))
         print(f"match  {target}")
         print(f"       {names}")
+    if errors:
+        print(f"{errors} file(s) could not be scanned", file=sys.stderr)
+        raise SystemExit(2)
     return matched
 
 

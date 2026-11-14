@@ -126,12 +126,13 @@ def iter_files() -> list[Path]:
     return files
 
 
-def scan(files: list[Path], flavor: str) -> tuple[dict[str, list[str]], float]:
+def scan(files: list[Path], flavor: str) -> tuple[dict[str, list[str]], float, list[str]]:
     sys.path.insert(0, str(ROOT))
     from larc_seraph.scan import compile_yara, yara_match
 
     rules = compile_yara(flavor)
     hits: dict[str, list[str]] = {}
+    errors: list[str] = []
     started = time.perf_counter()
     for path in files:
         try:
@@ -141,11 +142,13 @@ def scan(files: list[Path], flavor: str) -> tuple[dict[str, list[str]], float]:
                 use_filepath=flavor != "forge",
                 phrases=False,
             )
-        except Exception:
+        except Exception as exc:
+            # A file the engine cannot scan is not a clean file.
+            errors.append(f"{path.relative_to(CACHE)}: {exc}")
             continue
         for hit in matched:
             hits.setdefault(hit.rule, []).append(str(path.relative_to(CACHE)))
-    return hits, time.perf_counter() - started
+    return hits, time.perf_counter() - started, errors
 
 
 def allowlist() -> set[str]:
@@ -158,8 +161,9 @@ def main() -> int:
     CACHE.mkdir(parents=True, exist_ok=True)
     notes = fetch_repos() + fetch_packages()
     files = iter_files()
-    forge_hits, forge_elapsed = scan(files, "forge")
-    path_hits, path_elapsed = scan(files, "path")
+    forge_hits, forge_elapsed, forge_errors = scan(files, "forge")
+    path_hits, path_elapsed, path_errors = scan(files, "path")
+    scan_errors = sorted({*forge_errors, *path_errors})
     allowed = allowlist()
 
     def unexpected_for(hits: dict[str, list[str]]) -> list[str]:
@@ -185,6 +189,7 @@ def main() -> int:
         "fetch_notes": notes,
         "unexpected": unexpected,
         "unexpected_path": unexpected_path,
+        "scan_errors": scan_errors,
     }
     JSON_REPORT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     lines = [
@@ -211,6 +216,9 @@ def main() -> int:
             lines.append(f"- {rule}: {len(paths)}")
     lines.extend(["", "## Fetch notes", ""])
     lines.extend(f"- {note}" for note in notes)
+    if scan_errors:
+        lines.extend(["", "## Files the engine could not scan", ""])
+        lines.extend(f"- {item}" for item in scan_errors[:40])
     if unexpected or unexpected_path:
         lines.extend(["", "## Unexpected hits", ""])
         lines.extend(f"- forge {item}" for item in unexpected[:40])
@@ -223,10 +231,11 @@ def main() -> int:
         "seconds": payload["seconds"],
         "unexpected_forge": len(unexpected),
         "unexpected_path": len(unexpected_path),
+        "scan_errors": len(scan_errors),
         "forge_counts": payload["hit_counts"],
         "path_counts": payload["path_hit_counts"],
     }, indent=2))
-    return 1 if unexpected or unexpected_path else 0
+    return 1 if unexpected or unexpected_path or scan_errors else 0
 
 
 if __name__ == "__main__":

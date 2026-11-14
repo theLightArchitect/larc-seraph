@@ -30,6 +30,8 @@ detection:
     TargetFilename|endswith:
       - '/.ssh/authorized_keys'
       - '/.ssh/authorized_keys2'
+  selection_target_dir:
+    TargetFilename|contains: '/.ssh/authorized_keys.d/'
   selection_agent_image:
     Image|contains:
       - '/Cursor'
@@ -44,8 +46,28 @@ detection:
       - '/codex'
       - '/.npm/_npx/'
       - '/Code Helper'
-  condition: selection_target and 1 of selection_agent_*
+  selection_agent_extra_image:
+    - Image|contains: '/Windsurf'
+    - Image|endswith:
+        - '/opencode'
+        - '/aider'
+        - '/goose'
+  selection_agent_extra_parent:
+    - ParentImage|contains: '/Windsurf'
+    - ParentImage|endswith:
+        - '/opencode'
+        - '/aider'
+        - '/goose'
+  selection_agent_node:
+    - Image|endswith:
+        - '/node'
+        - '/nodejs'
+    - ParentImage|endswith:
+        - '/node'
+        - '/nodejs'
+  condition: (selection_target or selection_target_dir) and 1 of selection_agent_*
 falsepositives:
   - An operator explicitly asked an agent to install a public key during a documented bootstrap.
   - Unrelated software whose path contains the substring Claude, Cursor, or codex.
+  - A node script that manages SSH keys on purpose. node is listed because Gemini CLI and similar agents run as node scripts.
 level: high

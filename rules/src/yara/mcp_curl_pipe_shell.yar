@@ -16,11 +16,11 @@ rule SUSP_SERAPH_MCP_Curl_Pipe_Shell {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.3.0"
+    version          = "1.4.0"
     severity         = "critical"
     status           = "experimental"
     score            = 80
-    description      = "Detects an MCP client config that contains a fetch utility immediately piped into sh, bash, or zsh, a process substitution that feeds a fetch into a shell, or a shell or eval that runs a fetch through command substitution."
+    description      = "Detects an MCP client config that contains a fetch utility piped into a shell or a bare interpreter, a fetch written to a file and run in the same string, a process or command substitution that feeds a fetch into a shell, or Python that passes a fetched body to a system call. JSON escapes of the pipe, a letter of the fetch name, and the gap after the pipe do not hide it."
     attack_technique = "T1059.004, T1105"
     attack_tactic    = "execution, command-and-control"
     reference        = "https://attack.mitre.org/techniques/T1059/004/"
@@ -32,25 +32,35 @@ rule SUSP_SERAPH_MCP_Curl_Pipe_Shell {
   strings:
     // What follows the shell name has to end the command or start an argument,
     // so a Markdown table cell (| zsh |) and a longer word (dash-case) are not a shell.
-    $mcp        = "\"mcpServers\"" ascii
-    $mcp_yaml   = /mcpServers[ \t]*:/ ascii
-    $mcp_toml   = /mcp_servers[ \t]*=/ ascii
-    $mcp_table  = /\[mcp_servers[.\]]/ ascii
+    $mcp         = "\"mcpServers\"" ascii
+    $mcp_yaml    = /mcpServers[ \t]*:/ ascii
+    $mcp_toml    = /mcp_servers[ \t]*=/ ascii
+    $mcp_table   = /\[mcp_servers[.\]]/ ascii
     // VS Code writes "servers" and Zed writes "context_servers". "servers" is a
     // common key, so it only counts beside a command key.
-    $mcp_vscode = /"servers"[ \t\r\n]*:[ \t\r\n]*\{/ ascii
-    $mcp_zed    = "\"context_servers\"" ascii
-    $cmd_key    = /(["' \t\n{,]|^)command["']?[ \t]*[:=]/ ascii
+    $mcp_vscode  = /"servers"[ \t\r\n]*:[ \t\r\n]*\{/ ascii
+    $mcp_zed     = "\"context_servers\"" ascii
+    $cmd_key     = /(["' \t\n{,]|^)command["']?[ \t]*[:=]/ ascii
     // With no path to consult, the file has to be text (fewer than eight control bytes in
     // the first kilobyte), and the condition accepts a JSON object after an optional
     // BOM and blank space (a leading comment is not accepted, because source files start that way), a top-level mcpServers: key, or an mcp_servers table.
-    $yaml_top   = /(^|\n)mcpServers[ \t]*:/ ascii
-    $toml_top   = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
+    $yaml_top    = /(^|\n)mcpServers[ \t]*:/ ascii
+    $toml_top    = /(^|\n)(\[mcp_servers[.\]]|mcp_servers[ \t]*=)/ ascii
     // A shell by any usual name, with an optional sudo or directory, and |& as well as |.
-    $pipe_curl  = /(curl|wget)[^\n]{0,200}\|&?\s*(sudo\s+)?(\/[a-z\/]{1,20}\/)?(ba|z|da|k|fi)?sh(\\?["'`;&)]|[.,:]([ \t\r\n]|$)|[ \t]+[^| \t\r\n]|[ \t]*\r?\n|[ \t]*$)/ nocase ascii
-    $subst      = /((ba|z|da|k)?sh|source)\s+<\s*\(\s*(curl|wget)/ nocase ascii
+    // JSON can spell a letter of the fetch name as \u00XX, the pipe as \u007c, and the gap after it as \n.
+    $pipe_curl   = /((c|\\u0063)(u|\\u0075)(r|\\u0072)(l|\\u006c)|(w|\\u0077)(g|\\u0067)(e|\\u0065)(t|\\u0074))[^\n]{0,200}(\||\\u007c)&?(\s|\\[nrt])*(sudo\s+)?(\/[a-z\/]{1,20}\/)?(ba|z|da|k|fi)?sh(\\?["'`;&)]|[.,:]([ \t\r\n]|$)|[ \t]+[^| \t\r\n]|[ \t]*\r?\n|[ \t]*$)/ nocase ascii
+    // A bare interpreter reads the fetched script from standard input. python3 -m json.tool is not one.
+    $pipe_interp = /((c|\\u0063)(u|\\u0075)(r|\\u0072)(l|\\u006c)|(w|\\u0077)(g|\\u0067)(e|\\u0065)(t|\\u0074))[^\n]{0,200}(\||\\u007c)&?(\s|\\[nrt])*(sudo\s+)?(\/[a-z\/]{1,20}\/)?(python3?|node|perl|ruby)([ \t]+-)?(\\?["'`;&)]|[ \t]*\r?\n|[ \t]*$)/ nocase ascii
+    // Fetch to a file, then run that file in the same string.
+    $dl_run      = /(curl|wget)[^\n]{0,200}(-[A-Za-z]*[oO][ \t]+|--output[ \t=]+|--output-document[ \t=]+|>[ \t]*)[^ \t"'\n;&|]{1,100}[ \t]*(&&|;)[ \t]*(sudo[ \t]+)?((\/[a-z\/]{1,20}\/)?(ba|z|da|k)?sh[ \t]+(-[A-Za-z]+[ \t]+)*[^ \t"'\n;&|]|source[ \t]+[^ \t"'\n;&|]|chmod[ \t]+[+0-7ugoax=-]+[ \t]+[^ \t"'\n;&|]+[ \t]*(&&|;)[ \t]*[^ \t"'\n;&|])/ nocase ascii
+    // httpie and xh take the place of curl.
+    $httpie      = /(["' \t;&|(`]|\\n)(http|https|xh)[ \t]+(-{1,2}[A-Za-z][A-Za-z-]*[ \t]+){0,4}(GET[ \t]+)?https?:\/\/[^\n]{0,200}(\||\\u007c)&?(\s|\\[nrt])*(sudo\s+)?(\/[a-z\/]{1,20}\/)?(ba|z|da|k|fi)?sh(\\?["'`;&)]|[.,:]([ \t\r\n]|$)|[ \t]+[^| \t\r\n]|[ \t]*\r?\n|[ \t]*$)/ nocase ascii
+    // Python that hands a fetched body to a system call.
+    $py_sys      = /(os\.system|os\.popen|subprocess\.[A-Za-z_]+)[ \t]*\(.{0,160}urlopen/s ascii
+    $py_sys_fwd  = /urlopen.{0,200}os\.(system|popen)[ \t]*\(/s ascii
+    $subst       = /((ba|z|da|k)?sh|source)\s+<\s*\(\s*(curl|wget)/ nocase ascii
     // sh -c \"$(curl ...)\" and eval \"$(curl ...)\". The quote may be JSON-escaped.
-    $cmdsub     = /((ba|z|da|k)?sh\s+-c|eval|source)\s+\\?["']?\$\(\s*(curl|wget)/ nocase ascii
+    $cmdsub      = /(((ba|z|da|k)?sh\s+-c|eval|source)\s+\\?["']?\$\(\s*(curl|wget)|-c["']?[ \t\r\n]*,[ \t\r\n]*\\?["'](\$\(|`)[ \t]*(curl|wget))/ nocase ascii
 
   condition:
     (
@@ -63,5 +73,5 @@ rule SUSP_SERAPH_MCP_Curl_Pipe_Shell {
           ) or $yaml_top or $toml_top)) or
       (filepath != "" and filepath matches /\.(json|jsonc|toml|yml|yaml)(\.bak|\.backup[^\/]*)?$/i and
         not filepath matches /\.(md|markdown)$/i)
-    ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and any of ($pipe_curl, $subst, $cmdsub)
+    ) and ($mcp or $mcp_yaml or $mcp_toml or $mcp_table or $mcp_zed or ($mcp_vscode and $cmd_key)) and any of ($pipe_curl, $pipe_interp, $dl_run, $httpie, $py_sys, $py_sys_fwd, $subst, $cmdsub)
 }

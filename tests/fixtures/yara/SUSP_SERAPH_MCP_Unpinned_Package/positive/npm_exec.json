@@ -1,0 +1,18 @@
+{
+  "_seraph": {
+    "classification": "synthetic-benign",
+    "note": "Inert SERAPH fixture. Do not execute. Hosts are example.invalid.",
+    "expected": "match",
+    "rule": "SUSP_SERAPH_MCP_Unpinned_Package"
+  },
+  "mcpServers": {
+    "demo": {
+      "command": "npm",
+      "args": [
+        "exec",
+        "--yes",
+        "seraph-noop-mcp"
+      ]
+    }
+  }
+}

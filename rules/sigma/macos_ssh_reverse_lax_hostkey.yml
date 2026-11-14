@@ -41,14 +41,24 @@ detection:
       - ' -NfR'
       - ' -TNR'
       - 'RemoteForward'
+  selection_reverse_tab:
+    CommandLine|re: ".*\t-[NfT]*R.*"
   selection_lax:
     CommandLine|contains:
       - 'StrictHostKeyChecking=no'
       - 'StrictHostKeyChecking no'
       - 'StrictHostKeyChecking=off'
       - 'StrictHostKeyChecking off'
-  condition: selection_image and selection_reverse and selection_lax
+  selection_accept_new:
+    CommandLine|contains:
+      - 'StrictHostKeyChecking=accept-new'
+      - 'StrictHostKeyChecking accept-new'
+  selection_known_hosts_null:
+    CommandLine|contains:
+      - 'UserKnownHostsFile=/dev/null'
+      - 'UserKnownHostsFile /dev/null'
+  condition: selection_image and (selection_reverse or selection_reverse_tab) and (selection_lax or (selection_accept_new and selection_known_hosts_null))
 falsepositives:
   - An administrator who deliberately disables host-key checking on a reverse tunnel.
-  - accept-new and the default checking mode do not match.
+  - accept-new and the default checking mode do not match. accept-new together with a known-hosts file of /dev/null does, because nothing is ever remembered.
 level: high

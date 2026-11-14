@@ -39,6 +39,14 @@ detection:
       - '/.bash_login'
       - '/.zlogout'
       - '/.config/fish/config.fish'
+      - '/.zshrc.local'
+      - '/.config/zsh/.zshrc'
+      - '/.config/zsh/.zshenv'
+      - '/.config/zsh/.zprofile'
+      - '/.config/zsh/.zlogin'
+  selection_target_omz:
+    TargetFilename|contains: '/.oh-my-zsh/custom/'
+    TargetFilename|endswith: '.zsh'
   selection_agent_image:
     Image|contains:
       - '/Cursor'
@@ -53,7 +61,19 @@ detection:
       - '/codex'
       - '/.npm/_npx/'
       - '/Code Helper'
-  condition: selection_target and 1 of selection_agent_*
+  selection_agent_extra_image:
+    - Image|contains: '/Windsurf'
+    - Image|endswith:
+        - '/opencode'
+        - '/aider'
+        - '/goose'
+  selection_agent_extra_parent:
+    - ParentImage|contains: '/Windsurf'
+    - ParentImage|endswith:
+        - '/opencode'
+        - '/aider'
+        - '/goose'
+  condition: (selection_target or selection_target_omz) and 1 of selection_agent_*
 falsepositives:
   - An operator asked an agent to add an alias or a PATH entry to their own shell rc.
   - Dotfile tooling whose executable path contains Claude, Cursor, or codex.

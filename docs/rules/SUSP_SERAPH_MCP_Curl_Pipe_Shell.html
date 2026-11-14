@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-YARA-002 · yara · <span class="sev sev-critical">critical</span></p>
 <h1>MCP config pipes a remote fetch into a shell</h1>
-<p class="deck">Detects an MCP client config that contains a fetch utility immediately piped into sh, bash, or zsh, a process substitution that feeds a fetch into a shell, or a shell or eval that runs a fetch through command substitution. Content-only rule: it compiles with no externals.</p>
+<p class="deck">Detects an MCP client config that contains a fetch utility piped into a shell or a bare interpreter, a fetch written to a file and run in the same string, a process or command substitution that feeds a fetch into a shell, or Python that passes a fetched body to a system call. JSON escapes of the pipe, a letter of the fetch name, and the gap after the pipe do not hide it. Content-only rule: it compiles with no externals.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan · Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -53,9 +53,9 @@
 <h2 id="threat">Threat</h2>
 <p>The configured server is supposed to be a program. A one-liner that downloads a script and hands it to a shell is an installer, not a server, and the bytes that run are chosen by the remote host at start time.</p>
 <h2 id="why-this-rule">Why this rule</h2>
-<p>The rule looks for a fetch utility on the same line as a pipe into a shell, or a process substitution that feeds a fetch into a shell, inside a file that also carries the MCP server map. A download that writes a file and stops does not match. The positive fixtures use a reserved documentation host and do not retrieve anything.</p>
+<p>The rule looks for a fetch utility on the same line as a pipe into a shell, or a process substitution that feeds a fetch into a shell, inside a file that also carries the MCP server map. A download that writes a file and stops does not match. The positive fixtures use a reserved documentation host and do not retrieve anything. A bare <code>python3</code>, <code>node</code>, <code>perl</code>, or <code>ruby</code> after the pipe is a sink, because it reads the fetched script from standard input; an interpreter with a script or module argument is not. A fetch written to a file and run by a shell in the same string matches. httpie and xh count as fetch utilities.</p>
 <h2 id="limitations">Limitations</h2>
-<p>Splitting the fetch and the shell across two processes, or across a line break, misses. Quoting the anti-pattern inside a long description on the same line as a real fetch can false-positive. This is a content rule: it says the config contains the shape, not that the process ran.</p>
+<p>Splitting the fetch and the shell across two processes, or across separate strings, misses. A fetch that is run through a variable that expands to the utility name misses. Quoting the anti-pattern inside a long description on the same line as a real fetch can false-positive. This is a content rule: it says the config contains the shape, not that the process ran.</p>
 <h2 id="triage">Triage</h2>
 <p>Read the URL before you treat the entry as hostile. If the operator pasted an upstream install line, that is the documented false positive. Otherwise remove the server entry and review the rest of the config.</p>
 </article>

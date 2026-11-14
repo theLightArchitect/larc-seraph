@@ -36,7 +36,7 @@
 
 <p class="eyebrow">SERAPH-SIGMA-015 · sigma · <span class="sev sev-high">high</span></p>
 <h1>macOS agent parent started a shell that pipes a fetch or a decode</h1>
-<p class="deck">A known local AI-agent host spawned a shell or Python whose command line pipes curl, wget, or base64 into a shell, or calls exec or eval on a base64 decode. A plain download does not match. Field names are the larc-seraph normalized macOS contract.</p>
+<p class="deck">A known local AI-agent host spawned a shell, osascript, or Python whose command line pipes curl, wget, or base64 into a shell or a bare python3, runs a fetch through a shell command substitution, runs a temp-dir file right after fetching it, or calls exec or eval on a base64 decode. A plain download does not match. Field names are the larc-seraph normalized macOS contract.</p>
 <div class="meta-grid">
   <div><span>Author</span>Kevin Francis Tan / Light Architects</div>
   <div><span>Date</span>2026-11-13</div>
@@ -56,6 +56,8 @@
 <p>The parent image has to be an agent host. The child has to be a shell or Python. The command line has to pipe a fetch or a base64 invocation into a shell, or it has to call <code>exec</code> or <code>eval</code> on a base64 decode. A plain download from an agent does not match. A decode that only prints does not match. The same command from Terminal does not match.</p>
 <h2 id="limitations">Limitations</h2>
 <p>A LaunchAgent that later runs the same command has launchd as its parent, not the agent, so this rule will not see it. Use the plist rules for that stage. The python branch looks for <code>exec(</code> or <code>eval(</code> next to a decode call. Other interpreters are a gap. As with the rest of the Sigma set, the fields have to be the normalized contract or the rule is inert.</p>
+<h2 id="added-in-the-hardening-round">Added in the hardening round</h2>
+<p>The rule now also matches a pipe followed by two spaces, a fetch followed by a tab, a pipe into a bare <code>python3</code> (not <code>python3 -m json.tool</code> or <code>python3 -c</code>), a fetch run through a shell command substitution or process substitution (<code>sh -c &quot;$(curl ...)&quot;</code>, <code>eval &quot;$(curl ...)&quot;</code>, <code>sh &lt;(curl ...)</code>), a fetch followed by running a file from a temp directory, and osascript as the child. A plain <code>$(curl ...)</code> assigned to a variable does not match. A node parent is not accepted: every npm script and JS tool has one, so it says nothing about an agent. That is an asserted miss in <code>validation/evasion-matrix.yml</code>.</p>
 <h2 id="triage">Triage</h2>
 <p>Read the URL and the parent. The same line typed into Terminal is not covered by this pack. A single exec event does not hold a pipeline that an interactive shell parsed.</p>
 </article>
