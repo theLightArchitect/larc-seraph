@@ -479,9 +479,9 @@ pysigma-backend-elasticsearch==2.1.1 \
     --hash=sha256:0bb514ae02445d2053d530bd732c8747ffac9184246d45f3fa2669d0862a5af4 \
     --hash=sha256:0cfb6b8e7892591c3bc83ef4dea4c4ef5cf8fe9e53e27dc3b0e9112bb3427fa6
     # via larc-seraph (pyproject.toml)
-pysigma-backend-splunk==2.1.0 \
-    --hash=sha256:90da654b17c7a396ba23af14a29ed559c562ae5bb60c4ceda47cd9744dd3581c \
-    --hash=sha256:ca4d2d0e4c7f766a4daf551489ab20366578163e6ac838fc59bb6d3f2a1423e9
+pysigma-backend-splunk==3.0.0 \
+    --hash=sha256:56fe1614ba38a6991fbe02e9dff6f27704fa84b90951e5c86ef2a6ab475a5bff \
+    --hash=sha256:c424ea43195614caa99dbb1b7c08ca413c49b5246ac01adf8a6bb55fd2d1b8b7
     # via larc-seraph (pyproject.toml)
 pytest==9.2.0 \
     --hash=sha256:07acdcf88ec174f907dc01af70bf52d49b014bbab03faeeade31c96b18c2e588 \
