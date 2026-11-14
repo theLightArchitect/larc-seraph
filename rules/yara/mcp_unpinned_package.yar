@@ -16,7 +16,7 @@ rule SUSP_SERAPH_MCP_Unpinned_Package {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.6.0"
+    version          = "1.7.0"
     severity         = "medium"
     status           = "experimental"
     score            = 55
@@ -27,7 +27,7 @@ rule SUSP_SERAPH_MCP_Unpinned_Package {
     reference        = "https://modelcontextprotocol.io/specification/2025-06-18"
     reference        = "https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/"
     scope            = "A JSON object at the start of the file (after an optional BOM or blank space), YAML that starts with mcpServers:, or TOML that starts with [mcp_servers or mcp_servers =. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a version does not match. @latest is SERAPH-YARA-004."
-    false_positives  = "A community MCP server installed the way its README shows, with npx and no version. The allowlist is short on purpose. Review the package name."
+    false_positives  = "A community MCP server installed the way its README shows, with npx and no version. The allowlist is short on purpose. Review the package name. npm exec and pnpm dlx read a bare name as a package, as npx does, so a project-local binary run as npm exec -- tsc also matches: a rule cannot tell a local binary from a package npm would download."
     license          = "Detection Rule License 1.1"
 
   strings:

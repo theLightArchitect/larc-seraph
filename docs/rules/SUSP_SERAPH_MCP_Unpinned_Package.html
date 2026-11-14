@@ -46,7 +46,7 @@
   <div><span>Scope</span>A JSON object at the start of the file (after an optional BOM or blank space), YAML that starts with mcpServers:, or TOML that starts with [mcp_servers or mcp_servers =. Markdown docs do not match. Allowlisted scopes are @modelcontextprotocol, @anthropic, and @github. A package token that itself contains @ and a version does not match. @latest is SERAPH-YARA-004.</div>
 </div>
 <h2>False positives</h2>
-<ul><li>A community MCP server installed the way its README shows, with npx and no version. The allowlist is short on purpose. Review the package name.</li></ul>
+<ul><li>A community MCP server installed the way its README shows, with npx and no version. The allowlist is short on purpose. Review the package name. npm exec and pnpm dlx read a bare name as a package, as npx does, so a project-local binary run as npm exec -- tsc also matches: a rule cannot tell a local binary from a package npm would download.</li></ul>
 <h2>References</h2>
 <ul><li><a href="https://attack.mitre.org/techniques/T1195/002/">https://attack.mitre.org/techniques/T1195/002/</a></li><li><a href="https://modelcontextprotocol.io/specification/2025-06-18">https://modelcontextprotocol.io/specification/2025-06-18</a></li><li><a href="https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/">https://snyk.io/blog/malicious-mcp-server-on-npm-postmark-mcp-harvests-emails/</a></li></ul>
 <article class="prose">

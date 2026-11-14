@@ -6,7 +6,7 @@ This file is the methodology and the results. A green test run proves the fixtur
 
 Detection logic did change in v0.1.9. `SERAPH-YARA-016` no longer lets a pin or an allowlisted scope anywhere in the file clear a second unpinned package. The Forge hidden-unicode rule no longer requires the file to mention its own name. English confirmation-bypass sentences are generated into the YARA rule from `larc_seraph/phrases.py`, and YARA and the CLI now have parity on the instruction fixtures. `SERAPH-SIGMA-018` is new. A review of this branch then changed the rules again: the installer exemption is one exact command shape with no third-party URL, a vendor host has to end where the URL's authority ends, the binary check no longer trips on two letters or one NUL, tag characters and pipes are counted with no bound, the git-hook path covers `.githooks` and nested `.husky`, the MCP rules read Codex tables and the VS Code and Zed keys, `SERAPH-SIGMA-017` is removed, and `SERAPH-SIGMA-018` reads the command line. The corpus numbers below are from a local `tools/fp_scan.py` run. They are not a claim that a GitHub Actions run of a later commit has finished until that run is linked here.
 
-A hardening round then ran against head `12a1ef3`. The numbers in this file were measured on the rules and code at commit `e3821e4a2bb6f2be3d0c01dab6ac0b56b3c30bc1`. The YARA rule files after it are byte-identical. Later commits changed the Sigma temp-path regex (it now reads an assignment with a quoted or escaped part, including the `=`, which two security reviews showed it missed), the CLI's regex search form, the SonarCloud settings file, and the documentation; the Sigma harness, the unit tests, and the docs checks were re-run on it. Four lanes (MCP, plist and git hook, instruction, Sigma) worked from a review harness of 180 YARA bypass fixtures and 54 Sigma events for the live rules. Of those, 123 were misses at `12a1ef3` (93 YARA, 30 Sigma). 95 are closed (MCP 45 of 47, plist and git hook 12 of 19, instruction 17 of 27, Sigma 21 of 30) and 28 are open (MCP 2, plist and git hook 7, instruction 10, Sigma 9). Closed bypasses were added as positive fixtures, and a matrix entry flips from miss to match where the body is text. An adversarial tester then raised 8 findings against the integrated pack, and a fixer fixed 9 issues. A security review of the result raised further findings that the harness fixtures did not cover (a glob after a URL, a double exemption, an unrelated veto, a negation that ends a line, emphasis inside an injection phrase, a file name or an abbreviation before a word, a regex that backtracks in the Sigma temp-path rule, and libyara failing on two large binaries). Each was fixed and has a fixture, and the last also made a scan failure visible. 4 findings from the adversarial review were not fixed, _audit pending_. yaraQA 0.11.0 was run on both flavors of the final rules and reported nothing at level 3 or higher (see yaraQA). Every number in this file for that round comes from a run against the final worktree, not from a lane report.
+A hardening round then ran against head `12a1ef3`. Four lanes (MCP, plist and git hook, instruction, Sigma) worked from a review harness of 180 YARA bypass fixtures and 54 Sigma events for the live rules. Of those, 123 were misses at `12a1ef3` (93 YARA, 30 Sigma). 96 are closed (MCP 45 of 47, plist and git hook 12 of 19, instruction 18 of 27, Sigma 21 of 30) and 27 are open (MCP 2, plist and git hook 7, instruction 9, Sigma 9). Closed bypasses were added as positive fixtures, and a matrix entry flips from miss to match where the body is text. An adversarial tester then raised 8 findings against the integrated pack, and a fixer fixed 9 issues and left 4 items open. A security review of the result raised further findings that the harness fixtures did not cover (a glob after a URL, a double exemption, an unrelated veto, a negation that ends a line, emphasis inside an injection phrase, a file name or an abbreviation before a word, regexes that backtrack in the Sigma temp-path rule, quoted or escaped assignments, and libyara failing on two large binaries). Each was fixed and has a fixture, and the last also made a scan failure visible. A final round then dealt with the 4 open tester items and with the UTF-16 tag-character case `006-e9`: `006-e9` is closed; the Google-host item, the Oh My Zsh installer item, and the "forget previous instructions" item are fixed with fixtures; the `npm exec -- tsc` item is not changed and is recorded as a stated false-positive class with its reason (see Known limitations). yaraQA 0.11.0 was run on both flavors of the final rules and reported nothing at level 3 or higher (see yaraQA). Every number in this file for that round comes from a run against the final worktree, not from a lane report.
 
 GitHub Actions runs that already finished, on earlier commits of this pull request:
 
@@ -27,10 +27,10 @@ Do not read those three runs as coverage of the 016 span fix, the hidden-unicode
 | libyara | Pass. `yara-python` compiles the set. `yarac` 4.5.8 with `--fail-on-warnings` passes on `rules/yara` and `rules/path-scoped`. |
 | yara-x 1.23.0 | Pass. `yr compile rules/yara` with no externals exits 0 with no warning text. The path-scoped set compiles with `filepath` defined. `yr check` and `yr fmt --check` pass on the generated and source rules. |
 | Wide-tree speed | Pass. 400 benign Markdown files scanned in the unit test in under 10 seconds. The corpus scan below is the larger number. |
-| Benign corpus | Local pass at `e3821e4`. 15627 files in 25.3 seconds. Zero Forge hits. One path-scoped hit, which is the accepted entry in `validation/fp-allowlist.txt`. 0 unexpected hits and 0 files the engine could not scan. The corpus scan does not apply `larc_seraph.phrases`. |
+| Benign corpus | Local pass at the final head. 15627 files in 24.2 seconds. Zero Forge hits. One path-scoped hit, which is the accepted entry in `validation/fp-allowlist.txt`. 0 unexpected hits and 0 files the engine could not scan. The corpus scan does not apply `larc_seraph.phrases`. |
 | Metadata | Pass. Author is Kevin Francis Tan. Date, references, ATT&CK, severity, and false-positive notes are required by the test. Sigma UUIDs and YARA ids are unique. |
 | Evasion matrix | Pass. `validation/evasion-matrix.yml` is executed by pytest: 185 cases, 60 with a miss in at least one flavor or engine. Misses are asserted, not ignored. |
-| Review harness | 180 YARA bypass fixtures and 16 controls: 19 bypass fixtures are missed by both the path-scoped rules and the CLI, 23 by the Forge flavor. All 16 controls hit in every engine. 18 false-positive probes: 7 hit the path-scoped flavor and the CLI, the same 7 as before the round. libyara and yara-x disagree on none, and the CLI and path-scoped YARA disagree on none. See Evasion. |
+| Review harness | 180 YARA bypass fixtures and 16 controls: 18 bypass fixtures are missed by both the path-scoped rules and the CLI, 22 by the Forge flavor. All 16 controls hit in every engine. 18 false-positive probes: 7 hit the path-scoped flavor and the CLI, the same 7 as before the round. libyara and yara-x disagree on none, and the CLI and path-scoped YARA disagree on none. See Evasion. |
 
 ## Benign corpus
 
@@ -80,18 +80,18 @@ v0.1.6 on a Mac produced 14 hits: 3 expected and 11 true positives, with no fals
 
 ### Re-scan at the final head
 
-A read-only scan of one Mac on 2026-11-13 with the rules at `e3821e4`: 146,720 files in four trees. Files that are copies of this pack's own fixtures, and session transcripts, were left out of the counts, and the directories that hold copies of them (job folders, `.claude/projects`, file-history, and the SERAPH folder) were pruned inside the walk. The agent-configuration walk therefore covered 25,784 files, under the 60,000-file cap. Two runs without the pruning were discarded: one hit the cap at 60,003 files and missed 24 earlier hits, and the other walked 59,261 files and counted 7,353 hits, nearly all of them copies of the pack's own fixtures in the working folders of this review. The YARA rule files were hashed before and after the scan and did not change. The numbers are for the review machine only. The npm and projects walks stop at the 60,000-file cap, so they are a sample of the tree and not all of it.
+A read-only scan of one Mac on 2026-11-13 with the final rules: 146,803 files in four trees. Files that are copies of this pack's own fixtures, and session transcripts, were left out of the counts, and the directories that hold copies of them (job folders, `.claude/projects`, file-history, and the SERAPH folder) were pruned inside the walk. The agent-configuration walk therefore covered 25,867 files, under the 60,000-file cap. Two runs without the pruning were discarded: one hit the cap at 60,003 files and missed 24 earlier hits, and the other walked 59,261 files and counted 7,353 hits, nearly all of them copies of the pack's own fixtures in the working folders of this review. The YARA rule files were hashed before and after the scan and did not change. The numbers are for the review machine only. The npm and projects walks stop at the 60,000-file cap, so they are a sample of the tree and not all of it.
 
 | Tree | Files | Path-scoped hits | Forge-only hits | CLI vs YARA splits |
 | --- | --- | --- | --- | --- |
 | Global npm packages | 60,000 | 0 | 2 | 0 |
-| Agent configuration folders | 25,784 | 27 | 29 | 0 |
+| Agent configuration folders | 25,867 | 25 | 29 | 0 |
 | Projects sample | 60,000 | 3 | 54 | 0 |
 | launchd plists | 936 | 0 | 0 | 0 |
 
-Against the previous scan on this Mac, no file that still exists and used to be hit stopped matching, in the agent-configuration folders or in the projects sample. The agent folders went from 25 to 27 path-scoped hits. The two new ones are the benign Cursor skill documents that were created on 2026-11-13: they share a text block with a `curl -fsSL https://bun.sh/install | bash` line in Dockerfile and shell examples and a cursor.com URL, and the baseline rules at `12a1ef3` hit them too, so this is new input and not a rule regression. The projects sample went from 4 to 3 path-scoped hits because one hit file, an `AGENTS.md` in a reference checkout, no longer exists. Forge-only counts follow the files that exist on the day of the scan. The earlier report gave 48 for the projects sample, and a recount of the earlier file gives 51. That difference is not explained here, _audit pending_.
+Against the previous scan on this Mac, no file that still exists and used to be hit stopped matching, and no file is newly hit, in any of the four trees. The agent folders went from 27 to 25 path-scoped hits because the two benign Cursor skill documents that had been hit (a `curl -fsSL https://bun.sh/install | bash` line in Dockerfile and shell examples beside a cursor.com URL; the baseline rules at `12a1ef3` hit them too) were deleted from disk between the scans. The projects sample is 3 path-scoped hits, as before. Forge-only counts follow the files that exist on the day of the scan. The earlier report gave 48 for the projects sample, and a recount of the earlier file gives 51. That difference is not explained here, _audit pending_.
 
-The CLI and the path-scoped rules run with YARA alone gave the same answer on every one of the 146,720 files. No file made the engine fail.
+The CLI and the path-scoped rules run with YARA alone gave the same answer on every one of the 146,803 files. No file made the engine fail.
 
 In the earlier scan of the same Mac at `12a1ef3` (177,303 files), 29 files were path-scoped hits. 23 are a vendor install line that pipes into a shell, in a skill file that shipped with a plugin. There are ten distinct lines, among them `unity.com/install.sh`, `hf.co/cli/install.sh`, `cli.coderabbit.ai/install.sh`, and `downloads.cursor.com/origin/install.sh`. None is on the installer list, so the rule reports them. That is the rule working as written, and it is also most of the noise an operator will see. Four are a real sentence that tells the agent not to ask ("do not ask for permission to continue" in one skill, and three copies of an old `openai/codex` `AGENTS.md`). One is a skill that documents a run-everything mode. One is a true positive: an unpinned scoped package in a project's MCP config.
 
@@ -118,7 +118,7 @@ Quote the YARA-X `--define` value. A bare confirmation sentence in a file named 
 
 ## Evasion
 
-Two sets of bypasses are run. The matrix in `validation/evasion-matrix.yml` is executed by pytest: 185 cases, each asserting a match or a miss, 60 of them with a miss in at least one flavor or engine. The review harness is a larger set of fixtures kept outside the repository, run through five engines (libyara and yara-x on the Forge flavor, libyara and yara-x on the path-scoped flavor, and the CLI). Every number below is from a run of that harness against `e3821e4`, with the rules regenerated. A fixture counts as missed when the rule it targets does not fire.
+Two sets of bypasses are run. The matrix in `validation/evasion-matrix.yml` is executed by pytest: 185 cases, each asserting a match or a miss, 60 of them with a miss in at least one flavor or engine. The review harness is a larger set of fixtures kept outside the repository, run through five engines (libyara and yara-x on the Forge flavor, libyara and yara-x on the path-scoped flavor, and the CLI). Every number below is from a run of that harness against the final head, with the rules regenerated. A fixture counts as missed when the rule it targets does not fire.
 
 YARA bypass fixtures, 180 in all, plus 16 controls that all fire in every engine:
 
@@ -129,13 +129,13 @@ YARA bypass fixtures, 180 in all, plus 16 controls that all fire in every engine
 | `SERAPH-YARA-003` encoded exec | 12 | 5 | 0 | 0 | 0 |
 | `SERAPH-YARA-004` remote npx | 13 | 8 | 0 | 0 | 0 |
 | `SERAPH-YARA-005` secret exfil | 14 | 7 | 0 | 0 | 0 |
-| `SERAPH-YARA-006` hidden Unicode | 16 | 7 | 3 | 2 | 2 |
+| `SERAPH-YARA-006` hidden Unicode | 16 | 7 | 2 | 1 | 1 |
 | `SERAPH-YARA-007` unsafe directive | 37 | 20 | 7 | 11 | 7 |
 | `SERAPH-YARA-008` writable interpreter plist | 12 | 9 | 4 | 4 | 4 |
 | `SERAPH-YARA-009` SSH reverse tunnel plist | 10 | 3 | 1 | 1 | 1 |
 | `SERAPH-YARA-010` git hook | 16 | 7 | 2 | 2 | 1 |
 | `SERAPH-YARA-016` unpinned package | 17 | 10 | 2 | 2 | 2 |
-| Total | 180 | 93 | 19 | 23 | 17 |
+| Total | 180 | 93 | 18 | 22 | 16 |
 
 Sigma events for the live rules, 54 in all, plus 6 controls that all fire. The 5 events and 1 control written for the retired terminal piped-shell rule are not counted: that rule is removed, and they miss by design.
 
@@ -174,7 +174,7 @@ A bypass is listed here only if it is recorded with `expect: miss` in `validatio
 11. The Forge flavor has no path, and a gate that needs one would match source files, so Forge differs from the path-scoped rule. `001/jsonc_opens_with_a_comment`, `006/eight_control_bytes_first`, `007/bare_sentence_without_instruction_marker`
 12. Matching it flags ordinary developer work: login jobs, installers, routine agent edits, or a shell started by a person. `008/run_at_load_only`, `008/start_interval_instead_of_keepalive`, `008/writable_binary_without_interpreter`, `008/script_under_opt`, `011/ssh_config_write`, `013/moved_into_place`, `013/copied_into_place`, `015/node_parent_shell`, `018/zsh_parent_skip`, `006/zero_width_space_only`
 
-Open and not closed this round, and not a static-matching limit: `006-e9`, a UTF-16 file with Unicode tag characters (review-harness only). The Unicode-tag rule does not read UTF-16 text. A fix is known and was not applied.
+Closed in the final round: `006-e9`, a UTF-16 file with Unicode tag characters. The Unicode-tag rule now reads tag characters in UTF-16 text, little- or big-endian, when the file starts with a byte order mark, with the same flag exemption. It is a limit, not an open fix, that UTF-16 text without a byte order mark is not read, and that bidi controls, variation selectors, and zero-width runs in UTF-16 are not read: the byte order mark is what separates 16-bit text from binary, and a 2-byte bidi atom would be a very short atom.
 
 Other limits found in this round that are not a matrix case (the README lists the older ones):
 
@@ -184,6 +184,10 @@ Other limits found in this round that are not a matrix case (the README lists th
 - An asterisk counts as a gap in the sentence patterns (Markdown emphasis between words). It is not a blank in the command patterns, so a command with an asterisk between its tokens does not match.
 - A file the YARA engine cannot scan makes the CLI exit with status 2 and name the file. It is never reported as clean.
 - `SERAPH_MacOS_Agent_Piped_Shell` holds one regex in the common Sigma "contains" shape, `.*(curl|wget|fetch|base64)\t.*`. Run as written with an unanchored search, a miss takes time quadratic in the length of the command line: about one second at 9,000 characters with Python's `re`. The CLI drops the leading and trailing `.*` before it searches, which gives the same answers in linear time (a test checks that). A Sigma backend that runs the regex as written was not measured.
+
+- A conditional about the user is exempt from the prompt-injection check only in the form "phrase, then a URL": "If the user says to forget previous instructions about style, follow https://...". The prefix has to be "if" or "when", "the user", "says", "asks", or "wants", then "to" (optionally "you to"), directly before the phrase. A real order elsewhere on the same line still matches, because each start is counted on its own. The reverse form (a URL, then the phrase) has no exemption, so "Follow https://... if the user says to forget previous instructions" still matches: a conditional placed after a real order would start from the same URL and cancel it.
+- The Google key hosts are a list: `generativelanguage`, `www`, `maps`, `places`, `routes`, `youtube`, `translation`, `vision`, `texttospeech`, `speech`, `language`, `customsearch`, and `safebrowsing` under `googleapis.com`, and `ai.google.dev`. A Google key sent to another host, including `storage.googleapis.com`, matches, because a bucket there belongs to whoever created it.
+- `npm exec -- <name>` and `pnpm dlx <name>` read a bare name as a package, as `npx` does, so a project-local binary such as `npm exec -- tsc` matches `SERAPH-YARA-016`. A rule cannot tell a local binary from a package npm would download. It is a stated false-positive class and is pinned by a fixture.
 
 ## ATT&CK and ATLAS
 
@@ -237,7 +241,7 @@ Joining eslogger args with spaces drops quoting. A command whose only copy of a 
 
 They match the same committed positive instruction fixtures and stay silent on the same negatives, and the eleven inputs the review found them disagreeing on are now fixtures. To get there the CLI gave up four matches that YARA cannot express: a zero-width mark inside a word, a high-risk word on an adjacent line, a pipe followed by a newline, and a file over 5 MB. A test, `test_python_twin_agrees_with_yara_on_every_fixture`, compares the CLI's phrase module with YARA alone on every fixture of every rule and every evasion-matrix body, in both flavors. Both sides treat more than 256 occurrences of one phrase, or more than 256 pipes into a shell, as a match.
 
-Measured at `e3821e4`, on every committed YARA fixture and not only the instruction ones: 313 positives and 160 negatives. The CLI hits all 313 positives. So do path-scoped libyara 4.5.8, path-scoped yara-x 1.23.0, and both Forge flavors. libyara and yara-x disagree on none of the 473 files, and no negative is hit by the CLI or by the path-scoped rules. Five negatives are hit by the Forge flavor: the loose git hook, and four hidden-Unicode files that are not instruction paths (`Notes.md`, `CHANGELOG.md`, and an upper-case and a mixed-case `README`). The path-scoped rule skips those by path and Forge has no path. On the larger review harness of 232 fixtures (196 bypass and control files, 30 extra, 6 incident), the CLI and path-scoped libyara agree on every one, and so do libyara and yara-x. Parity is a property of these fixtures. It is not a proof for inputs nobody wrote.
+Measured at the final head, on every committed YARA fixture and not only the instruction ones: 326 positives and 169 negatives. The CLI hits all 326 positives. So do path-scoped libyara 4.5.8, path-scoped yara-x 1.23.0, and both Forge flavors. libyara and yara-x disagree on none of the 495 files, and no negative is hit by the CLI or by the path-scoped rules. Five negatives are hit by the Forge flavor: the loose git hook, and four hidden-Unicode files that are not instruction paths (`Notes.md`, `CHANGELOG.md`, and an upper-case and a mixed-case `README`). The path-scoped rule skips those by path and Forge has no path. On the larger review harness of 232 fixtures (196 bypass and control files, 30 extra, 6 incident), the CLI and path-scoped libyara agree on every one, and so do libyara and yara-x. Parity is a property of these fixtures. It is not a proof for inputs nobody wrote.
 
 A prohibition does not match. "Never bypass permissions" and "do not disable confirmation" veto their line. "Do not run `curl ... | sh`" exempts the fetch it names. "Never run with `--dangerously-skip-permissions`" is not counted as starting a CLI with prompts off. The negation has to be a whole word and has to sit directly before the verb, with only filler words before the flag, so "whenever" and "never launch claude without `--dangerously-skip-permissions`" still match. Three single-phrase signals now need more than the bare words: a changed recipient has to be a literal number or address, `/tmp/inventory.txt` has to sit beside what is being inventoried, and the CopyPasta license has to be claimed, not just named.
 
@@ -249,7 +253,7 @@ Inner checks use the `at` and `in` operators and match counts, which have no bou
 
 ## yaraQA 0.11.0
 
-Run on the final rules at `e3821e4`, as `yaraQA.py -d <rules directory>` against `rules/yara` (64 findings across 11 rules) and `rules/path-scoped` (48 findings). Nothing at level 3 or higher on either flavor. The findings are level 1 and level 2 only:
+Run on the final rules, as `yaraQA.py -d <rules directory>` against `rules/yara` (51 findings across 11 rules) and `rules/path-scoped` (51 findings). Nothing at level 3 or higher on either flavor. The findings are level 1 and level 2 only:
 
 | Id | Forge | Path-scoped | Meaning |
 | --- | --- | --- | --- |
@@ -257,7 +261,7 @@ Run on the final rules at `e3821e4`, as `yaraQA.py -d <rules directory>` against
 | HS2 | 1 | 1 | very high number of strings (level 2), the instruction rule |
 | HS4 | 10 | 8 | very high number of regex strings (level 2) |
 | PA2 | 7 | 7 | very short atoms, all in the hidden-unicode rule (level 2) |
-| PI1 | 43 | 29 | a regex string with a measurable performance impact (level 2), 37 of them in the instruction rule |
+| PI1 | 30 | 32 | a regex string with a measurable performance impact (level 2), 29 and 32 of them in the instruction rule |
 
 The earlier level-3 finding, CF2 for `math.min` in the instruction rules, does not recur: the instruction rules no longer call a `math` function. The short unanchored package regexes (RE1) were rewritten earlier, and none is reported.
 

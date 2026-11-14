@@ -45,6 +45,7 @@ from larc_seraph.phrases import (  # noqa: E402
     SUBST_PATTERN,
     OUTER_BOUND,
     TOOL_KEY_PATTERN,
+    INJECT_COND_FORWARD,
     INJECT_FORWARD,
     INJECT_REVERSE,
     LOW_PATTERN,
@@ -141,6 +142,7 @@ def render() -> str:
         f"    $fetch_then_file  = /{to_yara(CRED_REVERSE)}/ nocase ascii",
         f"    $inject_fwd       = /{to_yara(INJECT_FORWARD)}/ nocase ascii",
         f"    $inject_rev       = /{to_yara(INJECT_REVERSE)}/ nocase ascii",
+        f"    $inject_cond_fwd  = /{to_yara(INJECT_COND_FORWARD)}/ nocase ascii",
         f"    $high             = /{to_yara(HIGH_WORD_PATTERN)}/ nocase ascii",
         f"    $soft             = /({to_yara(POISON_PATTERN)})|({to_yara(LOW_PATTERN)})/ nocase ascii",
         "    $bad              = /"
@@ -301,7 +303,7 @@ rule SUSP_SERAPH_Instruction_Unsafe_Directive {{
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.13.0"
+    version          = "1.14.0"
     severity         = "high"
     status           = "experimental"
     score            = 70
@@ -337,7 +339,9 @@ rule SUSP_SERAPH_Instruction_Unsafe_Directive {{
       filepath matches /(\\/(agents|claude|gemini)\\.md$)|(\\/\\.cursorrules$)|(\\/skill\\.md$)|(\\/copilot-instructions\\.md$)|(\\/\\.cursor\\/rules\\/)|(\\.mdc$)|(\\/\\.windsurfrules$)|(\\/\\.windsurf\\/rules\\/)|(\\/\\.clinerules($|\\/))|(\\/\\.claude\\/(commands|agents)\\/[^\\/]+\\.md$)|(\\/\\.github\\/instructions\\/[^\\/]+\\.md$)/i or
       (filepath matches /\\.(json|jsonc)$/i and $desc and $toolkey)
     ) and (
-      $homo or $file_then_fetch or $fetch_then_file or $inject_fwd or $inject_rev or
+      $homo or $file_then_fetch or $fetch_then_file or
+      // A start that also matches the user-request conditional is exempt. Each start counts.
+      #inject_fwd > #inject_cond_fwd or $inject_rev or
       {phrase_condition}
     )
 }}

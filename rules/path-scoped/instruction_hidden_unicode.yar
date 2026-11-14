@@ -19,11 +19,11 @@ rule SUSP_SERAPH_Instruction_Hidden_Unicode_Path {
     author_url       = "https://lightarchitects.ai"
     date             = "2026-11-13"
     modified         = "2026-11-13"
-    version          = "1.8.0"
+    version          = "1.9.0"
     severity         = "high"
     status           = "experimental"
     score            = 80
-    description      = "Detects Unicode tag characters, a bidi override or isolate, a run of variation selectors, or a run of eight zero-width space, non-joiner, or joiner characters in an instruction file. The three subdivision flags Unicode recommends (England, Scotland, Wales) are ignored. Every tag character is checked, however many flags come first. Path-scoped variant. It requires the filepath external and is not for YARA-Forge."
+    description      = "Detects Unicode tag characters, a bidi override or isolate, a run of variation selectors, or a run of eight zero-width space, non-joiner, or joiner characters in an instruction file. The three subdivision flags Unicode recommends (England, Scotland, Wales) are ignored. Every tag character is checked, however many flags come first. Tag characters in UTF-16 text that starts with a byte order mark are detected too. The other checks read UTF-8 only. Path-scoped variant. It requires the filepath external and is not for YARA-Forge."
     attack_technique = "T1027"
     attack_tactic    = "defense-evasion"
     reference        = "https://attack.mitre.org/techniques/T1027/"
@@ -43,6 +43,14 @@ rule SUSP_SERAPH_Instruction_Hidden_Unicode_Path {
     // These three are the only subdivision flags in Unicode's RGI emoji set.
     // A black flag followed by any other tag run is not exempt.
     $flag    = { F0 9F 8F B4 F3 A0 81 A7 F3 A0 81 A2 (F3 A0 81 A5 F3 A0 81 AE F3 A0 81 A7 | F3 A0 81 B3 F3 A0 81 A3 F3 A0 81 B4 | F3 A0 81 B7 F3 A0 81 AC F3 A0 81 B3) F3 A0 81 BF }
+    // The same tag characters in UTF-16 text that starts with a byte order mark. A tag
+    // character is the surrogate pair U+DB40 then U+DC00..U+DC7F. Only a file with a
+    // byte order mark is read this way, because it is the BOM that says the bytes are
+    // 16-bit units and not binary.
+    $tag_le  = { 40 DB (0? | 1? | 2? | 3? | 4? | 5? | 6? | 7?) DC }
+    $tag_be  = { DB 40 DC (0? | 1? | 2? | 3? | 4? | 5? | 6? | 7?) }
+    $flag_le = { 3C D8 F4 DF 40 DB 67 DC 40 DB 62 DC (40 DB 65 DC 40 DB 6E DC 40 DB 67 DC | 40 DB 73 DC 40 DB 63 DC 40 DB 74 DC | 40 DB 77 DC 40 DB 6C DC 40 DB 73 DC) 40 DB 7F DC }
+    $flag_be = { D8 3C DF F4 DB 40 DC 67 DB 40 DC 62 (DB 40 DC 65 DB 40 DC 6E DB 40 DC 67 | DB 40 DC 73 DB 40 DC 63 DB 40 DC 74 | DB 40 DC 77 DB 40 DC 6C DB 40 DC 73) DB 40 DC 7F }
     $desc    = "\"description\"" ascii
     // A JSON file is a tool list only when it also has one of these keys.
     $toolkey = /"(tools|inputSchema|input_schema|mcpServers|context_servers)"/ ascii
@@ -71,9 +79,15 @@ rule SUSP_SERAPH_Instruction_Hidden_Unicode_Path {
       (filepath matches /\.(json|jsonc)$/i and $desc and $toolkey)
     ) and
     (
-      any of ($lre, $rle, $lro, $rlo, $lri, $rli, $fsi) or $vs_run or $vs_bmp or $zw_run or
-      // Each exempt flag holds exactly six tag characters. More tags than that
-      // means at least one tag sits outside a listed flag. No loop, so no bound.
-      #tag > 6 * #flag
+      (
+        (
+          any of ($lre, $rle, $lro, $rlo, $lri, $rli, $fsi) or $vs_run or $vs_bmp or $zw_run or
+          // Each exempt flag holds exactly six tag characters. More tags than that
+          // means at least one tag sits outside a listed flag. No loop, so no bound.
+          #tag > 6 * #flag
+        )
+      ) or
+      (uint16(0) == 0xFEFF and #tag_le > 6 * #flag_le) or
+      (uint16(0) == 0xFFFE and #tag_be > 6 * #flag_be)
     )
 }

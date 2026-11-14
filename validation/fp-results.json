@@ -1,8 +1,8 @@
 {
   "files_scanned": 15627,
-  "seconds": 25.257,
-  "forge_seconds": 16.783,
-  "path_seconds": 8.474,
+  "seconds": 24.175,
+  "forge_seconds": 16.209,
+  "path_seconds": 7.967,
   "hit_counts": {},
   "path_hit_counts": {
     "SUSP_SERAPH_Instruction_Unsafe_Directive_Path": 1

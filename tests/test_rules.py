@@ -133,9 +133,10 @@ def test_every_rule_has_labelled_fixtures(yara_rules, sigma_by_name):
         assert positives, record.name
         assert negatives, record.name
         for path in positives + negatives:
-            # A binary plist is not UTF-8 and a UTF-16 plist spells the label with NULs, so look at bytes.
+            # A binary plist is not UTF-8 and a UTF-16 file spells the label with NULs, so look at bytes.
             data = path.read_bytes()
-            assert b"synthetic-benign" in data or "synthetic-benign".encode("utf-16-le") in data, path
+            spellings = (b"synthetic-benign", "synthetic-benign".encode("utf-16-le"), "synthetic-benign".encode("utf-16-be"))
+            assert any(spelling in data for spelling in spellings), path
 
 
 # Payload outside a hook directory. The path-scoped rule stays silent.
@@ -267,6 +268,12 @@ def test_non_unicode_fixtures_are_ascii():
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_Writable_Interpreter/positive/utf16.plist",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_LaunchPlist_Writable_Interpreter/negative/utf16_system.plist",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/tags/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/utf16-le/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/utf16-be/CLAUDE.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/utf16-flag-then-tag/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/negative/utf16-flag/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/negative/utf16-flag-be/AGENTS.md",
+        ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/negative/utf16-plain/AGENTS.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/bidi/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/pillar/CLAUDE.md",
         ROOT / "tests/fixtures/yara/SUSP_SERAPH_Instruction_Hidden_Unicode/positive/pillar/.cursor/rules/style.mdc",
