@@ -312,6 +312,10 @@ def test_no_catastrophic_backtracking_in_a_hand_written_regex():
             "x; env " + "a=\\" * 20000,
             "x; env " + "'a=b' " * 20000 + "nope",
             "x; env " + "\\'a " * 20000,
+            "x" + "; env a=\\;b" * 20000 + " nope",
+            "x; env " + "X\\=1 " * 20000 + "nope",
+            "x; env " + "X'='1 " * 20000 + "nope",
+            "x; env " + "abc " * 20000 + "nope",
         ):
             started = time.perf_counter()
             compiled.search(line)
@@ -321,7 +325,7 @@ def test_no_catastrophic_backtracking_in_a_hand_written_regex():
         # A quoted value with a blank in it is still an assignment.
         assert compiled.search("x; env X='a b' bash /tmp/n"), pattern
         # Quotes and escapes in an assignment are what a shell strips before it runs env.
-        for hit in ("x; env 'X=1' bash /tmp/n", "x; env X=a\\'b bash /tmp/n", 'x; env "A B"=1 bash /tmp/n', "x; env X=a\\;b bash /tmp/n"):
+        for hit in ("x; env X\\=1 bash /tmp/n", "x; env X'='1 bash /tmp/n", 'x; env X"=1" bash /tmp/n', "x; env 'X=1' bash /tmp/n", "x; env X=a\\'b bash /tmp/n", 'x; env "A B"=1 bash /tmp/n', "x; env X=a\\;b bash /tmp/n"):
             assert compiled.search(hit), (pattern, hit)
         assert not compiled.search("x; env X=a\\ bash /tmp/n"), pattern  # the escaped blank makes /tmp/n the command
         # Padding must not hide the shell.

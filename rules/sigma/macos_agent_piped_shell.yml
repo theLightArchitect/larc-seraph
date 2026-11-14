@@ -114,7 +114,7 @@ detection:
   # assignment hide the shell. The shell name starts its token, so a
   # name that merely ends in sh (git push /tmp/mirror.git, publish /tmp/x) is not a shell.
   selection_temp_run:
-    CommandLine|re: '(&&|;|\|\|)[ \t]*((sudo|exec|env|nohup|command)[ \t]+((([^ \t=;&|''"\\]|\\.|''[^'';&|]*''|"[^";&|]*")+=([^ \t;&|''"\\]|\\.|''[^'';&|]*''|"[^";&|]*")*|(''[^'';&|]*=[^'';&|]*''|"[^";&|]*=[^";&|]*"))[ \t]+)*)*([^ \t;&|]*/)?(ba|z|da|k)?sh([ \t]+-[^ \t;&|]*)*[ \t]+/(private/)?(var/)?tmp/'
+    CommandLine|re: '(&&|;|\|\|)[ \t]*((sudo|exec|env|nohup|command)[ \t]+((?=([^ \t=;&|''"\\]|\\[^=]|''[^'';&|=]*''|"[^";&|=]*")*(=|\\=|''[^'';&|]*=[^'';&|]*''|"[^";&|]*=[^";&|]*"))([^ \t;&|''"\\]|\\.|''[^'';&|]*''|"[^";&|]*")+[ \t]+)*)*([^ \t;&|]*/)?(ba|z|da|k)?sh([ \t]+-[^ \t;&|]*)*[ \t]+/(private/)?(var/)?tmp/'
   selection_py_decode:
     CommandLine|contains: 'b64decode'
   selection_py_exec:
